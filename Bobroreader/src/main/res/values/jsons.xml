@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Bobroreader is open source software, created, maintained, and shared under
+  ~ the MIT license by Avadend Piroserpen Arts. The project includes components
+  ~ from other open source projects which remain under their existing licenses,
+  ~ detailed in their respective source files.
+  ~
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2015. Avadend Piroserpen Arts Ltd.
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  ~
+  ~
+  -->
+
+<resources>
+    <string name="op_json">
+        {
+            \"display_id\": 67610,
+            \"files\": [],
+            \"post_id\": 6008612,
+            \"last_modified\": \"2014-12-28 15:07:54\",
+            \"date\": \"2014-05-09 12:46:37\",
+            \"message\": \"\u041e\u0444\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u044b\u0439\u2122\",
+            \"subject\": \"\u041f\u0443\u0442\u0435\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c\",
+            \"board_id\": 11,
+            \"name\": \"\u0410\u043d\u043e\u043d\u0438\u043c\u0443\u0441\",
+            \"thread_id\": 272705,
+            \"__class__\": \"Post\",
+            \"op\": true
+        }
+    </string>
+    <string name="atatch_json">{"display_id": 71167,"files": [{"metadata": {"album": "The Chase (Deluxe
+        Edition)","artist": "Groenland ","type": "MP3","title": "The Things I've Done","totaltracks":
+        "10","length":170.59520000000001,"sample_rate": 48000,"tracknumber": "10","bitrate": 320000},
+        "src":"src/mp3/1508/10.-The-Things-I-ve-Done.mp3", "thumb_height": 128,"file_id": 1722095,"thumb_width":
+        128,"rating":"sfw","size": 6918201,"type": "music","__class__": "File","thumb":
+        "thumb/generic/sound.png"},{"metadata":{"album": "The Chase (Deluxe Edition)","artist": "Groenland ","type":
+        "MP3","title": "Immune","totaltracks":"5","length": 276.84319999999997,"sample_rate": 48000,"tracknumber":
+        "5","bitrate": 320000},"src":"src/mp3/1508/05.-Immune.mp3","thumb_height": 128,"file_id": 1722096,"thumb_width":
+        128,"rating": "sfw","size":11168092,"type": "music","__class__": "File","thumb":
+        "thumb/generic/sound.png"},{"metadata": {"album": "TheChase (Deluxe Edition)","artist": "Groenland ","type":
+        "MP3","title": "Superhero","totaltracks": "2","length":198.38719999999998,"sample_rate": 48000,"tracknumber":
+        "2","bitrate": 320000},"src":"src/mp3/1508/02.-Superhero.mp3","thumb_height": 128,"file_id":
+        1722097,"thumb_width": 128,"rating":"sfw","size": 8029858,"type": "music","__class__": "File","thumb":
+        "thumb/generic/sound.png"},{"metadata":{"width": 480,"height": 480},"src":
+        "src/jpg/1508/cover-2.jpg","thumb_height": 200,"file_id":1722098,"thumb_width": 200,"rating": "sfw","size":
+        92072,"type": "image","__class__": "File","thumb": "thumb/jpg/1508/143880138469894s.jpg"},{"metadata": {"album":
+        "The Chase (Deluxe Edition)","artist": "Groenland ","type": "MP3","title":"Criminals","totaltracks":
+        "6","length": 283.97120000000001,"sample_rate": 48000,"tracknumber": "6","bitrate":320000},"src":
+        "src/mp3/1508/06.-Criminals.mp3","thumb_height": 128,"file_id": 1722099,"thumb_width":128,"rating":
+        "sfw","size": 11453218,"type": "music","__class__": "File","thumb":"thumb/generic/sound.png"}],"post_id":
+        7500313,"last_modified": null,"date": "2015-08-05 22:03:03","message": "Indie Pop\r\n\u041c\u043e\u0439
+        \u0444\u0430\u0432\u043e\u0440\u0438\u0442 \u0432\u044d\u0442\u043e\u043c \u0433\u043e\u0434\u0443.
+        \u041a\u043e\u043c\u0431\u0438\u043d\u0430\u0446\u0438\u044f\u0438\u0437:
+        \u0443\u043a\u0443\u043b\u0435\u043b\u0435,\u0432\u0438\u043e\u043b\u043e\u043d\u0447\u0435\u043b\u0438,
+        \u043f\u0438\u0430\u043d\u0438\u043d\u043e \u0438\u043d\u0438\u0437\u043a\u043e\u0433\u043e
+        \u0436\u0435\u043d\u0441\u043a\u043e\u0433\u043e\u0433\u043e\u043b\u043e\u0441\u0430.","subject": "Groenland -
+        The Chase","board_id": 11,"name": "\u0410\u043d\u043e\u043d\u0438\u043c\u0443\u0441","thread_id":
+        291623,"__class__": "Post","op": false}
+    </string>
+
+</resources>
