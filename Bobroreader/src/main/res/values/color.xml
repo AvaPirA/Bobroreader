@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dobro_light">#FFFFEE</color>
+    <color name="dobro_medium">#F0E0D6</color>
+    <color name="dobro_dark">#EEAA88</color>
+    <color name="dobro_primary_text">#600000</color>
+    <color name="dobro_secondary_text">#DD0000</color>
+    <color name="dobro_very_text">#0000EE</color>
+    <color name="dobro_icon">#339900</color>
+    <color name="dobro_quote">#789921</color>
+    <color name="dobro_name">#107743</color>
+</resources>
