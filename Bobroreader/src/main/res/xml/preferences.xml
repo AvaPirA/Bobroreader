@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Bobroreader is open source software, created, maintained, and shared under
   ~ the MIT license by Avadend Piroserpen Arts. The project includes components
@@ -28,20 +29,20 @@
   ~
   ~
   -->
-<resources>
-    <string name="app_name">Material Bober</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
-    <string name="title_board_list">Boards</string>
-    <string name="title_board_detail">Board Detail</string>
-    <string name="title_activity_bobroreader">Bobroreader</string>
 
-    <string name="title_section1">Section 1</string>
-    <string name="title_section2">Section 2</string>
-    <string name="title_section3">Section 3</string>
-
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
-
-    <string name="action_example">Example action</string>
-</resources>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+            android:title="Navigation drawer"
+            android:key="pref_drawer_setting">
+        <SwitchPreference
+                android:key="pref_drawer_show_banners"
+                android:title="Show board banner"
+                android:defaultValue="true"/>
+        <SwitchPreference
+                android:key="pref_drawer_show_subdivider"
+                android:title="Show subdividers"
+                android:summary="Restart required for proper result"
+                android:defaultValue="true"
+                android:dependency="pref_drawer_show_banners"/>
+    </PreferenceCategory>
+</PreferenceScreen>

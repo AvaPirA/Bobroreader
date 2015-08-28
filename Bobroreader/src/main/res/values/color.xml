@@ -9,4 +9,7 @@
     <color name="dobro_icon">#339900</color>
     <color name="dobro_quote">#789921</color>
     <color name="dobro_name">#107743</color>
+
+    <!-- this 60% darker === primary_text, where's 60% is default darkening by the translucent status bar -->
+    <color name="dobro_status_bar">#A00000</color>
 </resources>

@@ -38,7 +38,7 @@
     <!-- ...and here we setting appcompat’s color theming attrs -->
     <item name="colorPrimary">@color/dobro_dark</item>
     <item name="colorPrimaryDark">@color/dobro_primary_text</item>
-    <item name="colorAccent">@color/dobro_medium</item>
+      <item name="colorAccent">@color/dobro_primary_text</item>
 
     <!-- MaterialDrawer specific values -->
     <item name="material_drawer_background">@color/dobro_medium</item>
@@ -53,8 +53,14 @@
     <!--<item name="material_drawer_selected_text">@color/dobro_name</item>-->
     <item name="material_drawer_header_selection_text">@android:color/black</item>
       <item name="android:windowTranslucentNavigation">true</item>
+
+      <item name="android:windowTranslucentStatus">true</item>
+      <item name="android:windowBackground">@drawable/window_drawable</item>
+
   </style>
-  <style name="Bobroreader.Drawer" parent="Widget.AppCompat.DrawerArrowToggle">
+
+
+    <style name="Bobroreader.Drawer" parent="Widget.AppCompat.DrawerArrowToggle">
     <item name="spinBars">true</item>
     <item name="color">@color/dobro_primary_text</item>
   </style>
