@@ -35,9 +35,12 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.avapira.bobroreader.Consumer;
+import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.hanabira.entity.Post;
+import com.google.gson.Gson;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -55,9 +58,7 @@ public class BasicsSupplier {
     public static final String diff = "/api/chan/stats/diff.json";
     public static final String user = "/api/user.json";
 
-    public static void checkAndLoadImages() {
 
-    }
 
     public static class PostSupplier {
         private static final String DISPLAY_ID           = "/api/post/%s.json";
@@ -73,6 +74,20 @@ public class BasicsSupplier {
         }
 
     }
+
+    public static void getUser(Context ctx, final Consumer<HanabiraUser> consumer) {
+        RequestQueue queue = Volley.newRequestQueue(ctx);
+        StringRequest reqJson = new StringRequest(BASIC_DOMAIN + user, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                Gson gson = new Gson();
+                HanabiraUser user = gson.fromJson(response, HanabiraUser.class);
+                consumer.accept(user);
+            }
+        }, errList);
+        queue.add(reqJson);
+    }
+
 
     public static void getBoardsIds(Context ctx, final Consumer<Iterator<String>> consumer) {
         RequestQueue queue = Volley.newRequestQueue(ctx);

@@ -3,6 +3,6 @@
            android:orientation="vertical"
            android:layout_width="match_parent"
            android:layout_height="wrap_content"
-           android:src="@drawable/acc39fc867fca9e20f6c278f36c73f4b3"
+           android:src="@drawable/acc39fc867f_transparent"
            android:adjustViewBounds="true"
            android:scaleType="fitXY" />

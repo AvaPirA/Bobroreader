@@ -29,39 +29,38 @@
  *
  */
 
-apply plugin: 'com.android.application'
+package com.avapira.bobroreader.hanabira.entity;
 
-android {
-    compileSdkVersion 23
-    buildToolsVersion "23"
+import android.app.Notification;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.SerializedName;
 
-    defaultConfig {
-        applicationId "com.avapira.bobroreader"
-        minSdkVersion 23
-        targetSdkVersion 23
-        versionCode 1
-        versionName "1.0"
+import java.util.List;
+
+/**
+ *
+ */
+public class HanabiraUser {
+    @SerializedName("tokens")
+    private List<Token>        tokens;
+    private List<Notification> notifications;
+    private String             language;
+    private String             password;
+    private String             id;
+
+
+    public enum Token {
+        @SerializedName("no_user_captcha")
+        NO_USER_CAPTCHA,
+        @SerializedName("captcha")
+        CAPTCHA,
+        @SerializedName("readonly")
+        READONLY
+
     }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-}
 
-task appStart(type: Exec, dependsOn: 'installDebug') {
-    commandLine 'cmd', '/c', 'adb', 'shell', 'am', 'start', '-n', 'com.avapira.bobroreader/.Bober'
-}
-
-dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile('com.mikepenz:materialdrawer:4.0.2@aar') {
-        transitive = true
+    public String toString() {
+        return new GsonBuilder().setPrettyPrinting().create().toJson(this);
     }
-    compile 'com.google.code.gson:gson:2.3.1'
-    compile 'com.google.guava:guava:18.0'
-    compile 'com.mcxiaoke.volley:library:1.0.18'
-    compile 'joda-time:joda-time:2.3'
-    compile 'com.android.support:appcompat-v7:23.0.0'
+
 }

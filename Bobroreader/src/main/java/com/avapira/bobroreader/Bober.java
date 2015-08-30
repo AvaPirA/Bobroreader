@@ -31,17 +31,18 @@
 package com.avapira.bobroreader;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.annotation.DrawableRes;
+import android.support.annotation.LayoutRes;
 import android.support.annotation.StringRes;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.networking.BasicsSupplier;
+import com.avapira.bobroreader.networking.PersistentCookieStore;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.holder.StringHolder;
@@ -49,116 +50,145 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.SectionDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 
-import java.util.HashMap;
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.util.Map;
 
 public class Bober extends AppCompatActivity {
 
-    private Drawer result = null;
+    private volatile Drawer drawer = null;
 
-    private static final Map<String, Integer> news = new HashMap<>();
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_boards_navigation_drawer);
-
-        BasicsSupplier.getDiff(this, new Consumer<Map<String, Integer>>() {
-            @Override
-            public void accept(Map<String, Integer> stringIntegerMap) {
-                news.putAll(stringIntegerMap);
-            }
-        });
-
-        // Handle Toolbar
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-//        toolbar.setBackgroundColor(getResources().getColor(R.color.dobro_dark, null));
-        toolbar.setTitle(R.string.title_activity_bobroreader);
-
-        //Create the drawer
-        result = new DrawerBuilder().withActivity(this)
-                                    .withFullscreen(true)
-                                    .withToolbar(toolbar)
-                                    .withHeader(R.layout.boards_drawer_header)
-                                    .addDrawerItems(new BoardItem("/b/", R.drawable.banners_b_b1),
-                                                    new BoardItem("/u/", R.drawable.banners_u_125860969598039),
-                                                    new BoardItem("/rf/", R.drawable.banners_rf_125701163950149),
-                                                    new BoardItem("/dt/", R.drawable.banners_dt_125697739438064),
-                                                    new BoardItem("/vg/", R.drawable.banners_vg_125709977081546),
-                                                    new BoardItem("/r/", R.drawable.banners_r_125699732718180),
-                                                    new BoardItem("/cr/", R.drawable.banners_cr_cr4),
-                                                    new BoardItem("/mu/", R.drawable.banners_mu_125861048005976),
-                                                    new BoardItem("/oe/", R.drawable.banners_wh_wh2),
-                                                    new BoardItem("/s/", R.drawable.banners_s_125776130692418),
-                                                    new BoardItem("/w/", R.drawable.banners_wh_wh1),
-                                                    new BoardItem("/hr/", R.drawable.banners_wh_125697147834527),
-                                                    //
-                                                    new SectionDrawerItem().withName("Аниме"), new BoardItem("/a/"),
-                                                    new BoardItem("/ma/"), new BoardItem("/sw/"),
-                                                    new BoardItem("/hau/"), new BoardItem("/azu/"),
-                                                    //
-                                                    new SectionDrawerItem().withName("Аниме"), new BoardItem("/tv/"),
-                                                    new BoardItem("/cp/"), new BoardItem("/gf/"), new BoardItem("/bo/"),
-                                                    new BoardItem("/di/"), new BoardItem("/vn/"), new BoardItem("/ve/"),
-                                                    new BoardItem("/wh/"), new BoardItem("/fur/"),
-                                                    new BoardItem("/to/"), new BoardItem("/bg/"), new BoardItem("/wn/"),
-                                                    new BoardItem("/slow/"), new BoardItem("/mad/"),
-                                                    //
-                                                    new SectionDrawerItem().withName("Доброчан"),
-                                                    new BoardItem().withName("/d/"), new BoardItem().withName("/news/"),
-                                                    new SectionDrawerItem().withName("Other stuff"),
-                                                    new SettingsItem().withIdentifier(239))
-                                    .withSavedInstance(savedInstanceState)
-                                    .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
-                                        @Override
-                                        public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
-                                            if (drawerItem != null) {
-                                                Intent intent = null;
-                                                if (drawerItem.getIdentifier() == 239) {
-                                                    intent = new Intent(Bober.this, SettingsActivity.class);
-                                                }
-                                                if (intent != null) {
-                                                    Bober.this.startActivity(intent);
-                                                }
-                                            }
-
-                                            return false;
-                                        }
-                                    })
-                                    .build();
-
-//        //USE THIS CODE TO GET A FULL TRANSPARENT STATUS BAR
-//        //YOU HAVE TO UNCOMMENT THE setWindowFlag too.
-//        if (Build.VERSION.SDK_INT >= 19 && Build.VERSION.SDK_INT < 21) {
-//            setWindowFlag(this, WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS, true);
-//        }
-//        if (Build.VERSION.SDK_INT >= 19) {
-//            getWindow().getDecorView().setSystemUiVisibility(
-//                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-//        }
-//        if (Build.VERSION.SDK_INT >= 21) {
-//            setWindowFlag(this, WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS, false);
-//            getWindow().setStatusBarColor(Color.TRANSPARENT);
-//        }
+    private static class ShortSectionDivider extends SectionDrawerItem {
+        @Override
+        @LayoutRes
+        public int getLayoutRes() {
+            return R.layout.section_divider;
+        }
     }
 
-//
-//    public static void setWindowFlag(Activity activity, final int bits, boolean on) {
-//        Window win = activity.getWindow();
-//        WindowManager.LayoutParams winParams = win.getAttributes();
-//        if (on) {
-//            winParams.flags |= bits;
-//        } else {
-//            winParams.flags &= ~bits;
-//        }
-//        win.setAttributes(winParams);
-//    }
+    private class BoardSwitcher implements Drawer.OnDrawerItemClickListener {
+        @Override
+        public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
+            if (drawerItem != null) {
+                Intent intent = null;
+                if (drawerItem.getIdentifier() == 239) {
+                    intent = new Intent(Bober.this, SettingsActivity.class);
+                }
+                if (intent != null) {
+                    Bober.this.startActivity(intent);
+                }
+            }
+
+            return false;
+        }
+    }
+
+    private void bindCookies() {
+        CookieManager cookieManager = new CookieManager(new PersistentCookieStore(this.getApplicationContext()),
+                                                        CookiePolicy.ACCEPT_ORIGINAL_SERVER);
+        CookieHandler.setDefault(cookieManager);
+    }
+
+    @Override
+    protected void onCreate(final Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        bindCookies();
+        setContentView(R.layout.activity_boards_navigation_drawer);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        drawer = generateBuilder(savedInstanceState, toolbar).build();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        updateDrawerDiff();
+        BasicsSupplier.getUser(this, new Consumer<HanabiraUser>() {
+            @Override
+            public void accept(HanabiraUser user) {
+                ((TextView) findViewById(R.id.txtLabel)).setText(user.toString());
+            }
+        });
+    }
+
+    public void updateDrawerDiff() {
+        BasicsSupplier.getDiff(this, new Consumer<Map<String, Integer>>() {
+            @Override
+            public void accept(final Map<String, Integer> diff) {
+                System.out.println("accept");
+                for (IDrawerItem item : drawer.getAdapter().getDrawerItems()) {
+                    if (item instanceof BoardItem) {
+                        BoardItem i = (BoardItem) item;
+                        String boardKey = shortenizeBoardName(i.getName().getText());
+                        i.withBadge(String.format("[%s]", diff.get(boardKey)));
+                    }
+                }
+                drawer.getAdapter().notifyDataSetChanged();
+            }
+        });
+    }
+
+    private DrawerBuilder generateBuilder(Bundle savedInstanceState, Toolbar toolbar) {
+        return new DrawerBuilder().withActivity(Bober.this)
+                                  .withFullscreen(true)
+                                  .withToolbar(toolbar)
+                                  .withHeaderDivider(false)
+                                  .withHeader(R.layout.boards_drawer_header)
+                                  .addDrawerItems(new ShortSectionDivider().withName("Общее"),
+                                                  new BoardItem("/b/", R.drawable.banners_b_b1),
+                                                  new BoardItem("/u/", R.drawable.banners_u_125860969598039),
+                                                  new BoardItem("/rf/", R.drawable.banners_rf_125701163950149),
+                                                  new BoardItem("/dt/", R.drawable.banners_dt_125697739438064),
+                                                  new BoardItem("/vg/", R.drawable.banners_vg_125709977081546),
+                                                  new BoardItem("/r/", R.drawable.banners_r_125699732718180),
+                                                  new BoardItem("/cr/", R.drawable.banners_cr_cr4),
+                                                  new BoardItem("/mu/", R.drawable.banners_mu_125861048005976),
+                                                  new BoardItem("/oe/", R.drawable.banners_empty),
+                                                  new BoardItem("/s/", R.drawable.banners_s_125776130692418),
+                                                  new BoardItem("/w/", R.drawable.banners_empty),
+                                                  new BoardItem("/hr/", R.drawable.banners_empty),
+                                                  //
+                                                  new ShortSectionDivider().withName("Аниме"),
+                                                  new BoardItem("/a/", R.drawable.banners_a_125768405443972),
+                                                  new BoardItem("/ma/", R.drawable.banners_ma_125860969613262),
+                                                  new BoardItem("/sw/", R.drawable.banners_sw_125861045421667),
+                                                  new BoardItem("/hau/", R.drawable.banners_hau_125861045418626),
+                                                  new BoardItem("/azu/", R.drawable.banners_empty),
+                                                  //
+                                                  new ShortSectionDivider().withName("На пробу"),
+                                                  new BoardItem("/tv/", R.drawable.banners_tv_55555),
+                                                  new BoardItem("/cp/", R.drawable.banners_cp_g125788239756657),
+                                                  new BoardItem("/gf/", R.drawable.banners_gf_125860979571217),
+                                                  new BoardItem("/bo/", R.drawable.banners_empty),
+                                                  new BoardItem("/di/", R.drawable.banners_di_125762259407262),
+                                                  new BoardItem("/vn/", R.drawable.banners_vn_125861005475361),
+                                                  new BoardItem("/ve/", R.drawable.banners_ve_125698880498448),
+                                                  new BoardItem("/wh/", R.drawable.banners_wh_125861075646865),
+                                                  new BoardItem("/fur/", R.drawable.banners_fur_125861026701646),
+                                                  new BoardItem("/to/", R.drawable.banners_to_125861045424732),
+                                                  new BoardItem("/bg/", R.drawable.banners_bg_125861578033434),
+                                                  new BoardItem("/wn/", R.drawable.banners_wn_125861005478345),
+                                                  new BoardItem("/slow/", R.drawable.banners_slow_slow_4),
+                                                  new BoardItem("/mad/", R.drawable.banners_mad_mad),
+                                                  //
+                                                  new ShortSectionDivider().withName("Доброчан"),
+                                                  new BoardItem("/d/", R.drawable.banners_d_125711152029591),
+                                                  new BoardItem("/news/", R.drawable.banners_news_125710395977840),
+                                                  new SectionDrawerItem().withName("Other stuff"),
+                                                  new SettingsItem().withIdentifier(239))
+                                  .withSavedInstance(savedInstanceState)
+                                  .withOnDrawerItemClickListener(new BoardSwitcher());
+    }
+
+    private String shortenizeBoardName(String name) {
+        return name.substring(1, name.length() - 1);
+    }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         //add the values which need to be saved from the drawer to the bundle
-        outState = result.saveInstanceState(outState);
+        outState = drawer.saveInstanceState(outState);
         super.onSaveInstanceState(outState);
     }
 
@@ -178,8 +208,8 @@ public class Bober extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         //handle the back press :D close the drawer first and if the drawer is closed close the activity
-        if (result != null && result.isDrawerOpen()) {
-            result.closeDrawer();
+        if (drawer != null && drawer.isDrawerOpen()) {
+            drawer.closeDrawer();
         } else {
             super.onBackPressed();
         }
@@ -227,26 +257,6 @@ public class Bober extends AppCompatActivity {
             withIcon(dId);
         }
 
-
-        @Override
-        public void onPostBindView(IDrawerItem drawerItem, View view) {
-            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(view.getContext());
-            view.findViewById(R.id.drawer_subdivider)
-                .setVisibility(sp.getBoolean("pref_drawer_show_subdivider", true) ? View.VISIBLE : View.INVISIBLE);
-
-            TextView name = (TextView) view.findViewById(R.id.material_drawer_name);
-            String sname = name.getText().toString();
-            Integer i = Bober.news.get(sname.substring(1, sname.length() - 1));
-            if (i != null) {
-
-                View badgeContainer = view.findViewById(R.id.material_drawer_badge_container);
-                TextView badge = (TextView) view.findViewById(R.id.material_drawer_badge);
-                badgeContainer.setVisibility(View.VISIBLE);
-                badge.setVisibility(View.VISIBLE);
-                badge.setText(String.format("[%s]", i));
-
-            }
-        }
     }
 
     public static final class SettingsItem extends PrimaryDrawerItem {
