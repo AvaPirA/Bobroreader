@@ -39,7 +39,6 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.avapira.bobroreader.Consumer;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
-import com.avapira.bobroreader.hanabira.entity.Post;
 import com.google.gson.Gson;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -66,12 +65,6 @@ public class BasicsSupplier {
         private static final String THREAD_ID_DISPLAY_ID = "/api/post/%s/%s.json";
 
         private static final String BOARD_EXPORT = "thread";
-
-        public Post displayId(boolean boardExport) {return null;}
-
-        private Post req() {
-            return null;
-        }
 
     }
 

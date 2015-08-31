@@ -31,14 +31,17 @@
 package com.avapira.bobroreader;
 
 import android.content.Intent;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.LayoutRes;
+import android.support.annotation.RawRes;
 import android.support.annotation.StringRes;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
+import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.networking.BasicsSupplier;
 import com.avapira.bobroreader.networking.PersistentCookieStore;
 import com.mikepenz.materialdrawer.Drawer;
@@ -48,6 +51,8 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.SectionDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
@@ -107,6 +112,7 @@ public class Bober extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        HanabiraBoard.loadBoards(rawJsonToString(getResources(), R.raw.boards));
 //        updateDrawerDiff();
 //        BasicsSupplier.getUser(this, new Consumer<HanabiraUser>() {
 //            @Override
@@ -114,6 +120,18 @@ public class Bober extends AppCompatActivity {
 //                ((TextView) findViewById(R.id.txtLabel)).setText(user.toString());
 //            }
 //        });
+    }
+
+    public static String rawJsonToString(Resources res, @RawRes int resId) {
+        BufferedInputStream bis = new BufferedInputStream(res.openRawResource(resId));
+        try {
+            byte[] bytes = new byte[bis.available()];
+            System.out.format("%s bytes read", bis.read(bytes));
+            return new String(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     public void updateDrawerDiff() {

@@ -33,15 +33,13 @@ package com.avapira.bobroreader.hanabira.entity;
 import com.google.gson.annotations.SerializedName;
 import org.joda.time.LocalDateTime;
 
-import java.util.List;
-
 /**
  *
  */
 public class HanabiraPost {
     @SerializedName("display_id")
     private int           displayId;
-    private List<File>    files;
+//    private List<File>    files;
     @SerializedName("last_modified")
     private LocalDateTime modifiedDate;
     @SerializedName("date")
@@ -61,6 +59,9 @@ public class HanabiraPost {
 
     }
 
+    public int getBoardId() {
+        return boardId;
+    }
 
     public String getMessage() {
         return message;
@@ -77,6 +78,9 @@ public class HanabiraPost {
                 name == null ? p.name == null : name.equals(p.name) && threadId == p.threadId && op == p.op;
     }
 
+    public String getName() {
+        return name;
+    }
 }
 
 

@@ -32,19 +32,26 @@
 package com.avapira.bobroreader.hanabira;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Typeface;
+import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
-import android.text.style.ForegroundColorSpan;
-import android.text.style.StrikethroughSpan;
-import android.text.style.StyleSpan;
-import android.text.style.URLSpan;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.style.*;
 import android.text.util.Linkify;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
+import com.avapira.bobroreader.R;
+import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
+import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
+import com.mikepenz.iconics.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,57 +59,151 @@ import java.util.regex.Pattern;
  *
  */
 public class HanabiraParser {
-    private static class SpanItalic extends SpanObjectFactory {
-        @Override
-        Object getSpan() {
-            return new StyleSpan(Typeface.ITALIC);
-        }
-    }
 
-    private static class SpanBold extends SpanObjectFactory {
-        @Override
-        Object getSpan() {
-            return new StyleSpan(Typeface.BOLD);
-        }
-    }
-
-    private static class SpanBoldItalic extends SpanObjectFactory {
-        @Override
-        Object getSpan() {
-            return new StyleSpan(Typeface.BOLD_ITALIC);
-        }
-    }
-
-    public static void main(String[] args) {
-        Pattern refPost = Pattern.compile(">>(/[a-z]{1,4}/)?([0-9]+)");
-        Pattern bold1 = Pattern.compile("(\\*{2}(.*?)\\*{2})");
-        Pattern bold2 = Pattern.compile("(_{2}.*?_{2})");
-        Pattern italic1 = Pattern.compile("(\\*\\\\*(.+)\\*)");
-
-        Pattern bold = Pattern.compile("(\\*\\*|__)(.*?)\\1");
-        Pattern italic = Pattern.compile("(\\*|_)(.*?)\\1");
-        Pattern ulList = Pattern.compile("\\n\\*(.*)");
-        Pattern olList = Pattern.compile("\\n[0-9]+\\.(.*)");
-        Pattern code = Pattern.compile("`(.*?)`");
-    }
-
-    static abstract class SpanObjectFactory {
+    private static abstract class SpanObjectFactory {
         abstract Object getSpan();
+
+        public static final SpanObjectFactory ITALIC      = new SpanObjectFactory() {
+            @Override
+            Object getSpan() {
+                return new StyleSpan(Typeface.ITALIC);
+            }
+        };
+        public static final SpanObjectFactory BOLD        = new SpanObjectFactory() {
+            @Override
+            Object getSpan() {
+                return new StyleSpan(Typeface.BOLD);
+            }
+        };
+        public static final SpanObjectFactory BOLD_ITALIC = new SpanObjectFactory() {
+            @Override
+            Object getSpan() {
+                return new StyleSpan(Typeface.BOLD_ITALIC);
+            }
+        };
+        public static final SpanObjectFactory SPOILER     = new SpanObjectFactory() {
+            @Override
+            Object getSpan() {
+                return new SpoilerSpan();
+            }
+        };
+        public static final SpanObjectFactory CODE_BLOCK  = new SpanObjectFactory() {
+            @Override
+            Object getSpan() {
+                return new CodeBlockSpan();
+            }
+        };
     }
 
-    final SpannableStringBuilder builder;
-    final List<Integer>          skips;
+    private static class QuoteSpan extends CharacterStyle implements UpdateAppearance {
+        @Override
+        public void updateDrawState(TextPaint tp) {
+            tp.setColor(boxedQuoteColor);
+        }
 
-    public HanabiraParser(String message) {
-        message = replaceInternalLinkWithReference(message);
+    }
+
+    private static class SpoilerSpan extends ClickableSpan implements UpdateAppearance {
+
+        Boolean wasShown;
+
+        public SpoilerSpan() {
+            super();
+            wasShown = !HanabiraParser.showSpoilers;
+            // todo maybe make it as "always show"/"show on start(hideable)"/"hidden"?
+        }
+
+        @Override
+        public void onClick(View widget) {
+            TextView tv = (TextView) widget;
+            Spanned spTxt = (Spanned) tv.getText();
+            tv.setTextColor(wasShown ? boxedSpoilerHiddenColor : boxedSpoilerShownColor);
+            wasShown = !wasShown;
+        }
+
+        @Override
+        public void updateDrawState(@NonNull TextPaint tp) {
+            tp.bgColor = boxedSpoilerHiddenColor;
+            if(wasShown) {
+                tp.setColor(boxedSpoilerHiddenColor);
+            } else {
+                tp.setColor(boxedSpoilerShownColor);
+            }
+        }
+    }
+
+    private static class CodeBlockSpan extends CharacterStyle implements UpdateAppearance {
+
+        @Override
+        public void updateDrawState(TextPaint tp) {
+            tp.setColor(boxedSpoilerHiddenColor);
+            tp.setTextSize(boxedCodeFontSize);
+            tp.setTypeface(Typeface.MONOSPACE);
+        }
+    }
+
+    private class HanabiraLinkSpan extends ClickableSpan implements UpdateAppearance {
+        private final String board;
+        private final String post;
+
+        public HanabiraLinkSpan(@Nullable String board, @NonNull String post) {
+            this.board =
+                    board == null ? HanabiraBoard.getForId(HanabiraParser.this.post.getBoardId()).getBoard() : board;
+            this.post = post;
+        }
+
+        @Override
+        public void onClick(View widget) {
+            Toast.makeText(HanabiraParser.this.context, String.format("Open >>%s/%s", board, post), Toast.LENGTH_SHORT)
+                 .show();
+            //open >>/board/post
+        }
+
+        @Override
+        public void updateDrawState(@NonNull TextPaint ds) {
+            ds.setColor(boxedRefLinkColor);
+            ds.setUnderlineText(true);
+        }
+    }
+
+    private static float   boxedCodeFontSize;
+    private static Integer boxedQuoteColor;
+    private static Integer boxedSpoilerHiddenColor;
+    private static Integer boxedSpoilerShownColor;
+    private static Integer boxedRefLinkColor;
+    private static boolean showSpoilers;
+
+    Pattern refPost = Pattern.compile(">>(/?[a-z]{1,4}/)?([0-9]+)");
+    Pattern bold    = Pattern.compile("(\\*\\*|__)(.*?)\\1");
+    Pattern italic  = Pattern.compile("(\\*|_)(.*?)\\1");
+    Pattern ulList  = Pattern.compile("\\n\\*(.*)");
+    Pattern olList  = Pattern.compile("\\n[0-9]+\\.(.*)");
+    Pattern code    = Pattern.compile("`(.*?)`");
+
+    private final Context context;
+
+    private final SpannableStringBuilder builder;
+    private final List<Integer>          skips;
+    private final HanabiraPost           post;
+
+    public HanabiraParser(HanabiraPost post, Context context) {
+        if (boxedSpoilerHiddenColor == null) {
+            boxedCodeFontSize = Utils.convertDpToPx(context, 12);
+            boxedSpoilerHiddenColor = context.getColor(R.color.dobro_dark);
+            boxedSpoilerShownColor = context.getColor(R.color.dobro_primary_text);
+            boxedRefLinkColor = context.getColor(R.color.dobro_ref_text);
+            boxedQuoteColor = context.getColor(R.color.dobro_quote);
+            showSpoilers = PreferenceManager.getDefaultSharedPreferences(context).getBoolean("show_spoilers", false);
+        }
+        this.context = context;
+        this.post = post;
+        builder = new SpannableStringBuilder(replaceInternalLinkWithReference(post.getMessage()));
         Linkify.addLinks(builder, Linkify.WEB_URLS);
-        builder = new SpannableStringBuilder(message);
         skips = new ArrayList<>();
 
-        // all the 4+ spacen in row in the start of string is a non-parsed code
+        // all the 4+ spaces in row in the start of string is a non-parsed code
         // actually not
         // original parser also require that code-block alse to be separated by empty lines
-        List<Integer> tmpSkips = new ArrayList<>();
         Pattern codeBlockPattern = Pattern.compile("^\\s{4,}.*$", Pattern.MULTILINE);
         Matcher codeBlockMatcher = codeBlockPattern.matcher(builder);
         while (codeBlockMatcher.find()) {
@@ -111,71 +212,36 @@ public class HanabiraParser {
         }
 
         //simplify blocks
-        for (int i = 0; i < tmpSkips.size() - 1; i++) {
-            while (tmpSkips.get(i).) //todo continue here
-        }
+//        for (int i = 0; i < tmpSkips.size() - 1; i++) {
+//            while (tmpSkips.get(i).) //todo continue here
+//        }
     }
 
-    public CharSequence getFormatted(String message, String board, Context context, DobroPost dobropost) {
-        if (message == null || message.length() == 0) { return ""; }
+
+    public CharSequence getFormatted() {
         formatTwoLevelBulletList();
-        formatQuotes();
-        formatReferences();
-        formatSpoiler();
+        paintQuotes();
 
-        // bold+italic
-        formatBoldItalic();
-        // bold
-        formatBold();
-        formatItalic();
+        //replaceAll
         formatCode();
+        formatSpoiler();
+        paintBoldItalic();
+        paintBold();
+        paintItalic();
 
-        someMethod(board, context, dobropost);
-        someMethod2();
-        return builder.toString();
-
-    }
-
-    private void someMethod2() {
-        int delta = 0;
-        String reverce = new StringBuffer(builder.toString()).reverse().toString();
-        Pattern wordBounds = Pattern.compile("[^ ]+");
-        Matcher wordMatcher = wordBounds.matcher(reverce);
-        Pattern pattern = Pattern.compile("(\\^W)+");
-        Matcher matcher = pattern.matcher(builder);
-        while (matcher.find()) {
-            boolean cont = false;
-            for (int i = 0; i < skips.size(); i += 2) {
-                if (matcher.start() > skips.get(i) && matcher.start() < skips.get(i + 1)) {
-                    cont = true;
-                }
-            }
-            if (cont) { continue; }
-            int pos_start = matcher.start() - delta;
-            int pos_end = matcher.end() - delta;
-            int wordsCount = (pos_end - pos_start) / 2;
-            int word_start = reverce.length() - matcher.start();
-            wordMatcher.reset();
-            for (int i = 0; i < wordsCount; i++) {
-                if (wordMatcher.find(word_start)) {
-                    builder.setSpan(new StrikethroughSpan(), reverce.length() - wordMatcher.end() - delta,
-                                    reverce.length() - wordMatcher.start() - delta, 0);
-                    word_start = wordMatcher.end();
-                }
-            }
-            delta += pos_end - pos_start;
-            builder.delete(pos_start, pos_end);
-        }
-    }
-
-    private void someMethod(String board, Context context, DobroPost dobropost) {
-
-        formatReferences(board, context, dobropost);
+        embedRefs();
         formatStrikethrough();
+        formatWordsReversion();
+        return builder;
+
+    }
+
+    private void formatWordsReversion() {
+        ///xxx powel etot imbicil prosto na 4ai
     }
 
     private void formatStrikethrough() {
-        int delta = 0;
+        int removedFormatCharsDelta = 0;
         Pattern pattern = Pattern.compile("(\\^H)+");
         Matcher matcher = pattern.matcher(builder);
         while (matcher.find()) {
@@ -187,138 +253,95 @@ public class HanabiraParser {
             }
             if (cont) { continue; }
 
-            int pos_start = matcher.start() - delta;
-            int pos_end = matcher.end() - delta;
-            delta += pos_end - pos_start;
+            int pos_start = matcher.start() - removedFormatCharsDelta;
+            int pos_end = matcher.end() - removedFormatCharsDelta;
             builder.setSpan(new StrikethroughSpan(), pos_start - (pos_end - pos_start) / 2, pos_start, 0);
             builder.delete(pos_start, pos_end);
+            removedFormatCharsDelta += pos_end - pos_start;
         }
     }
 
-    private void formatReferences(String board, Context context, DobroPost dobropost, Vector<Integer> skip_vector) {
-        Pattern referencePattern = Pattern.compile(">>(?:/)?([a-z]{1,4}/)?(\\d+)");
-        Matcher referenceMatcher = referencePattern.matcher(builder);
-        while (referenceMatcher.find()) {
+    private void embedRefs() {
+        Pattern referencePattern = Pattern.compile(">>(/?([a-z]{1,4})/)?(\\d+)");
+        Matcher refMatcher = referencePattern.matcher(builder);
+        while (refMatcher.find()) {
             boolean skip = false;
-            for (int i = 0; i < skip_vector.size(); i += 2) {
-                if (referenceMatcher.start() > skip_vector.get(i) &&
-                        referenceMatcher.start() < skip_vector.get(i + 1)) {
+            for (int i = 0; i < skips.size(); i += 2) {
+                if (refMatcher.start() > skips.get(i) && refMatcher.start() < skips.get(i + 1)) {
                     skip = true;
                     break;
                 }
             }
             if (skip) { continue; }
 
-            int start = referenceMatcher.start();
-            int end = referenceMatcher.end();
-            builder.setSpan(new DobroLinkSpan(
-                    referenceMatcher.group(1) == null ? board : referenceMatcher.group(1).replace("/", ""),
-                    referenceMatcher.group(2), context, dobropost), start, end, 0);
+            int start = refMatcher.start();
+            int end = refMatcher.end();
+            builder.setSpan(new HanabiraLinkSpan(refMatcher.group(2), refMatcher.group(3)), start, end, 0);
         }
     }
 
-    private void formatCode() {// mono
-        replaceAll("``", "``", new SpanObjectFactory() {
-            @Override
-            Object getSpan() {
-                return new ForegroundColorSpan(Color.parseColor("#2FA1E7"));
-            }
-        });
-        replaceAll("`", "`", new SpanObjectFactory() {
-            @Override
-            Object getSpan() {
-                return new ForegroundColorSpan(Color.parseColor("#2FA1E7"));
-            }
-        });
-        // mono
-        replaceAll("^``\r\n", "\r\n``$", new SpanObjectFactory() {
-            @Override
-            Object getSpan() {
-                return new ForegroundColorSpan(Color.parseColor("#2FA1E7"));
-            }
-        }, Pattern.DOTALL);
+    private void formatCode() {
+        replaceAll("``", "``", SpanObjectFactory.CODE_BLOCK);
+        replaceAll("`", "`", SpanObjectFactory.CODE_BLOCK);
+        replaceAll("^``\r\n", "\r\n``$", SpanObjectFactory.CODE_BLOCK, Pattern.DOTALL);
     }
 
-    private void formatItalic() {// italic
-        replaceAll("\\*", "\\*", new SpanItalic());
-        replaceAll("_", "_", new SpanItalic());
+    private void paintItalic() {
+        replaceAll("\\*", "\\*", SpanObjectFactory.ITALIC);
+        replaceAll("_", "_", SpanObjectFactory.ITALIC);
     }
 
-    private void formatBold() {
-        replaceAll("\\*\\*", "\\*\\*", new SpanBold());
-        replaceAll("__", "__", new SpanBold());
+    private void paintBold() {
+        replaceAll("\\*\\*", "\\*\\*", SpanObjectFactory.BOLD);
+        replaceAll("__", "__", SpanObjectFactory.BOLD);
     }
 
-    private void formatBoldItalic() {
-        replaceAll("_\\*\\*", "\\*\\*_", new SpanBoldItalic());
-        replaceAll("__\\*", "\\*__", new SpanBoldItalic());
+    private void paintBoldItalic() {
+        replaceAll("_\\*\\*", "\\*\\*_", SpanObjectFactory.BOLD_ITALIC);
+        replaceAll("__\\*", "\\*__", SpanObjectFactory.BOLD_ITALIC);
     }
 
-    private void formatSpoiler() {// spoiler
-        replaceAll("%%", "%%", new SpanObjectFactory() {
-            @Override
-            Object getSpan() {
-                return new SpoilerSpan();
-            }
-        });
-        replaceAll("%%", " %%", new SpanObjectFactory() {
-            @Override
-            Object getSpan() {
-                return new SpoilerSpan();
-            }
-        });
-        replaceAll("^%%\r\n", "\r\n%%$", new SpanObjectFactory() {
-            @Override
-            Object getSpan() {
-                return new SpoilerSpan();
-            }
-        }, Pattern.DOTALL);
+    private void formatSpoiler() {
+        replaceAll("%%", "%%", SpanObjectFactory.SPOILER);
+        replaceAll("%%", "%%", SpanObjectFactory.SPOILER);
+        replaceAll("^%%\r\n", "\r\n%%$", SpanObjectFactory.SPOILER, Pattern.DOTALL);
     }
 
-    private void formatReferences() {// dbl quote
-        Pattern pattern = Pattern.compile("^>(\\s*>)+[^(\\d+|[a-z]{1,4}/\\d+)].*?$", Pattern.MULTILINE);
-        Matcher matcher = pattern.matcher(builder);
-        while (matcher.find()) {
-            int pos_start = matcher.start();
-            int pos_end = matcher.end();
-            builder.setSpan(new ForegroundColorSpan(Color.parseColor("#406010")), pos_start, pos_end, 0);
-        }
+    private void leftSideSpan(String regex, Object span) {
+
     }
 
-    private void formatQuotes() {// quote
+    private void paintQuotes() {
         Pattern pattern = Pattern.compile("^>[^>].*?$", Pattern.MULTILINE);
         Matcher matcher = pattern.matcher(builder);
         while (matcher.find()) {
-            int pos_start = matcher.start();
-            int pos_end = matcher.end();
-            builder.setSpan(new ForegroundColorSpan(Color.parseColor("#789922")), pos_start, pos_end, 0);
+            int start = matcher.start();
+            int end = matcher.end();
+            builder.setSpan(new QuoteSpan(), start, end, 0);
         }
     }
 
     private void formatTwoLevelBulletList() {
-        Pattern p = Pattern.compile("^(\\*){1,2} ", Pattern.MULTILINE);
+        Pattern p = Pattern.compile("^(\\*\\s){1,2}", Pattern.MULTILINE);
         Matcher m = p.matcher(builder);
         while (m.find()) {
             int st = m.start();
-            if (m.group().length() == 2) {
-                builder.replace(st, st + 2, "● ");
+            if (m.group().matches("(\\*\\s){2}")) {
+                builder.replace(st, st + 3, "  ○ ");
             } else {
-                builder.replace(st, st + 3, " ○ ");
+                builder.replace(st, st + 2, "● ");
             }
         }
     }
 
     private static String replaceInternalLinkWithReference(String message) {
-        Pattern p = Pattern.compile(
-                "http(?:s)?://(?:suigintou.net|dobrochan.(?:ru|com|org))/([a-z]{1,4})/res/(\\d+).xhtml(?:#i" +
-                        "(\\d+))?");
+        Pattern p = Pattern.compile("https?://dobrochan\\.(?:ru|com|org)/([a-z]{1,4})/res/(\\d+)\\.xhtml(?:#i(\\d+))?");
         Matcher matcher = p.matcher(message);
-        while (matcher.find()) {
-            message = message.replaceFirst(matcher.group(), String.format(">>%s/%s", matcher.group(1),
-                                                                          (matcher.group(3) == null) ? matcher.group(
-                                                                                  2) : matcher.group(3)));
+        if (matcher.groupCount() == 4) { // whole, board, thread, (opt) post
+            return matcher.replaceAll(">>$1/$3"); //>>/board/display_id_post
+        } else {
+            return matcher.replaceAll(">>$1/$2"); //>>/board/thread_display_id
         }
-        return message;
     }
 
     private void replaceAll(String begin, String end, SpanObjectFactory factory) {
@@ -326,31 +349,58 @@ public class HanabiraParser {
     }
 
     private void replaceAll(String begin, String end, SpanObjectFactory factory, int flag) {
-        int delta = 0;
-        Pattern pattern = Pattern.compile(String.format("(%s(\\S.*?)%s)", begin, end), Pattern.MULTILINE | flag);
+        int removedFormatCharsDelta = 0;
+        Pattern pattern = Pattern.compile(String.format("(%s)(.*?)(%s)", begin, end), Pattern.MULTILINE | flag);
+        String beginRestore = restoreBreaks(begin);
+        String endRestore = restoreBreaks(end);
         Matcher matcher = pattern.matcher(builder);
-        while (matcher.find()) {
-            if (flag == 0) {
-                boolean cont = false;
-                for (int i = 0; i < skips.size(); i += 2) {
-                    if (matcher.start(1) > skips.get(i) && matcher.start(1) < skips.get(i + 1)) {
-                        cont = true;
-                    }
-                }
+        String doubleBeginCheck = begin.replace("\\", ""); //remove escapers to use just as plain string
+        String inlinedString;
 
-                URLSpan[] spans = builder.getSpans(matcher.start(1), matcher.end(1), URLSpan.class);
-                if (spans != null && spans.length > 0 && begin.contains("_")) { cont = true; }
-                if (cont) { continue; }
+        boolean code = doubleBeginCheck.contains("`");
+        while (matcher.find()) {
+            int start = matcher.start(2);
+            int finish = matcher.end(2);
+            if (code) {
+                skips.add(start);
+                skips.add(finish);
+            } else {
+                CodeBlockSpan[] spans = builder.getSpans(start, finish, CodeBlockSpan.class);
+                if (spans != null && spans.length != 0) { continue; }
             }
-            if (matcher.group(2).startsWith(begin.replace("\\", "")) &&
-                    matcher.group(2).length() <= begin.replace("\\", "").length()) { continue; }
-            int pos_start = matcher.start(1) - delta;
-            int pos_end = matcher.end(1) - delta;
+
+            inlinedString = matcher.group(2);
+            if (inlinedString == null || "".equals(inlinedString)) { continue; }
+
+            int lengthPrefix = matcher.group(1).length();
+            builder.replace(matcher.start(1) - removedFormatCharsDelta, matcher.end(1) - removedFormatCharsDelta,
+                    beginRestore);
+
+            builder.replace(matcher.start(3) - lengthPrefix - removedFormatCharsDelta + beginRestore.length(),
+                    matcher.end(3) - lengthPrefix - removedFormatCharsDelta + beginRestore.length(), endRestore);
+
             SpannableString rep = new SpannableString(matcher.group(2));
             rep.setSpan(factory.getSpan(), 0, rep.length(), 0);
-            Linkify.addLinks(rep, Linkify.WEB_URLS);
-            builder.replace(pos_start, pos_end, rep);
-            delta += matcher.group(1).length() - matcher.group(2).length();
+            if (!code) {
+                Linkify.addLinks(rep, Linkify.WEB_URLS);
+                // fixme twice used Linkify? try remove and just setSpan to builder
+            }
+            builder.replace(matcher.start() - removedFormatCharsDelta+beginRestore.length(),
+                    matcher.start() + rep.length() - removedFormatCharsDelta+endRestore.length(), rep);
+
+            // store deletions
+            removedFormatCharsDelta += matcher.group(1).length() - beginRestore.length();
+            removedFormatCharsDelta += matcher.group(3).length() - endRestore.length();
         }
+    }
+
+    private String restoreBreaks(String border) {
+        Pattern newline = Pattern.compile("\\r*\\n*");
+        Matcher nlMatchBegin = newline.matcher(border);
+        StringBuilder sb = new StringBuilder();
+        while (nlMatchBegin.find()) {
+            sb.append(nlMatchBegin.group());
+        }
+        return sb.toString();
     }
 }

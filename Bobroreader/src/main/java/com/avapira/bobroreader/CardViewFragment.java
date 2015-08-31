@@ -17,22 +17,17 @@ package com.avapira.bobroreader;
 
 import android.app.Fragment;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v7.widget.CardView;
-import android.text.*;
 import android.text.method.LinkMovementMethod;
-import android.text.style.ClickableSpan;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.google.gson.*;
 import org.joda.time.LocalDateTime;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
 import java.lang.reflect.Type;
 
 /**
@@ -76,10 +71,19 @@ public class CardViewFragment extends Fragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        long start = System.currentTimeMillis();
         mCardView = (CardView) view.findViewById(R.id.cardview);
+        System.out.println(System.currentTimeMillis() - start + "ms card");
+        start = System.currentTimeMillis();
+        TextView nameView = (TextView) view.findViewById(R.id.anon_name);
+        System.out.println(System.currentTimeMillis() - start + "ms name");
+        start = System.currentTimeMillis();
         textView = (TextView) view.findViewById(R.id.post_text);
-        String jsonString = rawJsonToString();
-        System.out.println(jsonString);
+        System.out.println(System.currentTimeMillis() - start + "ms text");
+        start = System.currentTimeMillis();
+        String jsonString = Bober.rawJsonToString(getResources(), R.raw.d_55048_57479);
+        System.out.println(System.currentTimeMillis() - start + "ms json raw");
+        start = System.currentTimeMillis();
         HanabiraPost post = new GsonBuilder().registerTypeAdapter(LocalDateTime.class,
                                                                   new JsonDeserializer<LocalDateTime>() {
                                                                       @Override
@@ -91,118 +95,17 @@ public class CardViewFragment extends Fragment {
                                                                                   json.getAsString().replace(' ', 'T'));
                                                                       }
                                                                   }).create().fromJson(jsonString, HanabiraPost.class);
-        SpannableString str = formatHanabiraPost(post.getMessage());
-//        SpannableStringBuilder sb = new SpannableStringBuilder(getResources().getString(R.string.));
-//        textView.setText();
-//        textView.setMovementMethod(LinkTouchMovementMethod.getInstance());
-    }
-
-    private SpannableString formatHanabiraPost(String message) {
-        SpannableStringBuilder builder = new SpannableStringBuilder();
-        return null;
-    }
-
-    private String rawJsonToString() {
-        BufferedInputStream bis = new BufferedInputStream(getResources().openRawResource(R.raw.d_55048_57479));
-        try {
-            byte[] bytes = new byte[bis.available()];
-            System.out.format("%s bytes read", bis.read(bytes));
-            return new String(bytes);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
-
-
-    private static class LinkTouchMovementMethod extends LinkMovementMethod {
-        private        TouchableSpan           mPressedSpan;
-        private static LinkTouchMovementMethod instance;
-
-        public static LinkTouchMovementMethod getInstance() {
-            if (instance == null) {
-                instance = new LinkTouchMovementMethod();
-            }
-            return instance;
-        }
-
-
-        @Override
-        public boolean onTouchEvent(@NonNull TextView textView,
-                                    @NonNull Spannable spannable,
-                                    @NonNull MotionEvent event) {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                mPressedSpan = getPressedSpan(textView, spannable, event);
-                if (mPressedSpan != null) {
-                    mPressedSpan.setPressed(true);
-                    Selection.setSelection(spannable, spannable.getSpanStart(mPressedSpan),
-                                           spannable.getSpanEnd(mPressedSpan));
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                TouchableSpan touchedSpan = getPressedSpan(textView, spannable, event);
-                if (mPressedSpan != null && touchedSpan != mPressedSpan) {
-                    mPressedSpan.setPressed(false);
-                    mPressedSpan = null;
-                    Selection.removeSelection(spannable);
-                }
-            } else {
-                if (mPressedSpan != null) {
-                    mPressedSpan.setPressed(false);
-                    super.onTouchEvent(textView, spannable, event);
-                }
-                mPressedSpan = null;
-                Selection.removeSelection(spannable);
-            }
-            return true;
-        }
-
-        private TouchableSpan getPressedSpan(TextView textView, Spannable spannable, MotionEvent event) {
-
-            int x = (int) event.getX();
-            int y = (int) event.getY();
-
-            x -= textView.getTotalPaddingLeft();
-            y -= textView.getTotalPaddingTop();
-
-            x += textView.getScrollX();
-            y += textView.getScrollY();
-
-            Layout layout = textView.getLayout();
-            int line = layout.getLineForVertical(y);
-            int off = layout.getOffsetForHorizontal(line, x);
-
-            TouchableSpan[] link = spannable.getSpans(off, off, TouchableSpan.class);
-            TouchableSpan touchedSpan = null;
-            if (link.length > 0) {
-                touchedSpan = link[0];
-            }
-            return touchedSpan;
-        }
+        System.out.println(System.currentTimeMillis() - start + "ms json parse");
+        start = System.currentTimeMillis();
+        nameView.setText(post.getName());
+        System.out.println(System.currentTimeMillis() - start + "ms name set");
+        start = System.currentTimeMillis();
+        textView.setMovementMethod(LinkMovementMethod.getInstance());
+        System.out.println(System.currentTimeMillis() - start + "ms mov meth");
+        start = System.currentTimeMillis();
+        textView.setText(new HanabiraParser(post, getContext()).getFormatted());
+        System.out.println(System.currentTimeMillis() - start + "ms format");
 
     }
 
-    public static abstract class TouchableSpan extends ClickableSpan {
-        private boolean mIsPressed;
-        private int     mPressedBackgroundColor;
-        private int     mNormalTextColor;
-        private int     mPressedTextColor;
-
-        public TouchableSpan(int normalTextColor, int pressedTextColor, int pressedBackgroundColor) {
-            mNormalTextColor = normalTextColor;
-            mPressedTextColor = pressedTextColor;
-            mPressedBackgroundColor = pressedBackgroundColor;
-        }
-
-        public void setPressed(boolean isSelected) {
-            mIsPressed = isSelected;
-        }
-
-        @Override
-        public void updateDrawState(TextPaint ds) {
-            super.updateDrawState(ds);
-            ds.setColor(mIsPressed ? mPressedTextColor : mNormalTextColor);
-            ds.bgColor = mIsPressed ? mPressedBackgroundColor : 0xffeeeeee;
-            ds.setUnderlineText(false);
-        }
-    }
 }
