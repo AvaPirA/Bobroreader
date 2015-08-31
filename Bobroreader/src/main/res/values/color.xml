@@ -12,4 +12,6 @@
 
     <!-- this 60% darker === primary_text, where's 60% is default darkening by the translucent status bar -->
     <color name="dobro_status_bar">#A00000</color>
+
+    <color name="cardview_initial_background">#71C3DE</color>
 </resources>

@@ -28,41 +28,55 @@
  *
  *
  */
+package com.avapira.bobroreader.hanabira.entity;
 
-apply plugin: 'com.android.application'
+import com.google.gson.annotations.SerializedName;
+import org.joda.time.LocalDateTime;
 
-android {
-    compileSdkVersion 23
-    buildToolsVersion "23"
+import java.util.List;
 
-    defaultConfig {
-        applicationId "com.avapira.bobroreader"
-        minSdkVersion 23
-        targetSdkVersion 23
-        versionCode 1
-        versionName "1.0"
+/**
+ *
+ */
+public class HanabiraPost {
+    @SerializedName("display_id")
+    private int           displayId;
+    private List<File>    files;
+    @SerializedName("last_modified")
+    private LocalDateTime modifiedDate;
+    @SerializedName("date")
+    private LocalDateTime createdDate;
+    @SerializedName("post_id")
+    private int           id;
+    private String        message;
+    private String        subject;
+    @SerializedName("board_id")
+    private int           boardId;
+    private String        name;
+    @SerializedName("thread_id")
+    private int           threadId;
+    private boolean       op;
+
+    public HanabiraPost() {
+
     }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
+
+
+    public String getMessage() {
+        return message;
     }
+
+    public boolean equals(Object o) {
+        return o instanceof HanabiraPost && ((HanabiraPost) o).id == this.id;
+    }
+
+    public boolean deepEquals(HanabiraPost p) {
+        return displayId == p.displayId && id == p.id && boardId == p.boardId &&
+                modifiedDate.equals(p.modifiedDate) &&
+                createdDate.equals(p.createdDate) && message.equals(p.message) && subject.equals(p.subject) &&
+                name == null ? p.name == null : name.equals(p.name) && threadId == p.threadId && op == p.op;
+    }
+
 }
 
-task appStart(type: Exec, dependsOn: 'installDebug') {
-    commandLine 'cmd', '/c', 'adb', 'shell', 'am', 'start', '-n', 'com.avapira.bobroreader/.Bober'
-}
 
-dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile('com.mikepenz:materialdrawer:4.0.2@aar') {
-        transitive = true
-    }
-    compile 'com.google.code.gson:gson:2.3.1'
-    compile 'com.google.guava:guava:18.0'
-    compile 'com.mcxiaoke.volley:library:1.0.18'
-    compile 'joda-time:joda-time:2.3'
-    compile 'com.android.support:cardview-v7:23.0.0'
-    compile 'com.android.support:appcompat-v7:23.0.0'
-}

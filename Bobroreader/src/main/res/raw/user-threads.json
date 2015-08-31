@@ -1,0 +1,40 @@
+{
+  "language": "ru",
+  "__class__": "UserSession",
+  "tokens": [],
+  "notifications": [],
+  "threads": [
+    {
+      "board_id": 25,
+      "thread_id": 805863,
+      "last_post_id": null,
+      "last_viewed": null,
+      "level": "hidden",
+      "unread": 0,
+      "__class__": "UserThread",
+      "last_hit": null
+    },
+    {
+      "board_id": 11,
+      "thread_id": 272705,
+      "last_post_id": null,
+      "last_viewed": "2015-08-23 09:50:41.278285",
+      "level": "bookmarked",
+      "unread": 0,
+      "__class__": "UserThread",
+      "last_hit": null
+    },
+    {
+      "board_id": 2,
+      "thread_id": 110004,
+      "last_post_id": null,
+      "last_viewed": "2015-08-23 03:21:16.901343",
+      "level": "bookmarked",
+      "unread": 0,
+      "__class__": "UserThread",
+      "last_hit": null
+    }
+  ],
+  "password": "EDyK0Pzu",
+  "id": "078cd88a419378f3e70b1234fcd3c645"
+}

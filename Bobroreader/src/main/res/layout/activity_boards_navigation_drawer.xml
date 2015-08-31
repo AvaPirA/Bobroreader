@@ -1,25 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-    <!-- 25dp margin to show up custom bg color on status bar-->
-    <FrameLayout
-            android:id="@+id/frame_container"
-            android:layout_marginTop="25dp"
-            android:background="@color/dobro_light"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-        <TextView
-                android:id="@+id/txtLabel"
-                android:layout_gravity="center"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp" />
-    </FrameLayout>
-
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:gravity="center"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical">
     <android.support.v7.widget.Toolbar
             xmlns:app="http://schemas.android.com/apk/res-auto"
             android:id="@+id/toolbar"
@@ -31,4 +15,14 @@
             android:elevation="4dp"
             android:title="@string/app_name"
             />
-</RelativeLayout>
+
+    <!-- 25dp margin to show up custom bg color on status bar-->
+    <FrameLayout
+            android:id="@+id/frame_container"
+            android:background="@color/dobro_light"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+    </FrameLayout>
+
+
+</LinearLayout>

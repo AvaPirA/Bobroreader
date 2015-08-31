@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Bobroreader is open source software, created, maintained, and shared under
   ~ the MIT license by Avadend Piroserpen Arts. The project includes components
@@ -28,27 +29,30 @@
   ~
   ~
   -->
-<resources>
-    <string name="app_name">Material Bober</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
-    <string name="title_board_list">Boards</string>
-    <string name="title_board_detail">Board Detail</string>
-    <string name="title_activity_bobroreader">Bobroreader</string>
 
-    <string name="title_section1">Section 1</string>
-    <string name="title_section2">Section 2</string>
-    <string name="title_section3">Section 3</string>
+<RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <FrameLayout
+            android:id="@+id/frame_container"
+            android:layout_below="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
 
-    <string name="action_example">Example action</string>
+    <android.support.v7.widget.Toolbar
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/dobro_dark"
+            app:titleTextColor="@color/dobro_primary_text"
+            android:layout_marginTop="@dimen/tool_bar_top_padding"
+            android:elevation="4dp"
+            android:title="@string/app_name"
+            />
 
-
-    <!-- CardView example -->
-    <string name="title_activity_card_view">CardViewActivity</string>
-    <string name="hanabira_post_text">This is Hanabira Text View. Here you can</string>
-    <string name="cardview_radius_seekbar_text">Radius</string>
-    <string name="cardview_elevation_seekbar_text">Elevation</string>
-</resources>
+</RelativeLayout>

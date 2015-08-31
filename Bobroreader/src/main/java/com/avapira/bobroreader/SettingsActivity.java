@@ -34,6 +34,9 @@ package com.avapira.bobroreader;
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.MenuItem;
+import android.widget.Toast;
 
 /**
  *
@@ -42,9 +45,27 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.settings_activity);
+        setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
+        getSupportActionBar().setHomeButtonEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem menuItem) {
+        if (menuItem.getItemId() == android.R.id.home) {
+            Toast.makeText(this, "Home", Toast.LENGTH_SHORT).show();
+            this.finish();
+        }
+        return super.onOptionsItemSelected(menuItem);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
         // Display the fragment as the main content.
-        getFragmentManager().beginTransaction().replace(android.R.id.content, new SettingsFragment()).commit();
+        getFragmentManager().beginTransaction().replace(R.id.frame_container, new SettingsFragment()).commit();
+
     }
 
     public static class SettingsFragment extends PreferenceFragment {

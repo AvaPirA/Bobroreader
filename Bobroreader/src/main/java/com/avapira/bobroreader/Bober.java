@@ -39,8 +39,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
-import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.networking.BasicsSupplier;
 import com.avapira.bobroreader.networking.PersistentCookieStore;
 import com.mikepenz.materialdrawer.Drawer;
@@ -72,8 +70,14 @@ public class Bober extends AppCompatActivity {
         public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
             if (drawerItem != null) {
                 Intent intent = null;
-                if (drawerItem.getIdentifier() == 239) {
-                    intent = new Intent(Bober.this, SettingsActivity.class);
+                switch (drawerItem.getIdentifier()) {
+                    case 239:
+                        intent = new Intent(Bober.this, SettingsActivity.class);
+                        break;
+                    case 30:
+                        getFragmentManager().beginTransaction()
+                                            .replace(R.id.frame_container, new CardViewFragment())
+                                            .commit();
                 }
                 if (intent != null) {
                     Bober.this.startActivity(intent);
@@ -103,13 +107,13 @@ public class Bober extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        updateDrawerDiff();
-        BasicsSupplier.getUser(this, new Consumer<HanabiraUser>() {
-            @Override
-            public void accept(HanabiraUser user) {
-                ((TextView) findViewById(R.id.txtLabel)).setText(user.toString());
-            }
-        });
+//        updateDrawerDiff();
+//        BasicsSupplier.getUser(this, new Consumer<HanabiraUser>() {
+//            @Override
+//            public void accept(HanabiraUser user) {
+//                ((TextView) findViewById(R.id.txtLabel)).setText(user.toString());
+//            }
+//        });
     }
 
     public void updateDrawerDiff() {
@@ -138,7 +142,9 @@ public class Bober extends AppCompatActivity {
                                   .addDrawerItems(new ShortSectionDivider().withName("Общее"),
                                                   new BoardItem("/b/", R.drawable.banners_b_b1),
                                                   new BoardItem("/u/", R.drawable.banners_u_125860969598039),
-                                                  new BoardItem("/rf/", R.drawable.banners_rf_125701163950149),
+                                                  new BoardItem("/rf/",
+                                                                R.drawable.banners_rf_125701163950149).withIdentifier(
+                                                          30),
                                                   new BoardItem("/dt/", R.drawable.banners_dt_125697739438064),
                                                   new BoardItem("/vg/", R.drawable.banners_vg_125709977081546),
                                                   new BoardItem("/r/", R.drawable.banners_r_125699732718180),
@@ -176,7 +182,7 @@ public class Bober extends AppCompatActivity {
                                                   new BoardItem("/d/", R.drawable.banners_d_125711152029591),
                                                   new BoardItem("/news/", R.drawable.banners_news_125710395977840),
                                                   new SectionDrawerItem().withName("Other stuff"),
-                                                  new SettingsItem().withIdentifier(239))
+                                                  new SettingsItem().withIdentifier(239).withSelectable(false))
                                   .withSavedInstance(savedInstanceState)
                                   .withOnDrawerItemClickListener(new BoardSwitcher());
     }
