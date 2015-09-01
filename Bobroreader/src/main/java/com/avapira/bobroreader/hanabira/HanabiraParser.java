@@ -38,20 +38,16 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.style.*;
 import android.text.util.Linkify;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.mikepenz.iconics.utils.Utils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -115,10 +111,8 @@ public class HanabiraParser {
 
         @Override
         public void onClick(View widget) {
-            TextView tv = (TextView) widget;
-            Spanned spTxt = (Spanned) tv.getText();
-            tv.setTextColor(wasShown ? boxedSpoilerHiddenColor : boxedSpoilerShownColor);
             wasShown = !wasShown;
+            widget.invalidate();
         }
 
         @Override
@@ -183,7 +177,6 @@ public class HanabiraParser {
     private final Context context;
 
     private final SpannableStringBuilder builder;
-    private final List<Integer>          skips;
     private final HanabiraPost           post;
 
     public HanabiraParser(HanabiraPost post, Context context) {
@@ -199,22 +192,6 @@ public class HanabiraParser {
         this.post = post;
         builder = new SpannableStringBuilder(replaceInternalLinkWithReference(post.getMessage()));
         Linkify.addLinks(builder, Linkify.WEB_URLS);
-        skips = new ArrayList<>();
-
-        // all the 4+ spaces in row in the start of string is a non-parsed code
-        // actually not
-        // original parser also require that code-block alse to be separated by empty lines
-        Pattern codeBlockPattern = Pattern.compile("^\\s{4,}.*$", Pattern.MULTILINE);
-        Matcher codeBlockMatcher = codeBlockPattern.matcher(builder);
-        while (codeBlockMatcher.find()) {
-            skips.add(codeBlockMatcher.start());
-            skips.add(codeBlockMatcher.end());
-        }
-
-        //simplify blocks
-//        for (int i = 0; i < tmpSkips.size() - 1; i++) {
-//            while (tmpSkips.get(i).) //todo continue here
-//        }
     }
 
 
@@ -246,15 +223,12 @@ public class HanabiraParser {
         Matcher matcher = pattern.matcher(builder);
         while (matcher.find()) {
             boolean cont = false;
-            for (int i = 0; i < skips.size(); i += 2) {
-                if (matcher.start() > skips.get(i) && matcher.start() < skips.get(i + 1)) {
-                    cont = true;
-                }
-            }
-            if (cont) { continue; }
-
             int pos_start = matcher.start() - removedFormatCharsDelta;
             int pos_end = matcher.end() - removedFormatCharsDelta;
+            // don't reformat in code blocks
+            CodeBlockSpan[] spans = builder.getSpans(pos_start, pos_end, CodeBlockSpan.class);
+            if (spans != null && spans.length != 0) { continue; }
+
             builder.setSpan(new StrikethroughSpan(), pos_start - (pos_end - pos_start) / 2, pos_start, 0);
             builder.delete(pos_start, pos_end);
             removedFormatCharsDelta += pos_end - pos_start;
@@ -264,18 +238,15 @@ public class HanabiraParser {
     private void embedRefs() {
         Pattern referencePattern = Pattern.compile(">>(/?([a-z]{1,4})/)?(\\d+)");
         Matcher refMatcher = referencePattern.matcher(builder);
-        while (refMatcher.find()) {
-            boolean skip = false;
-            for (int i = 0; i < skips.size(); i += 2) {
-                if (refMatcher.start() > skips.get(i) && refMatcher.start() < skips.get(i + 1)) {
-                    skip = true;
-                    break;
-                }
-            }
-            if (skip) { continue; }
 
+        while (refMatcher.find()) {
             int start = refMatcher.start();
             int end = refMatcher.end();
+
+            // don't reformat in code blocks
+            CodeBlockSpan[] spans = builder.getSpans(start, end, CodeBlockSpan.class);
+            if (spans != null && spans.length != 0) { continue; }
+
             builder.setSpan(new HanabiraLinkSpan(refMatcher.group(2), refMatcher.group(3)), start, end, 0);
         }
     }
@@ -324,6 +295,7 @@ public class HanabiraParser {
     private void formatTwoLevelBulletList() {
         Pattern p = Pattern.compile("^(\\*\\s){1,2}", Pattern.MULTILINE);
         Matcher m = p.matcher(builder);
+        // fixme
         while (m.find()) {
             int st = m.start();
             if (m.group().matches("(\\*\\s){2}")) {
@@ -350,27 +322,30 @@ public class HanabiraParser {
 
     private void replaceAll(String begin, String end, SpanObjectFactory factory, int flag) {
         int removedFormatCharsDelta = 0;
-        Pattern pattern = Pattern.compile(String.format("(%s)(.*?)(%s)", begin, end), Pattern.MULTILINE | flag);
+        Pattern pattern = Pattern.compile(String.format("(%s)(.+?)(%s)", begin, end), Pattern.MULTILINE | flag);
         String beginRestore = restoreBreaks(begin);
         String endRestore = restoreBreaks(end);
         Matcher matcher = pattern.matcher(builder);
-        String doubleBeginCheck = begin.replace("\\", ""); //remove escapers to use just as plain string
         String inlinedString;
 
-        boolean code = doubleBeginCheck.contains("`");
+        boolean code = begin.contains("`");
         while (matcher.find()) {
             int start = matcher.start(2);
             int finish = matcher.end(2);
-            if (code) {
-                skips.add(start);
-                skips.add(finish);
-            } else {
+
+            // don't reformat in code blocks
+            if (!code) {
                 CodeBlockSpan[] spans = builder.getSpans(start, finish, CodeBlockSpan.class);
                 if (spans != null && spans.length != 0) { continue; }
             }
 
+            // don't reformat double borders while searchin for sinlges
+            // e.g.: searching for "*abc*", found "**"
             inlinedString = matcher.group(2);
-            if (inlinedString == null || "".equals(inlinedString)) { continue; }
+            if (inlinedString == null || "".equals(inlinedString)) {
+                System.out.println(matcher.group());
+                continue;
+            }
 
             int lengthPrefix = matcher.group(1).length();
             builder.replace(matcher.start(1) - removedFormatCharsDelta, matcher.end(1) - removedFormatCharsDelta,

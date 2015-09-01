@@ -38,7 +38,7 @@
     <!-- ...and here we setting appcompat’s color theming attrs -->
     <item name="colorPrimary">@color/dobro_dark</item>
     <item name="colorPrimaryDark">@color/dobro_primary_text</item>
-      <item name="colorAccent">@color/dobro_primary_text</item>
+      <item name="colorAccent">@color/dobro_secondary_text</item>
 
     <!-- MaterialDrawer specific values -->
     <item name="material_drawer_background">@color/dobro_medium</item>

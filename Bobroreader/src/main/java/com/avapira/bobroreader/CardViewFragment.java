@@ -29,6 +29,8 @@ import com.google.gson.*;
 import org.joda.time.LocalDateTime;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * Fragment that demonstrates how to use CardView.
@@ -68,6 +70,11 @@ public class CardViewFragment extends Fragment {
     }
 
 
+    static Iterator<Integer> rawJsons = Arrays.asList(
+            new Integer[]{R.raw.d_55048_57432, R.raw.d_55048_57442, R.raw.d_55048_57479}).iterator();
+//    @RawRes
+//    public Integer
+
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -81,20 +88,19 @@ public class CardViewFragment extends Fragment {
         textView = (TextView) view.findViewById(R.id.post_text);
         System.out.println(System.currentTimeMillis() - start + "ms text");
         start = System.currentTimeMillis();
-        String jsonString = Bober.rawJsonToString(getResources(), R.raw.d_55048_57479);
+        String jsonString = Bober.rawJsonToString(getResources(), rawJsons.next());
         System.out.println(System.currentTimeMillis() - start + "ms json raw");
         start = System.currentTimeMillis();
-        HanabiraPost post = new GsonBuilder().registerTypeAdapter(LocalDateTime.class,
-                                                                  new JsonDeserializer<LocalDateTime>() {
-                                                                      @Override
-                                                                      public LocalDateTime deserialize(JsonElement json,
-                                                                                                       Type typeOfT,
-                                                                                                       JsonDeserializationContext context)
-                                                                      throws JsonParseException {
-                                                                          return LocalDateTime.parse(
-                                                                                  json.getAsString().replace(' ', 'T'));
-                                                                      }
-                                                                  }).create().fromJson(jsonString, HanabiraPost.class);
+        Gson gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
+            @Override
+            public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
+                return LocalDateTime.parse(json.getAsString().replace(' ', 'T'));
+            }
+        }).create();
+        System.out.println(System.currentTimeMillis() - start + "ms gson create");
+        start = System.currentTimeMillis();
+        HanabiraPost post = gson.fromJson(jsonString, HanabiraPost.class);
         System.out.println(System.currentTimeMillis() - start + "ms json parse");
         start = System.currentTimeMillis();
         nameView.setText(post.getName());
