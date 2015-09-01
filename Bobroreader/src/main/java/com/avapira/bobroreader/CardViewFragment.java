@@ -25,10 +25,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
-import com.google.gson.*;
-import org.joda.time.LocalDateTime;
 
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -38,9 +35,6 @@ import java.util.Iterator;
 public class CardViewFragment extends Fragment {
 
     private static final String TAG = CardViewFragment.class.getSimpleName();
-
-    CardView mCardView;
-    TextView textView;
 
     /**
      * Use this factory method to create a new instance of
@@ -71,47 +65,31 @@ public class CardViewFragment extends Fragment {
 
 
     static Iterator<Integer> rawJsons = Arrays.asList(
-            new Integer[]{R.raw.lorem_ipsum, R.raw.d_55048_57432, R.raw.d_55048_57442, R.raw.d_55048_57479}).iterator();
+            new Integer[]{ R.raw.lorem_ipsum, R.raw.d_55048_57432, R.raw.d_55048_57442, R.raw.d_55048_57479})
+                                              .iterator();
 //    @RawRes
 //    public Integer
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        long start = System.currentTimeMillis();
-        mCardView = (CardView) view.findViewById(R.id.cardview);
-        System.out.println(System.currentTimeMillis() - start + "ms card");
-        start = System.currentTimeMillis();
         TextView nameView = (TextView) view.findViewById(R.id.anon_name);
-        System.out.println(System.currentTimeMillis() - start + "ms name");
-        start = System.currentTimeMillis();
-        textView = (TextView) view.findViewById(R.id.post_text);
-        System.out.println(System.currentTimeMillis() - start + "ms text");
-        start = System.currentTimeMillis();
-        String jsonString = Bober.rawJsonToString(getResources(), rawJsons.next());
-        System.out.println(System.currentTimeMillis() - start + "ms json raw");
-        start = System.currentTimeMillis();
-        Gson gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
-            @Override
-            public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-            throws JsonParseException {
-                return LocalDateTime.parse(json.getAsString().replace(' ', 'T'));
-            }
-        }).create();
-        System.out.println(System.currentTimeMillis() - start + "ms gson create");
-        start = System.currentTimeMillis();
-        HanabiraPost post = gson.fromJson(jsonString, HanabiraPost.class);
-        System.out.println(System.currentTimeMillis() - start + "ms json parse");
-        start = System.currentTimeMillis();
-        nameView.setText(post.getName());
-        System.out.println(System.currentTimeMillis() - start + "ms name set");
-        start = System.currentTimeMillis();
-        textView.setMovementMethod(LinkMovementMethod.getInstance());
-        System.out.println(System.currentTimeMillis() - start + "ms mov meth");
-        start = System.currentTimeMillis();
-        textView.setText(new HanabiraParser(post, getContext()).getFormatted());
-        System.out.println(System.currentTimeMillis() - start + "ms format");
+        CardView cardView = (CardView) view.findViewById(R.id.cardview);
+        TextView textView = (TextView) view.findViewById(R.id.post_text);
 
+        final HanabiraPost post = getPost();
+        final CharSequence text = new HanabiraParser(post, getContext()).getFormatted();
+        nameView.setText(post.getName());
+        textView.setMovementMethod(LinkMovementMethod.getInstance());
+        textView.setText(text);
+        if (post.isOp()) {
+            cardView.setCardElevation(2 * cardView.getCardElevation());
+        }
+    }
+
+    private HanabiraPost getPost() {
+        String jsonString = Bober.rawJsonToString(getResources(), rawJsons.next());
+        return HanabiraPost.fromJson(jsonString, HanabiraPost.class);
     }
 
 }

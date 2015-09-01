@@ -32,7 +32,6 @@
 package com.avapira.bobroreader.hanabira.entity;
 
 import android.app.Notification;
-import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
@@ -40,7 +39,7 @@ import java.util.List;
 /**
  *
  */
-public class HanabiraUser {
+public class HanabiraUser extends HanabiraEntity{
     @SerializedName("tokens")
     private List<Token>        tokens;
     private List<Notification> notifications;
@@ -60,7 +59,7 @@ public class HanabiraUser {
     }
 
     public String toString() {
-        return new GsonBuilder().setPrettyPrinting().create().toJson(this);
+        return toPrettyJson();
     }
 
 }

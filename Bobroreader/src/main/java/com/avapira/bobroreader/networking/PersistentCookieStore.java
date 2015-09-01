@@ -47,9 +47,11 @@ public class PersistentCookieStore implements CookieStore {
     /**
      * The default preferences string.
      */
-    private final static String PREF_DEFAULT_STRING =
-            "{maxAge:-1, domain:\"http://dobrochan.ru/api/chan/stats/diff.json\", name:\"hanabira\"," +
-                    "value:\"b278577bb1befca8ea8068e59bbef27b4e28878e078cd88a419378f3e70b1234fcd3c645\"}";
+    private final static String PREF_DEFAULT_STRING       =
+            "{\"discard\":false,\"domain\":\"dobrochan.ru\",\"httpOnly\":false,\"maxAge\":-1,\"name\":\"hanabira\"," +
+                    "\"path\":\"/\",\"secure\":false,\"value\":\"b278577bb1befca8ea8068e59bbef27b4e28878e078cd88a419378f3e70b1234fcd3c645\"," +
+                    "\"version\":0}";
+    private final static String PREF_DEFAULT_EMPTY_STRING = "";
 
     /**
      * The preferences name.
@@ -72,24 +74,18 @@ public class PersistentCookieStore implements CookieStore {
         mStore = new CookieManager().getCookieStore();
 
         String jsonSessionCookie = getJsonSessionCookieString();
-//        if (!jsonSessionCookie.equals(PREF_DEFAULT_STRING)) {
-        Gson gson = new Gson();
-        HttpCookie cookie = gson.fromJson(jsonSessionCookie, HttpCookie.class);
-        URI uri = URI.create(cookie.getDomain());
-        mStore.add(uri, cookie);
-//        }
+        if (!jsonSessionCookie.equals(PREF_DEFAULT_EMPTY_STRING)) {
+            Gson gson = new Gson();
+            HttpCookie cookie = gson.fromJson(jsonSessionCookie, HttpCookie.class);
+            URI uri = URI.create(cookie.getDomain());
+            mStore.add(uri, cookie);
+        }
     }
 
     @Override
     public void add(URI uri, HttpCookie cookie) {
-        if (cookie.getName().equals("sessionid")) {
-            // if the cookie that the cookie store attempt to add is a session cookie,
-            // we remove the older cookie and save the new one in shared preferences
-            remove(URI.create(cookie.getDomain()), cookie);
-            saveSessionCookie(cookie);
-        }
-
         mStore.add(URI.create(cookie.getDomain()), cookie);
+        saveSessionCookie(cookie);
     }
 
     @Override
@@ -123,7 +119,7 @@ public class PersistentCookieStore implements CookieStore {
     }
 
     private String getJsonSessionCookieString() {
-        return getPrefs().getString(PREF_SESSION_COOKIE, PREF_DEFAULT_STRING);
+        return getPrefs().getString(PREF_SESSION_COOKIE, PREF_DEFAULT_STRING); // XXX here's my own test-cookie
     }
 
     /**

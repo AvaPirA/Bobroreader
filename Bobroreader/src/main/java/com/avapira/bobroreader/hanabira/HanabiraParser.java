@@ -32,10 +32,13 @@
 package com.avapira.bobroreader.hanabira;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.Layout;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
@@ -94,7 +97,7 @@ public class HanabiraParser {
     private static class QuoteSpan extends CharacterStyle implements UpdateAppearance {
         @Override
         public void updateDrawState(TextPaint tp) {
-            tp.setColor(boxedQuoteColor);
+            tp.setColor(quoteColor);
         }
 
     }
@@ -117,22 +120,93 @@ public class HanabiraParser {
 
         @Override
         public void updateDrawState(@NonNull TextPaint tp) {
-            tp.bgColor = boxedSpoilerHiddenColor;
-            if(wasShown) {
-                tp.setColor(boxedSpoilerHiddenColor);
+            tp.bgColor = spoilerHiddenColor;
+            if (wasShown) {
+                tp.setColor(spoilerHiddenColor);
             } else {
-                tp.setColor(boxedSpoilerShownColor);
+                tp.setColor(spoilerShownColor);
             }
         }
     }
 
-    private static class CodeBlockSpan extends CharacterStyle implements UpdateAppearance {
+    private static class CodeBlockSpan extends TypefaceSpan implements UpdateAppearance {
+
+        public CodeBlockSpan() {
+            super("monospaced");
+        }
 
         @Override
-        public void updateDrawState(TextPaint tp) {
-            tp.setColor(boxedSpoilerHiddenColor);
-            tp.setTextSize(boxedCodeFontSize);
-            tp.setTypeface(Typeface.MONOSPACE);
+        public void updateDrawState(@NonNull TextPaint tp) {
+            tp.setColor(spoilerHiddenColor);
+            applyCustomTypeFace(tp);
+        }
+        @Override
+        public void updateMeasureState(TextPaint paint) {
+            applyCustomTypeFace(paint);
+        }
+
+        private static void applyCustomTypeFace(Paint paint) {
+            int oldStyle;
+            Typeface old = paint.getTypeface();
+            if (old == null) {
+                oldStyle = 0;
+            } else {
+                oldStyle = old.getStyle();
+            }
+
+            int fake = oldStyle & ~Typeface.MONOSPACE.getStyle();
+            if ((fake & Typeface.BOLD) != 0) {
+                paint.setFakeBoldText(true);
+            }
+
+            if ((fake & Typeface.ITALIC) != 0) {
+                paint.setTextSkewX(-0.25f);
+            }
+
+            paint.setTypeface(Typeface.MONOSPACE);
+        }
+    }
+
+    private static class BulletListSpan implements LeadingMarginSpan {
+
+        private int level;
+
+        public BulletListSpan(int level) {
+            if (level < 1 || level > 2) {
+                throw new IllegalArgumentException("Only 1- and 2-level bullet lists available");
+            }
+            this.level = level;
+        }
+
+        @Override
+        public int getLeadingMargin(boolean first) {
+            switch (level) {
+                case 1:
+                    return first ? 0 : bulletMarginPerLevel;
+                case 2:
+                    return first ? bulletMarginPerLevel : 2 * bulletMarginPerLevel;
+                default:
+                    throw new InternalError(
+                            String.format("Found level value equals %s instead \'1\' or \'2\' after constructor check",
+                                    level));
+
+            }
+        }
+
+        @Override
+        public void drawLeadingMargin(Canvas c,
+                                      Paint p,
+                                      int x,
+                                      int dir,
+                                      int top,
+                                      int baseline,
+                                      int bottom,
+                                      CharSequence text,
+                                      int start,
+                                      int end,
+                                      boolean first,
+                                      Layout layout) {
+
         }
     }
 
@@ -155,16 +229,18 @@ public class HanabiraParser {
 
         @Override
         public void updateDrawState(@NonNull TextPaint ds) {
-            ds.setColor(boxedRefLinkColor);
+            ds.setColor(refLinkColor);
             ds.setUnderlineText(true);
         }
     }
 
+    public static boolean contextInitCompleted = false;
     private static float   boxedCodeFontSize;
-    private static Integer boxedQuoteColor;
-    private static Integer boxedSpoilerHiddenColor;
-    private static Integer boxedSpoilerShownColor;
-    private static Integer boxedRefLinkColor;
+    private static int     bulletMarginPerLevel;
+    private static int     quoteColor;
+    private static int     spoilerHiddenColor;
+    private static int     spoilerShownColor;
+    private static int     refLinkColor;
     private static boolean showSpoilers;
 
     Pattern refPost = Pattern.compile(">>(/?[a-z]{1,4}/)?([0-9]+)");
@@ -180,13 +256,15 @@ public class HanabiraParser {
     private final HanabiraPost           post;
 
     public HanabiraParser(HanabiraPost post, Context context) {
-        if (boxedSpoilerHiddenColor == null) {
+        if (!contextInitCompleted) {
             boxedCodeFontSize = Utils.convertDpToPx(context, 12);
-            boxedSpoilerHiddenColor = context.getColor(R.color.dobro_dark);
-            boxedSpoilerShownColor = context.getColor(R.color.dobro_primary_text);
-            boxedRefLinkColor = context.getColor(R.color.dobro_ref_text);
-            boxedQuoteColor = context.getColor(R.color.dobro_quote);
+            bulletMarginPerLevel = Utils.convertDpToPx(context, 12);
+            spoilerHiddenColor = context.getColor(R.color.dobro_dark);
+            spoilerShownColor = context.getColor(R.color.dobro_primary_text);
+            refLinkColor = context.getColor(R.color.dobro_ref_text);
+            quoteColor = context.getColor(R.color.dobro_quote);
             showSpoilers = PreferenceManager.getDefaultSharedPreferences(context).getBoolean("show_spoilers", false);
+            contextInitCompleted = true;
         }
         this.context = context;
         this.post = post;
@@ -222,7 +300,6 @@ public class HanabiraParser {
         Pattern pattern = Pattern.compile("(\\^H)+");
         Matcher matcher = pattern.matcher(builder);
         while (matcher.find()) {
-            boolean cont = false;
             int pos_start = matcher.start() - removedFormatCharsDelta;
             int pos_end = matcher.end() - removedFormatCharsDelta;
             // don't reformat in code blocks
@@ -278,10 +355,6 @@ public class HanabiraParser {
         replaceAll("^%%\r\n", "\r\n%%$", SpanObjectFactory.SPOILER, Pattern.DOTALL);
     }
 
-    private void leftSideSpan(String regex, Object span) {
-
-    }
-
     private void paintQuotes() {
         Pattern pattern = Pattern.compile("^>[^>].*?$", Pattern.MULTILINE);
         Matcher matcher = pattern.matcher(builder);
@@ -293,16 +366,26 @@ public class HanabiraParser {
     }
 
     private void formatTwoLevelBulletList() {
-        Pattern p = Pattern.compile("^(\\*\\s){1,2}", Pattern.MULTILINE);
+        Pattern p = Pattern.compile("^(\\*\\s){1,2}([^\\*\\s].*?)$", Pattern.MULTILINE);
         Matcher m = p.matcher(builder);
-        // fixme
+
+        // when happens replacement with such strings as old.length!=new.length, actual size of builder changing and
+        // indexing broken for following matching. Since that we need to track that discrepancy
+        int delta = 0;
+        final int replacementLength = 2; // == "○ ".length() == "● ".length()
+
         while (m.find()) {
-            int st = m.start();
-            if (m.group().matches("(\\*\\s){2}")) {
-                builder.replace(st, st + 3, "  ○ ");
-            } else {
-                builder.replace(st, st + 2, "● ");
-            }
+            int start = m.start()-delta;
+            int paraLength = m.group().length();
+            boolean single = !m.group().substring(0, m.start(2) - m.start()).matches("\\*\\s\\*\\s");
+            String replacement = single ? "● " : "○ ";
+            int level = single ? 1 : 2;
+            int oldStringLength = 2 * level; // "* " or "* * "
+            int diff = oldStringLength - replacementLength;
+
+            builder.replace(start, start + oldStringLength, replacement);
+            builder.setSpan(new BulletListSpan(level), start - delta, start + paraLength - delta - diff, 0);
+            delta += diff;
         }
     }
 
@@ -360,8 +443,8 @@ public class HanabiraParser {
                 Linkify.addLinks(rep, Linkify.WEB_URLS);
                 // fixme twice used Linkify? try remove and just setSpan to builder
             }
-            builder.replace(matcher.start() - removedFormatCharsDelta+beginRestore.length(),
-                    matcher.start() + rep.length() - removedFormatCharsDelta+endRestore.length(), rep);
+            builder.replace(matcher.start() - removedFormatCharsDelta + beginRestore.length(),
+                    matcher.start() + rep.length() - removedFormatCharsDelta + endRestore.length(), rep);
 
             // store deletions
             removedFormatCharsDelta += matcher.group(1).length() - beginRestore.length();

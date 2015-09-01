@@ -36,7 +36,8 @@ import org.joda.time.LocalDateTime;
 /**
  *
  */
-public class HanabiraPost {
+public class HanabiraPost extends HanabiraEntity {
+
     @SerializedName("display_id")
     private int           displayId;
 //    private List<File>    files;
@@ -54,10 +55,6 @@ public class HanabiraPost {
     @SerializedName("thread_id")
     private int           threadId;
     private boolean       op;
-
-    public HanabiraPost() {
-
-    }
 
     public int getBoardId() {
         return boardId;
@@ -80,6 +77,10 @@ public class HanabiraPost {
 
     public String getName() {
         return name;
+    }
+
+    public boolean isOp() {
+        return op;
     }
 }
 
