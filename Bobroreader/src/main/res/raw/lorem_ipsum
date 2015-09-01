@@ -4,10 +4,10 @@
   "post_id": 7570315,
   "last_modified": null,
   "date": "2015-08-30 03:01:33",
-  "message": ">>239239\r\nLorem *ipsum* **dolor** _sit_ __amet__, %%consectetur%% adipiscing elit, \r\n* sed \r\n * do \r\neiusmod http:://tempor.com incididunt `ut` labore ``et dolore`` magna aliqua.\r\n    Ut \r\n    enim\r\n    ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+  "message": ">>239239\r\nLorem *ipsum* **dolor** _sit_ __amet__, %%c_on_sect__et__ur%% adipiscing elit, \r\n* sed \r\n* do \r\neiusmod http://tempor.com incididunt `ut` labore ``et dolore`` magna aliqua.\r\n``\r\nUt enim ad minim \r\nveniam, quis nostrud \r\nexercitation ullamco laboris\r\n``\r\n nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   "subject": "",
   "board_id": 2,
-  "name": "\u0410\u043d\u043e\u043d\u0438\u043c\u0443\u0441",
+  "name": "Lorem Ipsum",
   "thread_id": 287781,
   "__class__": "Post",
   "op": false
