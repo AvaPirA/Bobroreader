@@ -29,7 +29,7 @@
  *
  */
 
-package com.avapira.bobroreader.networking;
+package com.avapira.bobroreader;
 
 import android.app.Fragment;
 import android.content.res.Resources;
@@ -41,11 +41,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import com.avapira.bobroreader.Bober;
-import com.avapira.bobroreader.CardViewFragment;
-import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
+import org.joda.time.format.DateTimeFormat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -137,18 +135,20 @@ public class ThreadFragment extends Fragment {
             }
             View postcard = holder.view;
             CardView card = (CardView) postcard.findViewById(R.id.post_card);
-            TextView name = (TextView) postcard.findViewById(R.id.post_name);
-            TextView date = (TextView) postcard.findViewById(R.id.post_date);
+            TextView displayId = (TextView) postcard.findViewById(R.id.post_display_id);
+            TextView authorName = (TextView) postcard.findViewById(R.id.post_author_name);
+            TextView rightHeader = (TextView) postcard.findViewById(R.id.post_right_header_text);
             TextView text = (TextView) postcard.findViewById(R.id.post_text);
             RecyclerView filesRecycler = (RecyclerView) postcard.findViewById(R.id.post_files_recycler);
 //            TextView replies = (TextView) postcard.findViewById(R.id.post_replies);
 
             HanabiraPost cursor = posts.get(position);
-            name.setText(cursor.getName());
-            date.setText(cursor.getDate().toString());
+            displayId.setText("№".concat(cursor.getDisplayId()));
+            authorName.setText(cursor.getName());
+            rightHeader.setText(DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(cursor.getDate()));
             text.setText(new HanabiraParser(cursor, getContext()).getFormatted());
             if (cursor.isOp()) {
-                card.setCardElevation(2 * card.getCardElevation());
+                card.setCardElevation(5 * card.getCardElevation() / 2);
             }
 
             if (cursor.getFiles() == null || cursor.getFiles().size() == 0) {

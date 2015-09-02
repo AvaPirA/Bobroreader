@@ -41,8 +41,8 @@ import java.util.List;
 public class HanabiraPost extends HanabiraEntity {
 
     @SerializedName("display_id")
-    private int           displayId;
-//    private List<File>    files;
+    private String        displayId;
+    //    private List<File>    files;
     @SerializedName("last_modified")
     private LocalDateTime modifiedDate;
     @SerializedName("date")
@@ -91,6 +91,10 @@ public class HanabiraPost extends HanabiraEntity {
 
     public List getFiles() {
         return null;
+    }
+
+    public String getDisplayId() {
+        return displayId;
     }
 }
 

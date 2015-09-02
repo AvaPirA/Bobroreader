@@ -43,10 +43,11 @@
             android:elevation="2dp"
             card_view:cardBackgroundColor="@color/dobro_medium"
             card_view:cardCornerRadius="4dp"
-            android:layout_marginBottom="@dimen/margin_small"
-            android:layout_marginTop="@dimen/margin_small"
-            android:layout_marginStart="@dimen/margin_small"
-            android:layout_marginEnd="@dimen/margin_small"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+
             >
         <LinearLayout
                 android:layout_width="wrap_content"
@@ -58,26 +59,46 @@
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content">
                 <TextView
-                        android:id="@+id/post_name"
+                        android:id="@+id/post_right_header_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/dobro_primary_text"
+                        android:text="15 August 2015 (Sat)"
+                        android:layout_alignParentEnd="true"
+                        android:gravity="end"
+                        android:lines="2"/>
+                <TextView
+                        android:id="@+id/post_display_id"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentStart="true"
+                        android:textColor="@color/dobro_primary_text"
+                        android:lines="1"/>
+                <TextView
+                        android:id="@+id/post_author_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_alignBottom="@id/post_right_header_text"
                         android:textColor="@color/dobro_name"
                         android:textStyle="bold"
                         android:lines="1"
                         android:ellipsize="end"
                         android:text="Chlenodevka"
                         />
-                <TextView
-                        android:id="@+id/post_date"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/dobro_primary_text"
-                        android:text="15 August 2015 (Sat) 00:17"
-                        android:layout_alignParentEnd="true"/>
+
+                <!--<TextView-->
+                        <!--android:id="@+id/post_time"-->
+                        <!--android:layout_width="wrap_content"-->
+                        <!--android:layout_height="wrap_content"-->
+                        <!--android:textColor="@color/dobro_primary_text"-->
+                        <!--android:text="00:17:23"-->
+                        <!--android:layout_alignParentEnd="true"-->
+                        <!--android:layout_below="@id/post_date"-->
+                        <!--android:lines="1"/>-->
                 <android.support.v7.widget.RecyclerView
                         android:id="@+id/post_files_recycler"
-                        android:layout_below="@id/post_name"
+                        android:layout_below="@id/post_author_name"
                         android:layout_width="fill_parent"
                         android:layout_height="150dp"
                         android:layout_marginTop="@dimen/margin_tiny"
@@ -96,7 +117,8 @@
                     android:id="@+id/post_replies"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
-                    android:text=">>12312, >>12321, >>12312"/>
+                    android:text=">>12312, >>12321, >>12312"
+                    android:visibility="gone"/>
         </LinearLayout>
 
     </android.support.v7.widget.CardView>
