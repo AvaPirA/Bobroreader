@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Bobroreader is open source software, created, maintained, and shared under
+  ~ the MIT license by Avadend Piroserpen Arts. The project includes components
+  ~ from other open source projects which remain under their existing licenses,
+  ~ detailed in their respective source files.
+  ~
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2015. Avadend Piroserpen Arts Ltd.
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  ~
+  ~
+  -->
+
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_height="fill_parent"
+        android:layout_width="fill_parent">
+    <android.support.v7.widget.CardView
+            xmlns:card_view="http://schemas.android.com/apk/res-auto"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/post_card"
+            android:elevation="2dp"
+            card_view:cardBackgroundColor="@color/dobro_medium"
+            card_view:cardCornerRadius="4dp"
+            android:layout_marginBottom="@dimen/margin_small"
+            android:layout_marginTop="@dimen/margin_small"
+            android:layout_marginStart="@dimen/margin_small"
+            android:layout_marginEnd="@dimen/margin_small"
+            >
+        <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/margin_small">
+            <RelativeLayout
+                    android:id="@+id/post_header"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content">
+                <TextView
+                        android:id="@+id/post_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:textColor="@color/dobro_name"
+                        android:textStyle="bold"
+                        android:lines="1"
+                        android:ellipsize="end"
+                        android:text="Chlenodevka"
+                        />
+                <TextView
+                        android:id="@+id/post_date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/dobro_primary_text"
+                        android:text="15 August 2015 (Sat) 00:17"
+                        android:layout_alignParentEnd="true"/>
+                <android.support.v7.widget.RecyclerView
+                        android:id="@+id/post_files_recycler"
+                        android:layout_below="@id/post_name"
+                        android:layout_width="fill_parent"
+                        android:layout_height="150dp"
+                        android:layout_marginTop="@dimen/margin_tiny"
+                        android:orientation="horizontal"/>
+            </RelativeLayout>
+
+            <TextView
+                    android:id="@+id/post_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/margin_tiny"
+                    android:textColor="@color/dobro_primary_text"
+                    android:text="@string/lorem_ipsum"
+                    />
+            <TextView
+                    android:id="@+id/post_replies"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text=">>12312, >>12321, >>12312"/>
+        </LinearLayout>
+
+    </android.support.v7.widget.CardView>
+</LinearLayout>

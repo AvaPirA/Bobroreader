@@ -28,70 +28,43 @@
  *
  *
  */
+
 package com.avapira.bobroreader.hanabira.entity;
 
-import com.google.gson.annotations.SerializedName;
+import com.google.gson.*;
 import org.joda.time.LocalDateTime;
 
-import java.util.List;
+import java.lang.reflect.Type;
 
 /**
  *
  */
-public class HanabiraPost extends HanabiraEntity {
+public abstract class HanabiraEntity {
 
-    @SerializedName("display_id")
-    private int           displayId;
-//    private List<File>    files;
-    @SerializedName("last_modified")
-    private LocalDateTime modifiedDate;
-    @SerializedName("date")
-    private LocalDateTime createdDate;
-    @SerializedName("post_id")
-    private int           id;
-    private String        message;
-    private String        subject;
-    @SerializedName("board_id")
-    private int           boardId;
-    private String        name;
-    @SerializedName("thread_id")
-    private int           threadId;
-    private boolean       op;
-
-    public int getBoardId() {
-        return boardId;
+    static {
+        gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
+            @Override
+            public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
+                return LocalDateTime.parse(json.getAsString().replace(' ', 'T'));
+            }
+        }).create();
+        prettyGson = new GsonBuilder().setPrettyPrinting().create();
     }
 
-    public String getMessage() {
-        return message;
+    private static final Gson gson;
+    private static final Gson prettyGson;
+
+    public static <T extends HanabiraEntity> T fromJson(String jsonString, Class<T> clazz) {
+        return gson.fromJson(jsonString, clazz);
     }
 
-    public boolean equals(Object o) {
-        return o instanceof HanabiraPost && ((HanabiraPost) o).id == this.id;
+    public String toJson() {
+        return gson.toJson(this);
     }
 
-    public boolean deepEquals(HanabiraPost p) {
-        return displayId == p.displayId && id == p.id && boardId == p.boardId &&
-                modifiedDate.equals(p.modifiedDate) &&
-                createdDate.equals(p.createdDate) && message.equals(p.message) && subject.equals(p.subject) &&
-                name == null ? p.name == null : name.equals(p.name) && threadId == p.threadId && op == p.op;
+    public String toPrettyJson() {
+        return prettyGson.toJson(this);
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public boolean isOp() {
-        return op;
-    }
-
-    public LocalDateTime getDate() {
-        return createdDate;
-    }
-
-    public List getFiles() {
-        return null;
-    }
 }
-
-

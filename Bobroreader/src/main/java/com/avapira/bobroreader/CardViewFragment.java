@@ -67,8 +67,6 @@ public class CardViewFragment extends Fragment {
     static Iterator<Integer> rawJsons = Arrays.asList(
             new Integer[]{ R.raw.lorem_ipsum, R.raw.d_55048_57432, R.raw.d_55048_57442, R.raw.d_55048_57479})
                                               .iterator();
-//    @RawRes
-//    public Integer
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {

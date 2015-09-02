@@ -51,4 +51,18 @@
     <string name="hanabira_post_text">This is Hanabira Text View. Here you can</string>
     <string name="cardview_radius_seekbar_text">Radius</string>
     <string name="cardview_elevation_seekbar_text">Elevation</string>
+    <string name="menu_go_to">Go to</string>
+    <string name="search_label">Go to reflink</string>
+    <string name="search_hint">/board/post</string>
+    <string name="lorem_ipsum">Волк достиг домика бабушки и постучал в дверь. Эта дверь была сделана в
+        середине 17 века неизвестным мастером. Он вырезал ее из модного в то
+        время канадского дуба, придал ей классическую форму и повесил ее на
+        железные петли, которые в свое время, может быть, и были хороши, но
+        ужасно сейчас скрипели. На двери не было никаких орнаментов и узоров,
+        только в правом нижнем углу виднелась одна царапина, о которой говорили,
+        что ее сделал собственной шпорой Селестен де Шавард - фаворит Марии
+        Антуанетты и двоюродный брат по материнской линии бабушкиного дедушки
+        Красной Шапочки. В остальном же дверь была обыкновенной, и поэтому не
+        следует останавливаться на ней более подробно.
+    </string>
 </resources>

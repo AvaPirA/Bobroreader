@@ -32,6 +32,8 @@ package com.avapira.bobroreader;
 
 import android.content.Intent;
 import android.content.res.Resources;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.LayoutRes;
@@ -39,14 +41,20 @@ import android.support.annotation.RawRes;
 import android.support.annotation.StringRes;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.SpannableStringBuilder;
+import android.text.style.StyleSpan;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
+import android.widget.SearchView;
 import android.widget.TextView;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.networking.BasicsSupplier;
 import com.avapira.bobroreader.networking.PersistentCookieStore;
+import com.avapira.bobroreader.networking.ThreadFragment;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.holder.StringHolder;
@@ -68,7 +76,7 @@ public class Bober extends AppCompatActivity {
         new LocalDateTime();
     }
 
-    private volatile Drawer drawer = null;
+    private Drawer drawer = null;
 
     private static class ShortSectionDivider extends SectionDrawerItem {
         @Override
@@ -91,6 +99,12 @@ public class Bober extends AppCompatActivity {
                         getFragmentManager().beginTransaction()
                                             .replace(R.id.frame_container, new CardViewFragment())
                                             .commit();
+                        break;
+                    case 261:
+                        getFragmentManager().beginTransaction()
+                                            .replace(R.id.frame_container, new ThreadFragment())
+                                            .commit();
+                        break;
                 }
                 if (intent != null) {
                     Bober.this.startActivity(intent);
@@ -103,7 +117,7 @@ public class Bober extends AppCompatActivity {
 
     private void bindCookies() {
         CookieManager cookieManager = new CookieManager(new PersistentCookieStore(this.getApplicationContext()),
-                CookiePolicy.ACCEPT_ORIGINAL_SERVER);
+                                                        CookiePolicy.ACCEPT_ORIGINAL_SERVER);
         CookieHandler.setDefault(cookieManager);
     }
 
@@ -121,15 +135,15 @@ public class Bober extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        updateDrawerDiff();
-        showUserInfo();
+//        updateDrawerDiff();
+//        showUserInfo();
     }
 
     private void showUserInfo() {
         BasicsSupplier.getUser(this, new Consumer<HanabiraUser>() {
             @Override
             public void accept(HanabiraUser user) {
-                TextView tv = (TextView) findViewById(R.id.text);
+                TextView tv = (TextView) findViewById(R.id.user_text);
                 tv.setText(user.toString());
             }
         });
@@ -154,8 +168,8 @@ public class Bober extends AppCompatActivity {
             @Override
             public void accept(final Map<String, Integer> diff) {
                 for (IDrawerItem item : drawer.getAdapter().getDrawerItems()) {
-                    if (item instanceof BoardItem) {
-                        BoardItem i = (BoardItem) item;
+                    if (item instanceof BoardDrawerItem) {
+                        BoardDrawerItem i = (BoardDrawerItem) item;
                         String boardKey = shortenizeBoardName(i.getName().getText());
                         i.withBadge(String.format("[%s]", diff.get(boardKey)));
                     }
@@ -172,54 +186,115 @@ public class Bober extends AppCompatActivity {
                                   .withHeaderDivider(false)
                                   .withHeader(R.layout.boards_drawer_header)
                                   .addDrawerItems(new ShortSectionDivider().withName("Общее"),
-                                          new BoardItem("/b/", R.drawable.banners_b_b1),
-                                          new BoardItem("/u/", R.drawable.banners_u_125860969598039),
-                                          new BoardItem("/rf/", R.drawable.banners_rf_125701163950149).withIdentifier(
-                                                  30), new BoardItem("/dt/", R.drawable.banners_dt_125697739438064),
-                                          new BoardItem("/vg/", R.drawable.banners_vg_125709977081546),
-                                          new BoardItem("/r/", R.drawable.banners_r_125699732718180),
-                                          new BoardItem("/cr/", R.drawable.banners_cr_cr4),
-                                          new BoardItem("/mu/", R.drawable.banners_mu_125861048005976),
-                                          new BoardItem("/oe/", R.drawable.banners_empty),
-                                          new BoardItem("/s/", R.drawable.banners_s_125776130692418),
-                                          new BoardItem("/w/", R.drawable.banners_empty),
-                                          new BoardItem("/hr/", R.drawable.banners_empty),
-                                          //
-                                          new ShortSectionDivider().withName("Аниме"),
-                                          new BoardItem("/a/", R.drawable.banners_a_125768405443972),
-                                          new BoardItem("/ma/", R.drawable.banners_ma_125860969613262),
-                                          new BoardItem("/sw/", R.drawable.banners_sw_125861045421667),
-                                          new BoardItem("/hau/", R.drawable.banners_hau_125861045418626),
-                                          new BoardItem("/azu/", R.drawable.banners_empty),
-                                          //
-                                          new ShortSectionDivider().withName("На пробу"),
-                                          new BoardItem("/tv/", R.drawable.banners_tv_55555),
-                                          new BoardItem("/cp/", R.drawable.banners_cp_g125788239756657),
-                                          new BoardItem("/gf/", R.drawable.banners_gf_125860979571217),
-                                          new BoardItem("/bo/", R.drawable.banners_empty),
-                                          new BoardItem("/di/", R.drawable.banners_di_125762259407262),
-                                          new BoardItem("/vn/", R.drawable.banners_vn_125861005475361),
-                                          new BoardItem("/ve/", R.drawable.banners_ve_125698880498448),
-                                          new BoardItem("/wh/", R.drawable.banners_wh_125861075646865),
-                                          new BoardItem("/fur/", R.drawable.banners_fur_125861026701646),
-                                          new BoardItem("/to/", R.drawable.banners_to_125861045424732),
-                                          new BoardItem("/bg/", R.drawable.banners_bg_125861578033434),
-                                          new BoardItem("/wn/", R.drawable.banners_wn_125861005478345),
-                                          new BoardItem("/slow/", R.drawable.banners_slow_slow_4),
-                                          new BoardItem("/mad/", R.drawable.banners_mad_mad),
-                                          //
-                                          new ShortSectionDivider().withName("Доброчан"),
-                                          new BoardItem("/d/", R.drawable.banners_d_125711152029591),
-                                          new BoardItem("/news/", R.drawable.banners_news_125710395977840),
-                                          new SectionDrawerItem().withName("Other stuff"),
-                                          new SettingsItem().withIdentifier(239).withSelectable(false))
+                                                  new BoardDrawerItem("/b/", R.drawable.banners_b_b1).withIdentifier(
+                                                          261),
+                                                  new BoardDrawerItem("/u/", R.drawable.banners_u_125860969598039),
+                                                  new BoardDrawerItem("/rf/",
+                                                                      R.drawable.banners_rf_125701163950149)
+                                                          .withIdentifier(
+                                                          30),
+                                                  new BoardDrawerItem("/dt/", R.drawable.banners_dt_125697739438064),
+                                                  new BoardDrawerItem("/vg/", R.drawable.banners_vg_125709977081546),
+                                                  new BoardDrawerItem("/r/", R.drawable.banners_r_125699732718180),
+                                                  new BoardDrawerItem("/cr/", R.drawable.banners_cr_cr4),
+                                                  new BoardDrawerItem("/mu/", R.drawable.banners_mu_125861048005976),
+                                                  new BoardDrawerItem("/oe/", R.drawable.banners_empty),
+                                                  new BoardDrawerItem("/s/", R.drawable.banners_s_125776130692418),
+                                                  new BoardDrawerItem("/w/", R.drawable.banners_empty),
+                                                  new BoardDrawerItem("/hr/", R.drawable.banners_empty),
+                                                  //
+                                                  new ShortSectionDivider().withName("Аниме"),
+                                                  new BoardDrawerItem("/a/", R.drawable.banners_a_125768405443972),
+                                                  new BoardDrawerItem("/ma/", R.drawable.banners_ma_125860969613262),
+                                                  new BoardDrawerItem("/sw/", R.drawable.banners_sw_125861045421667),
+                                                  new BoardDrawerItem("/hau/", R.drawable.banners_hau_125861045418626),
+                                                  new BoardDrawerItem("/azu/", R.drawable.banners_empty),
+                                                  //
+                                                  new ShortSectionDivider().withName("На пробу"),
+                                                  new BoardDrawerItem("/tv/", R.drawable.banners_tv_55555),
+                                                  new BoardDrawerItem("/cp/", R.drawable.banners_cp_g125788239756657),
+                                                  new BoardDrawerItem("/gf/", R.drawable.banners_gf_125860979571217),
+                                                  new BoardDrawerItem("/bo/", R.drawable.banners_empty),
+                                                  new BoardDrawerItem("/di/", R.drawable.banners_di_125762259407262),
+                                                  new BoardDrawerItem("/vn/", R.drawable.banners_vn_125861005475361),
+                                                  new BoardDrawerItem("/ve/", R.drawable.banners_ve_125698880498448),
+                                                  new BoardDrawerItem("/wh/", R.drawable.banners_wh_125861075646865),
+                                                  new BoardDrawerItem("/fur/", R.drawable.banners_fur_125861026701646),
+                                                  new BoardDrawerItem("/to/", R.drawable.banners_to_125861045424732),
+                                                  new BoardDrawerItem("/bg/", R.drawable.banners_bg_125861578033434),
+                                                  new BoardDrawerItem("/wn/", R.drawable.banners_wn_125861005478345),
+                                                  new BoardDrawerItem("/slow/", R.drawable.banners_slow_slow_4),
+                                                  new BoardDrawerItem("/mad/", R.drawable.banners_mad_mad),
+                                                  //
+                                                  new ShortSectionDivider().withName("Доброчан"),
+                                                  new BoardDrawerItem("/d/", R.drawable.banners_d_125711152029591),
+                                                  new BoardDrawerItem("/news/",
+                                                                      R.drawable.banners_news_125710395977840),
+                                                  new SectionDrawerItem().withName("Other stuff"),
+                                                  new SettingsDrawerItem().withIdentifier(239).withSelectable(false))
                                   .withSavedInstance(savedInstanceState)
-                                  .withOnDrawerItemClickListener(new BoardSwitcher());
+                                  .withOnDrawerItemClickListener(new BoardSwitcher())
+                                  .withOnDrawerListener(new Drawer.OnDrawerListener() {
+
+                                      private static final float MENU_CLOSING_THRESHOLD = 1f / 3f;
+                                      private static final float MENU_SHOWING_THRESHOLD = 1f - MENU_CLOSING_THRESHOLD;
+
+                                      @Override
+                                      public void onDrawerOpened(View drawerView) {
+                                          Bober.this.invalidateOptionsMenu();
+                                          sliderThinksClosing = null;
+                                      }
+
+                                      @Override
+                                      public void onDrawerClosed(View drawerView) {
+                                          Bober.this.invalidateOptionsMenu();
+                                          sliderThinksClosing = null;
+                                      }
+
+                                      private float previousOffset;
+
+                                      @Override
+                                      public void onDrawerSlide(View arg0, float slideOffset) {
+//                                          sliderThinksClosing = drawer.isDrawerOpen();
+//                                          if (!sliderThinksClosing) {                    // Opening...
+//                                              if (slideOffset > MENU_SHOWING_THRESHOLD) {// ..more half completed...
+//                                                  if (slideOffset > previousOffset) {    // ..from this moment
+//                                                      sliderHide = true;
+//                                                      invalidateOptionsMenu();
+//                                                  }                                      // .. else already hidden
+//                                              } else {                                   // ..less half completed...
+//                                                  if (slideOffset < previousOffset) {    // ..from this moment
+//                                                      sliderHide = false;
+//                                                      invalidateOptionsMenu();
+//                                                  }                                      // else already shown
+//                                              }
+//                                          } else {                                       // Closing..
+//                                              if (slideOffset > MENU_CLOSING_THRESHOLD) {// ..less half completed..
+//                                                  if (slideOffset > previousOffset) {    // ..from now
+//                                                      sliderHide = true;
+//                                                      invalidateOptionsMenu();
+//                                                  }                                      // else already hidden
+//                                              } else {                                   // ..more half completed..
+//                                                  if (slideOffset < previousOffset) {    // ..from now
+//                                                      sliderHide = false;
+//                                                      invalidateOptionsMenu();
+//                                                  }                                      // else already shown
+//                                              }
+//                                          }
+//                                          previousOffset = slideOffset;
+                                      }
+
+                                  })
+                                  .withActionBarDrawerToggleAnimated(true);
     }
 
     private String shortenizeBoardName(String name) {
         return name.substring(1, name.length() - 1);
     }
+
+    Boolean sliderThinksClosing;
+    boolean sliderHide;
+    Menu    menu;
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -230,15 +305,30 @@ public class Bober extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        //handle the click on the back arrow click
         switch (item.getItemId()) {
             case android.R.id.home:
                 onBackPressed();
                 return true;
+            case R.id.show_goto:
 
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        boolean valToSetVisibility;
+        if (sliderThinksClosing != null) { // sliding now
+            valToSetVisibility = !sliderHide;
+        } else { // not sliding
+            valToSetVisibility = !drawer.isDrawerOpen();
+        }
+        for (int i = 0; i < menu.size(); i++) {
+            menu.getItem(i).setVisible(valToSetVisibility);
+        }
+        return true;
     }
 
     @Override
@@ -251,52 +341,72 @@ public class Bober extends AppCompatActivity {
         }
     }
 
-    public static final class BoardItem extends PrimaryDrawerItem {
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.default_menu, menu);
+        // todo draw a proper icon for Go-To-Ref-Link
+        SearchView searchView = (SearchView) menu.findItem(R.id.show_goto).getActionView();
+        int searchImgId = getResources().getIdentifier("android:id/search_button", null, null);
+        ImageView v = (ImageView) searchView.findViewById(searchImgId);
+        SpannableStringBuilder ssb = new SpannableStringBuilder("board/post");
+        ssb.setSpan(new StyleSpan(Typeface.MONOSPACE.getStyle()), 0, 10, 0);
+//        ImageView icon = (ImageView)searchView.findViewById(android.R.id.search_mag_icon);
+        searchView.setQueryHint(ssb);
+        Drawable d = getDrawable(android.R.drawable.ic_media_ff);
+        d.setTint(getColor(R.color.dobro_primary_text));
+        v.setImageDrawable(d);
+//        searchView.setOnQueryTextListener(this);
+        this.menu = menu;
+        return super.onPrepareOptionsMenu(menu);
+//        return true;
+    }
+
+    public static final class BoardDrawerItem extends PrimaryDrawerItem {
 
         @Override
         public int getLayoutRes() {
             return R.layout.board_drawer_item;
         }
 
-        public BoardItem() {
+        public BoardDrawerItem() {
             super();
 
         }
 
-        public BoardItem(String s) {
+        public BoardDrawerItem(String s) {
             this();
             withName(s);
         }
 
-        public BoardItem(@StringRes int id) {
+        public BoardDrawerItem(@StringRes int id) {
             this();
             withName(id);
         }
 
-        public BoardItem(StringHolder s) {
+        public BoardDrawerItem(StringHolder s) {
             this();
             withName(s);
         }
 
-        public BoardItem(String s, @DrawableRes int dId) {
+        public BoardDrawerItem(String s, @DrawableRes int dId) {
             this(s);
             withIcon(dId);
         }
 
-        public BoardItem(@StringRes int id, @DrawableRes int dId) {
+        public BoardDrawerItem(@StringRes int id, @DrawableRes int dId) {
             this(id);
             withIcon(dId);
         }
 
-        public BoardItem(StringHolder s, @DrawableRes int dId) {
+        public BoardDrawerItem(StringHolder s, @DrawableRes int dId) {
             this(s);
             withIcon(dId);
         }
 
     }
 
-    public static final class SettingsItem extends PrimaryDrawerItem {
-        public SettingsItem() {
+    public static final class SettingsDrawerItem extends PrimaryDrawerItem {
+        public SettingsDrawerItem() {
             super();
             withName("Settings");
         }
