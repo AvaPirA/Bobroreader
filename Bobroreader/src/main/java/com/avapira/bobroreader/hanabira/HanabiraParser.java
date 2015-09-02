@@ -44,6 +44,7 @@ import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.style.*;
 import android.text.util.Linkify;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 import com.avapira.bobroreader.R;
@@ -114,6 +115,7 @@ public class HanabiraParser {
 
         @Override
         public void onClick(View widget) {
+            Log.d("Spoiler#onClick", "clickclick; wasShown = " + wasShown);
             wasShown = !wasShown;
             widget.invalidate();
         }
@@ -140,6 +142,7 @@ public class HanabiraParser {
             tp.setColor(spoilerHiddenColor);
             applyCustomTypeFace(tp);
         }
+
         @Override
         public void updateMeasureState(TextPaint paint) {
             applyCustomTypeFace(paint);
@@ -375,7 +378,7 @@ public class HanabiraParser {
         final int replacementLength = 2; // == "○ ".length() == "● ".length()
 
         while (m.find()) {
-            int start = m.start()-delta;
+            int start = m.start() - delta;
             int paraLength = m.group().length();
             boolean single = !m.group().substring(0, m.start(2) - m.start()).matches("\\*\\s\\*\\s");
             String replacement = single ? "● " : "○ ";

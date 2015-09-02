@@ -1,34 +1,3 @@
-/*
- * Bobroreader is open source software, created, maintained, and shared under
- * the MIT license by Avadend Piroserpen Arts. The project includes components
- * from other open source projects which remain under their existing licenses,
- * detailed in their respective source files.
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2015. Avadend Piroserpen Arts Ltd.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- *
- */
-
 package com.avapira.bobroreader;
 
 import android.app.Fragment;
@@ -51,9 +20,9 @@ import java.util.List;
 /**
  *
  */
-public class ThreadFragment extends Fragment {
+public class BoardFragment extends Fragment {
 
-    private static final String TAG = ThreadFragment.class.getSimpleName();
+    private static final String TAG = BoardFragment.class.getSimpleName();
 
     /**
      * Use this factory method to create a new instance of
@@ -67,7 +36,7 @@ public class ThreadFragment extends Fragment {
         return fragment;
     }
 
-    public ThreadFragment() {
+    public BoardFragment() {
         // Required empty public constructor
     }
 
@@ -86,10 +55,10 @@ public class ThreadFragment extends Fragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         RecyclerView recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
-        recycler.setAdapter(new ThreadAdapter(getPosts()));
+        recycler.setAdapter(new BoardAdapter(getOpPosts()));
     }
 
-    public List<HanabiraPost> getPosts() {
+    public List<HanabiraPost> getOpPosts() {
         List<HanabiraPost> list = new ArrayList<>();
         Resources res = getResources();
         list.add(HanabiraPost.fromJson(Bober.rawJsonToString(res, R.raw.d_55048_57432), HanabiraPost.class));
@@ -99,7 +68,7 @@ public class ThreadFragment extends Fragment {
     }
 
 
-    private class ThreadAdapter extends RecyclerView.Adapter<ThreadAdapter.PostCardViewHolder> {
+    private class BoardAdapter extends RecyclerView.Adapter<BoardAdapter.OpPostCardViewHolder> {
         private class VIEW_TYPES {
             public static final int Header = 1;
             public static final int Normal = 2;
@@ -108,12 +77,12 @@ public class ThreadFragment extends Fragment {
 
         List<HanabiraPost> posts = new ArrayList<>();
 
-        public ThreadAdapter(List<HanabiraPost> pp) {
+        public BoardAdapter(List<HanabiraPost> pp) {
             posts = pp; // FIXME Aware of non-consistent pp changes
         }
 
         @Override
-        public PostCardViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public OpPostCardViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View postcard;
             switch (viewType) {
                 case VIEW_TYPES.Footer:
@@ -125,11 +94,11 @@ public class ThreadFragment extends Fragment {
                 default:
                     throw new IllegalArgumentException("Wrong view type for this Recycler");
             }
-            return new PostCardViewHolder(postcard);
+            return new OpPostCardViewHolder(postcard);
         }
 
         @Override
-        public void onBindViewHolder(PostCardViewHolder holder, int position) {
+        public void onBindViewHolder(OpPostCardViewHolder holder, int position) {
             if (position == posts.size()) {
                 return;
             }
@@ -172,10 +141,10 @@ public class ThreadFragment extends Fragment {
             } else { return VIEW_TYPES.Normal; }
         }
 
-        protected class PostCardViewHolder extends RecyclerView.ViewHolder {
+        protected class OpPostCardViewHolder extends RecyclerView.ViewHolder {
             private View view;
 
-            public PostCardViewHolder(View view) {
+            public OpPostCardViewHolder(View view) {
                 super(view);
                 this.view = view;
             }

@@ -183,7 +183,7 @@ public class Bober extends AppCompatActivity {
                                   .withFullscreen(true)
                                   .withToolbar(toolbar)
                                   .withHeaderDivider(false)
-                                  .withHeader(R.layout.boards_drawer_header)
+                                  .withHeader(R.layout.drawer_header_horo)
                                   .addDrawerItems(new ShortSectionDivider().withName("Общее"),
                                                   new BoardDrawerItem("/b/", R.drawable.banners_b_b1).withIdentifier(
                                                           261),
@@ -364,7 +364,7 @@ public class Bober extends AppCompatActivity {
 
         @Override
         public int getLayoutRes() {
-            return R.layout.board_drawer_item;
+            return R.layout.drawer_item_board;
         }
 
         public BoardDrawerItem() {
