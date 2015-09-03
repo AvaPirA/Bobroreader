@@ -14,11 +14,11 @@ import java.util.regex.Pattern;
 /**
  *
  */
-public class HanabiraBoard {
+public class HanabiraBoardInfo {
 
-    private static List<HanabiraBoard> boards;
-    private static final Map<String, HanabiraBoard>  boardToBoard = new HashMap<>();
-    private static final Map<Integer, HanabiraBoard> idToBoard    = new HashMap<>();
+    private static List<HanabiraBoardInfo> boards;
+    private static final Map<String, HanabiraBoardInfo>  boardToBoard = new HashMap<>();
+    private static final Map<Integer, HanabiraBoardInfo> idToBoard    = new HashMap<>();
 //    private static final Map<String, HanabiraBoard> boardToBoard = new HashMap<>();
 //    private static final Map<String, HanabiraBoard> boardToBoard = new HashMap<>();
 //    private static final Map<String, HanabiraBoard> boardToBoard = new HashMap<>();
@@ -27,8 +27,9 @@ public class HanabiraBoard {
         if (isLoaded()) {
             throw new IllegalStateException("Boards already loaded");
         }
-        List<HanabiraBoard> boards = new Gson().fromJson(json, new TypeToken<List<HanabiraBoard>>() {}.getType());
-        for (HanabiraBoard board : boards) {
+        List<HanabiraBoardInfo> boards = new Gson().fromJson(json,
+                new TypeToken<List<HanabiraBoardInfo>>() {}.getType());
+        for (HanabiraBoardInfo board : boards) {
             boardToBoard.put(board.board, board);
             idToBoard.put(board.id, board);
         }
@@ -38,15 +39,15 @@ public class HanabiraBoard {
         return boards != null;
     }
 
-    public static HanabiraBoard getForId(int id) {
+    public static HanabiraBoardInfo getForId(int id) {
         return idToBoard.get(id);
     }
 
-    public static HanabiraBoard getForBoard(@NonNull String s) {
+    public static HanabiraBoardInfo getForBoard(@NonNull String s) {
         return boardToBoard.get(s);
     }
 
-    public static HanabiraBoard getForSlashed(@NonNull String s) {
+    public static HanabiraBoardInfo getForSlashed(@NonNull String s) {
         return boardToBoard.get(cutSlashes(s));
     }
 

@@ -149,7 +149,7 @@ public class ThreadFragment extends Fragment {
 //            TextView replies = (TextView) postcard.findViewById(R.id.post_replies);
 
             HanabiraPost cursor = posts.get(position);
-            displayId.setText("№".concat(cursor.getDisplayId()));
+            displayId.setText("№".concat(Integer.toString(cursor.getDisplayId())));
             authorName.setText(cursor.getName());
             rightHeader.setText(DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(cursor.getDate()));
             text.setText(new HanabiraParser(cursor, getContext()).getFormatted());

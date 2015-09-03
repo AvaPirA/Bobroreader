@@ -50,7 +50,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
-import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
+import com.avapira.bobroreader.hanabira.entity.HanabiraBoardInfo;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.networking.BasicsSupplier;
 import com.avapira.bobroreader.networking.PersistentCookieStore;
@@ -125,7 +125,7 @@ public class Bober extends AppCompatActivity {
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        HanabiraBoard.loadBoards(rawJsonToString(getResources(), R.raw.boards));
+        HanabiraBoardInfo.loadBoards(rawJsonToString(getResources(), R.raw.boards));
         setContentView(R.layout.activity_boards_navigation_drawer);
         Bober.this.bindCookies();
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);

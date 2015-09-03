@@ -48,7 +48,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 import com.avapira.bobroreader.R;
-import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
+import com.avapira.bobroreader.hanabira.entity.HanabiraBoardInfo;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.mikepenz.iconics.utils.Utils;
 
@@ -219,7 +219,7 @@ public class HanabiraParser {
 
         public HanabiraLinkSpan(@Nullable String board, @NonNull String post) {
             this.board =
-                    board == null ? HanabiraBoard.getForId(HanabiraParser.this.post.getBoardId()).getBoard() : board;
+                    board == null ? HanabiraBoardInfo.getForId(HanabiraParser.this.post.getBoardId()).getBoard() : board;
             this.post = post;
         }
 

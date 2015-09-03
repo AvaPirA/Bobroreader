@@ -41,14 +41,14 @@ import java.util.List;
 public class HanabiraPost extends HanabiraEntity {
 
     @SerializedName("display_id")
-    private String        displayId;
+    private int           displayId;
     //    private List<File>    files;
     @SerializedName("last_modified")
     private LocalDateTime modifiedDate;
     @SerializedName("date")
     private LocalDateTime createdDate;
     @SerializedName("post_id")
-    private int           id;
+    private int           postId;
     private String        message;
     private String        subject;
     @SerializedName("board_id")
@@ -67,11 +67,11 @@ public class HanabiraPost extends HanabiraEntity {
     }
 
     public boolean equals(Object o) {
-        return o instanceof HanabiraPost && ((HanabiraPost) o).id == this.id;
+        return o instanceof HanabiraPost && ((HanabiraPost) o).postId == this.postId;
     }
 
     public boolean deepEquals(HanabiraPost p) {
-        return displayId == p.displayId && id == p.id && boardId == p.boardId &&
+        return displayId == p.displayId && postId == p.postId && boardId == p.boardId &&
                 modifiedDate.equals(p.modifiedDate) &&
                 createdDate.equals(p.createdDate) && message.equals(p.message) && subject.equals(p.subject) &&
                 name == null ? p.name == null : name.equals(p.name) && threadId == p.threadId && op == p.op;
@@ -93,7 +93,7 @@ public class HanabiraPost extends HanabiraEntity {
         return null;
     }
 
-    public String getDisplayId() {
+    public int getDisplayId() {
         return displayId;
     }
 }
