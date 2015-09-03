@@ -19,6 +19,7 @@ public class HanabiraBoardInfo {
     private static List<HanabiraBoardInfo> boards;
     private static final Map<String, HanabiraBoardInfo>  boardToBoard = new HashMap<>();
     private static final Map<Integer, HanabiraBoardInfo> idToBoard    = new HashMap<>();
+
 //    private static final Map<String, HanabiraBoard> boardToBoard = new HashMap<>();
 //    private static final Map<String, HanabiraBoard> boardToBoard = new HashMap<>();
 //    private static final Map<String, HanabiraBoard> boardToBoard = new HashMap<>();
@@ -115,5 +116,9 @@ public class HanabiraBoardInfo {
 
     public String getBoard() {
         return board;
+    }
+
+    public int getId() {
+        return id;
     }
 }

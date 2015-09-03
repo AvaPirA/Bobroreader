@@ -32,23 +32,81 @@
 package com.avapira.bobroreader.hanabira.entity;
 
 import com.google.gson.*;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
 import org.joda.time.LocalDateTime;
 
 import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  *
  */
 abstract class HanabiraEntity {
 
-    static {
-        gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
-            @Override
-            public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-            throws JsonParseException {
-                return LocalDateTime.parse(json.getAsString().replace(' ', 'T'));
+    private static LocalDateTime extractLocatDateTime(JsonElement jsonElement) {
+         return LocalDateTime.parse(jsonElement.getAsString().replace(' ', 'T'));
+    }
+
+    private static class LocalDateTimeDeserializer implements JsonDeserializer<LocalDateTime> {
+        @Override
+        public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+            return extractLocatDateTime(json);
+        }
+    }
+
+    private static class HanabiraBoardDeserializer implements JsonDeserializer<HanabiraBoard> {
+
+        String boardKey;
+
+        @Override
+        public HanabiraBoard deserialize(JsonElement json, Type type, JsonDeserializationContext context)
+        throws JsonParseException {
+            JsonObject boardsJsonObject = json.getAsJsonObject().get("boards").getAsJsonObject();
+            Set<Map.Entry<String, JsonElement>> boardsSet = boardsJsonObject.entrySet();
+            if (boardsSet.size() > 1) {
+                throw new IllegalArgumentException("Few board entries received for a request");
             }
-        }).create();
+            Map.Entry<String, JsonElement> boardEntry = boardsSet.iterator().next();
+            boardKey = boardEntry.getKey();
+            JsonObject boardData = boardEntry.getValue().getAsJsonObject();
+            final int pages = boardData.get("pages").getAsInt();
+            final Object capabilities = null;
+
+            JsonArray threads = boardData.getAsJsonArray("threads");
+            final TreeSet<HanabiraThread> threadsSet = new TreeSet<>(new HanabiraThread.ModificationDateComparator());
+            for (JsonElement threadElement : threads) {
+                threadsSet.add(createThread(threadElement.getAsJsonObject()));
+            }
+        }
+
+        private HanabiraThread createThread(JsonObject threadObject) {
+
+            int dispayId = threadObject.get("display_id").getAsInt();
+            int threadId = threadObject.get("thread_id").getAsInt();
+            boolean archived = threadObject.get("archived").getAsBoolean();
+            LocalDateTime modifiedDate = extractLocatDateTime(threadObject.get("last_modified"));
+            int filesCount = threadObject.get("files_count").getAsInt();
+            String title = threadObject.get("title").getAsString();
+            int postsCount = threadObject.get("posts_count").getAsInt();
+            int boardId = HanabiraBoardInfo.getForBoard(boardKey).getId();
+            boolean autosage = threadObject.get("autosage").getAsBoolean();
+            LocalDateTime lastHit = extractLocatDateTime(threadObject.get("last_hit"));
+
+            JsonArray opAndEndOfThread = threadObject.getAsJsonArray("posts");
+            TreeSet<HanabiraPost> postsSet = new TreeSet<>(new HanabiraPost.ModificationDateComparator());
+            for(JsonElement postElement) {
+            }
+            LocalDateTime createdDate = postsSet.first().getDate(); // OP post and thread creation date is the same
+        }
+    }
+
+
+    static {
+        gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer()).create();
         prettyGson = new GsonBuilder().setPrettyPrinting().create();
     }
 

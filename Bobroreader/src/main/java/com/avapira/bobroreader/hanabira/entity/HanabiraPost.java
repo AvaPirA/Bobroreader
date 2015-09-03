@@ -33,12 +33,21 @@ package com.avapira.bobroreader.hanabira.entity;
 import com.google.gson.annotations.SerializedName;
 import org.joda.time.LocalDateTime;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
  *
  */
 public class HanabiraPost extends HanabiraEntity {
+
+    static class ModificationDateComparator implements Comparator<HanabiraPost> {
+
+        @Override
+        public int compare(HanabiraPost lhs, HanabiraPost rhs) {
+            return lhs.modifiedDate.compareTo(rhs.modifiedDate);
+        }
+    }
 
     @SerializedName("display_id")
     private int           displayId;
