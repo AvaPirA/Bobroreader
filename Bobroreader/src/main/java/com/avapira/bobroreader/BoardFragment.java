@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
+import com.avapira.bobroreader.util.TestCardViewFragment;
 import org.joda.time.format.DateTimeFormat;
 
 import java.util.ArrayList;

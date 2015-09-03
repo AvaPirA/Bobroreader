@@ -28,7 +28,7 @@
  *
  *
  */
-package com.avapira.bobroreader;
+package com.avapira.bobroreader.util;
 
 /**
  *

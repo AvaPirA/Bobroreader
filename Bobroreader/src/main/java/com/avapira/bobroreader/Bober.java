@@ -54,6 +54,8 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.networking.BasicsSupplier;
 import com.avapira.bobroreader.networking.PersistentCookieStore;
+import com.avapira.bobroreader.util.Consumer;
+import com.avapira.bobroreader.util.TestCardViewFragment;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.holder.StringHolder;

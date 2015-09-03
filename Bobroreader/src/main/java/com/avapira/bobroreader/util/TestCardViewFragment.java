@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package com.avapira.bobroreader;
+package com.avapira.bobroreader.util;
 
 import android.app.Fragment;
 import android.os.Bundle;
@@ -23,6 +23,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import com.avapira.bobroreader.Bober;
+import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 

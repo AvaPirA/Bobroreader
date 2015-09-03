@@ -39,7 +39,7 @@ import java.lang.reflect.Type;
 /**
  *
  */
-public abstract class HanabiraEntity {
+abstract class HanabiraEntity {
 
     static {
         gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
