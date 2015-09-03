@@ -30,8 +30,8 @@ public class BoardFragment extends Fragment {
      *
      * @return A new instance of fragment NotificationFragment.
      */
-    public static CardViewFragment newInstance() {
-        CardViewFragment fragment = new CardViewFragment();
+    public static TestCardViewFragment newInstance() {
+        TestCardViewFragment fragment = new TestCardViewFragment();
         fragment.setRetainInstance(true);
         return fragment;
     }

@@ -96,7 +96,7 @@ public class Bober extends AppCompatActivity {
                         break;
                     case 30:
                         getFragmentManager().beginTransaction()
-                                            .replace(R.id.frame_container, new CardViewFragment())
+                                            .replace(R.id.frame_container, new TestCardViewFragment())
                                             .commit();
                         break;
                     case 261:

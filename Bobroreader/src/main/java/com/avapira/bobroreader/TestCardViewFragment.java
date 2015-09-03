@@ -32,9 +32,9 @@ import java.util.Iterator;
 /**
  * Fragment that demonstrates how to use CardView.
  */
-public class CardViewFragment extends Fragment {
+public class TestCardViewFragment extends Fragment {
 
-    private static final String TAG = CardViewFragment.class.getSimpleName();
+    private static final String TAG = TestCardViewFragment.class.getSimpleName();
 
     /**
      * Use this factory method to create a new instance of
@@ -42,13 +42,13 @@ public class CardViewFragment extends Fragment {
      *
      * @return A new instance of fragment NotificationFragment.
      */
-    public static CardViewFragment newInstance() {
-        CardViewFragment fragment = new CardViewFragment();
+    public static TestCardViewFragment newInstance() {
+        TestCardViewFragment fragment = new TestCardViewFragment();
         fragment.setRetainInstance(true);
         return fragment;
     }
 
-    public CardViewFragment() {
+    public TestCardViewFragment() {
         // Required empty public constructor
     }
 
@@ -65,8 +65,7 @@ public class CardViewFragment extends Fragment {
 
 
     static Iterator<Integer> rawJsons = Arrays.asList(
-            new Integer[]{ R.raw.lorem_ipsum, R.raw.d_55048_57432, R.raw.d_55048_57442, R.raw.d_55048_57479})
-                                              .iterator();
+            new Integer[]{R.raw.lorem_ipsum, R.raw.d_55048_57432, R.raw.d_55048_57442, R.raw.d_55048_57479}).iterator();
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {

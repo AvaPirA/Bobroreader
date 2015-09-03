@@ -34,12 +34,12 @@ package com.avapira.bobroreader;
 import android.app.Fragment;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.text.method.LinkMovementMethod;
+import android.view.*;
 import android.widget.TextView;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
@@ -61,8 +61,8 @@ public class ThreadFragment extends Fragment {
      *
      * @return A new instance of fragment NotificationFragment.
      */
-    public static CardViewFragment newInstance() {
-        CardViewFragment fragment = new CardViewFragment();
+    public static TestCardViewFragment newInstance() {
+        TestCardViewFragment fragment = new TestCardViewFragment();
         fragment.setRetainInstance(true);
         return fragment;
     }
@@ -82,11 +82,16 @@ public class ThreadFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_scroller, container, false);
     }
 
+    GestureDetectorCompat detector;
+    RecyclerView          recycler;
+
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
-        RecyclerView recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
+        recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
         recycler.setAdapter(new ThreadAdapter(getPosts()));
+        recycler.addOnItemTouchListener(new TouchEventInterceptor());
+        detector = new GestureDetectorCompat(getActivity(), new RecyclerGestureListener());
     }
 
     public List<HanabiraPost> getPosts() {
@@ -147,6 +152,7 @@ public class ThreadFragment extends Fragment {
             authorName.setText(cursor.getName());
             rightHeader.setText(DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(cursor.getDate()));
             text.setText(new HanabiraParser(cursor, getContext()).getFormatted());
+            text.setMovementMethod(LinkMovementMethod.getInstance());
             if (cursor.isOp()) {
                 card.setCardElevation(5 * card.getCardElevation() / 2);
             }
@@ -182,6 +188,26 @@ public class ThreadFragment extends Fragment {
         }
     }
 
+    private class RecyclerGestureListener extends GestureDetector.SimpleOnGestureListener {
+        @Override
+        public boolean onSingleTapConfirmed(MotionEvent e) {
+            View view = recycler.findChildViewUnder(e.getX(), e.getY());
+            TextView tv = ((TextView) view.findViewById(R.id.post_text));
+            tv.onTouchEvent(e);
+            return super.onSingleTapConfirmed(e);
+        }
+
+
+        public void onLongPress(MotionEvent e) {
+            View view = recycler.findChildViewUnder(e.getX(), e.getY());
+            int position = recycler.getChildAdapterPosition(view);
+
+            // handle long press
+
+            super.onLongPress(e);
+        }
+    }
+
 
     private class FilesAdapter extends RecyclerView.Adapter {
         @Override
@@ -207,6 +233,24 @@ public class ThreadFragment extends Fragment {
                 super(view);
                 this.view = view;
             }
+        }
+    }
+
+    private class TouchEventInterceptor implements RecyclerView.OnItemTouchListener {
+        @Override
+        public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+            detector.onTouchEvent(e);
+            return false;
+        }
+
+        @Override
+        public void onTouchEvent(RecyclerView rv, MotionEvent e) {
+
+        }
+
+        @Override
+        public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+
         }
     }
 }
