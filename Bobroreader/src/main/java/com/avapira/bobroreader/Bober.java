@@ -30,6 +30,7 @@
  */
 package com.avapira.bobroreader;
 
+import android.app.Fragment;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Typeface;
@@ -50,7 +51,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
-import com.avapira.bobroreader.hanabira.entity.HanabiraBoardInfo;
+import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.networking.BasicsSupplier;
 import com.avapira.bobroreader.networking.PersistentCookieStore;
@@ -106,6 +107,15 @@ public class Bober extends AppCompatActivity {
                                             .replace(R.id.frame_container, new ThreadFragment())
                                             .commit();
                         break;
+                    case 566:
+                        String boardKey = HanabiraBoard.Info.cutSlashes(((BoardDrawerItem) drawerItem).getName().getText
+                                ());
+                        Fragment boardFragment = new BoardFragment();
+                        Bundle b = new Bundle();
+                        b.putString("board", boardKey);
+                        boardFragment.setArguments(b);
+                        getFragmentManager().beginTransaction().replace(R.id.frame_container, boardFragment).commit();
+                        break;
                 }
                 if (intent != null) {
                     Bober.this.startActivity(intent);
@@ -125,7 +135,7 @@ public class Bober extends AppCompatActivity {
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        HanabiraBoardInfo.loadBoards(rawJsonToString(getResources(), R.raw.boards));
+        HanabiraBoard.Info.loadBoardsInfo(rawJsonToString(getResources(), R.raw.boards));
         setContentView(R.layout.activity_boards_navigation_drawer);
         Bober.this.bindCookies();
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -136,6 +146,7 @@ public class Bober extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        // todo show pretty /news/ index page
 //        updateDrawerDiff();
 //        showUserInfo();
     }
@@ -192,8 +203,7 @@ public class Bober extends AppCompatActivity {
                                                   new BoardDrawerItem("/u/", R.drawable.banners_u_125860969598039),
                                                   new BoardDrawerItem("/rf/",
                                                                       R.drawable.banners_rf_125701163950149)
-                                                          .withIdentifier(
-                                                          30),
+                                                          .withIdentifier(30),
                                                   new BoardDrawerItem("/dt/", R.drawable.banners_dt_125697739438064),
                                                   new BoardDrawerItem("/vg/", R.drawable.banners_vg_125709977081546),
                                                   new BoardDrawerItem("/r/", R.drawable.banners_r_125699732718180),

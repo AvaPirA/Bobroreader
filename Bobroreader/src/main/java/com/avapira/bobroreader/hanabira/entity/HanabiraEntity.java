@@ -73,12 +73,27 @@ abstract class HanabiraEntity {
             }
             Map.Entry<String, JsonElement> boardEntry = boardsSet.iterator().next();
             boardKey = boardEntry.getKey();
-            JsonObject boardData = boardEntry.getValue().getAsJsonObject();
-            final int pages = boardData.get("pages").getAsInt();
-            final Object capabilities = null;
+            JsonObject boardObject = boardEntry.getValue().getAsJsonObject();
+            int pages = boardObject.get("pages").getAsInt();
 
-            JsonArray threads = boardData.getAsJsonArray("threads");
-            // fixme finish deserializer
+            HanabiraBoard cachedBoard = Cache.findBoardByKey(boardKey);
+            if (cachedBoard == null) {
+                cachedBoard = new HanabiraBoard(boardKey, pages, null);
+                Cache.saveBoard(cachedBoard);
+            } else {
+                cachedBoard.update(pages, null);
+            }
+
+            JsonElement pageElement = boardObject.get("page");
+            int page = (pageElement == null) ? 0 : pageElement.getAsInt();
+
+            List<Integer> threadsOnPageIds = new ArrayList<>();
+            for (JsonElement threadElement : boardObject.getAsJsonArray("threads")) {
+                threadsOnPageIds.add(createThreadWithPreview(threadElement.getAsJsonObject()).getDispayId());
+            }
+            cachedBoard.updatePage(page, threadsOnPageIds);
+
+            return cachedBoard;
         }
 
         private HanabiraThread createThreadWithPreview(JsonObject threadObject) {
@@ -104,12 +119,12 @@ abstract class HanabiraEntity {
                 int postsCount = threadObject.get("posts_count").getAsInt();
                 int filesCount = threadObject.get("files_count").getAsInt();
                 String title = threadObject.get("title").getAsString();
-                int boardId = HanabiraBoardInfo.getForBoard(boardKey).getId();
+                int boardId = HanabiraBoard.Info.getIdForKey(boardKey);
                 boolean autosage = threadObject.get("autosage").getAsBoolean();
                 LocalDateTime lastHit = extractLocatDateTime(threadObject.get("last_hit"));
 
-                thread = new HanabiraThread(displayId, threadId, modifiedDate, postsCount, filesCount,
-                                            boardId, archived, title, autosage, lastHit);
+                thread = new HanabiraThread(displayId, threadId, modifiedDate, postsCount, filesCount, boardId,
+                                            archived, title, autosage, lastHit);
                 Cache.saveThread(thread);
             }
 
@@ -118,6 +133,13 @@ abstract class HanabiraEntity {
                 createAndSavePost(postElement.getAsJsonObject(), threadId);
             }
 
+            // set thread creation date
+            // always for OP post and thread `display_id` and `date` are equal
+            HanabiraPost opPost = Cache.finPostByDisplayId(thread.getDispayId());
+            if (opPost == null || !opPost.isOp()) {
+                throw new InputMismatchException("Op post not received");
+            }
+            thread.setCreatedDate(opPost.getCreatedDate());
             return thread;
         }
 
@@ -143,7 +165,7 @@ abstract class HanabiraEntity {
                 String subject = postObject.get("subject").getAsString();
                 String name = postObject.get("name").getAsString();
                 boolean op = postObject.get("op").getAsBoolean();
-                int boardId = HanabiraBoardInfo.getForBoard(boardKey).getId();
+                int boardId = HanabiraBoard.Info.getIdForKey(boardKey);
                 cachedPost = new HanabiraPost(displayId, modifiedDate, createdDate, postId, message, subject, boardId,
                                               name, threadId, op);
                 Cache.savePost(cachedPost);

@@ -9,18 +9,18 @@ import java.util.TreeMap;
 /**
  *
  */
-public class HanabiraThread extends HanabiraEntity{
+public class HanabiraThread extends HanabiraEntity {
 
     HanabiraThread(int dispayId,
-                          int threadId,
-                          LocalDateTime modifiedDate,
-                          int postsCount,
-                          int filesCount,
-                          int boardId,
-                          boolean archived,
-                          String title,
-                          boolean autosage,
-                          LocalDateTime lastHit) {
+                   int threadId,
+                   LocalDateTime modifiedDate,
+                   int postsCount,
+                   int filesCount,
+                   int boardId,
+                   boolean archived,
+                   String title,
+                   boolean autosage,
+                   LocalDateTime lastHit) {
         this.dispayId = dispayId;
         this.threadId = threadId;
         this.modifiedDate = modifiedDate;
@@ -35,24 +35,24 @@ public class HanabiraThread extends HanabiraEntity{
     }
 
     @SerializedName("display_id")
-    private final int dispayId;
+    private final int           dispayId;
     @SerializedName("thread_id")
-    private final int threadId;
+    private final int           threadId;
     @SerializedName("last_modified")
-    private LocalDateTime modifiedDate;
+    private       LocalDateTime modifiedDate;
     @SerializedName("created")
-    private LocalDateTime createdDate;
+    private       LocalDateTime createdDate;
     @SerializedName("posts_count")
-    private int           postsCount;
+    private       int           postsCount;
     @SerializedName("files_count")
-    private int           filesCount;
+    private       int           filesCount;
     @SerializedName("board_id")
     private final int           boardId;
-    private boolean       archived;
-    private String        title;
+    private       boolean       archived;
+    private       String        title;
     private final boolean       autosage;
     @SerializedName("last_hit")
-    private LocalDateTime lastHit;
+    private       LocalDateTime lastHit;
 
     private final Map<LocalDateTime, Integer> posts;
 
@@ -91,5 +91,49 @@ public class HanabiraThread extends HanabiraEntity{
 
     public void setLastHit(LocalDateTime lastHit) {
         this.lastHit = lastHit;
+    }
+
+    public int getDispayId() {
+        return dispayId;
+    }
+
+    public int getThreadId() {
+        return threadId;
+    }
+
+    public LocalDateTime getModifiedDate() {
+        return modifiedDate;
+    }
+
+    public LocalDateTime getCreatedDate() {
+        return createdDate;
+    }
+
+    public int getFilesCount() {
+        return filesCount;
+    }
+
+    public int getBoardId() {
+        return boardId;
+    }
+
+    public boolean isArchived() {
+        return archived;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public boolean isAutosage() {
+        return autosage;
+    }
+
+    public LocalDateTime getLastHit() {
+        return lastHit;
+    }
+
+    public Map<LocalDateTime, Integer> getPosts() {
+        return posts;
     }
 }

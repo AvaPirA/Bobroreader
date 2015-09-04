@@ -108,6 +108,26 @@ public class HanabiraPost extends HanabiraEntity {
                 name == null ? p.name == null : name.equals(p.name) && threadId == p.threadId && op == p.op;
     }
 
+    public LocalDateTime getModifiedDate() {
+        return modifiedDate;
+    }
+
+    public LocalDateTime getCreatedDate() {
+        return createdDate;
+    }
+
+    public int getPostId() {
+        return postId;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public int getThreadId() {
+        return threadId;
+    }
+
     public String getName() {
         return name;
     }
@@ -132,19 +152,19 @@ public class HanabiraPost extends HanabiraEntity {
         return modifiedDate.isEqual(modifiedDate);
     }
 
-    public void setName(String name) {
+    void setName(String name) {
         this.name = name;
     }
 
-    public void setSubject(String subject) {
+    void setSubject(String subject) {
         this.subject = subject;
     }
 
-    public void setMessage(String message) {
+    void setMessage(String message) {
         this.message = message;
     }
 
-    public void setModifiedDate(LocalDateTime modifiedDate) {
+    void setModifiedDate(LocalDateTime modifiedDate) {
         this.modifiedDate = modifiedDate;
     }
 }

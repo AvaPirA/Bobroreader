@@ -40,6 +40,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.method.LinkMovementMethod;
 import android.view.*;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
@@ -83,19 +84,38 @@ public class ThreadFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_scroller, container, false);
     }
 
+    ProgressBar           progressBar;
     GestureDetectorCompat detector;
     RecyclerView          recycler;
 
     @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
+    public void onViewCreated(final View view, Bundle savedInstanceState) {
+        progressBar = (ProgressBar) view.findViewById(R.id.pb);
         recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
-        recycler.setAdapter(new ThreadAdapter(getPosts()));
         recycler.addOnItemTouchListener(new TouchEventInterceptor());
         detector = new GestureDetectorCompat(getActivity(), new RecyclerGestureListener());
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final ThreadAdapter threadAdapter = new ThreadAdapter(getPosts());
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        recycler.setAdapter(threadAdapter);
+                        progressBar.setVisibility(View.GONE);
+                    }
+                });
+            }
+        }).start();
     }
 
     public List<HanabiraPost> getPosts() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         List<HanabiraPost> list = new ArrayList<>();
         Resources res = getResources();
         list.add(HanabiraPost.fromJson(Bober.rawJsonToString(res, R.raw.d_55048_57432), HanabiraPost.class));
@@ -123,7 +143,7 @@ public class ThreadFragment extends Fragment {
             View postcard;
             switch (viewType) {
                 case VIEW_TYPES.Footer:
-                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.footer_view, parent, false);
+                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.thread_footer, parent, false);
                     break;
                 case VIEW_TYPES.Normal:
                     postcard = LayoutInflater.from(getContext()).inflate(R.layout.card_post, parent, false);
