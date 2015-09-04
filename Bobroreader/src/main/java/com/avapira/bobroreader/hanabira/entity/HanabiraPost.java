@@ -41,6 +41,28 @@ import java.util.List;
  */
 public class HanabiraPost extends HanabiraEntity {
 
+    HanabiraPost(int displayId,
+                        LocalDateTime modifiedDate,
+                        LocalDateTime createdDate,
+                        int postId,
+                        String message,
+                        String subject,
+                        int boardId,
+                        String name,
+                        int threadId,
+                        boolean op) {
+        this.displayId = displayId;
+        this.modifiedDate = modifiedDate;
+        this.createdDate = createdDate;
+        this.postId = postId;
+        this.message = message;
+        this.subject = subject;
+        this.boardId = boardId;
+        this.name = name;
+        this.threadId = threadId;
+        this.op = op;
+    }
+
     static class ModificationDateComparator implements Comparator<HanabiraPost> {
 
         @Override
@@ -50,22 +72,22 @@ public class HanabiraPost extends HanabiraEntity {
     }
 
     @SerializedName("display_id")
-    private int           displayId;
+    private final int           displayId;
     //    private List<File>    files;
     @SerializedName("last_modified")
     private LocalDateTime modifiedDate;
     @SerializedName("date")
-    private LocalDateTime createdDate;
+    private final LocalDateTime createdDate;
     @SerializedName("post_id")
-    private int           postId;
+    private final int           postId;
     private String        message;
     private String        subject;
     @SerializedName("board_id")
-    private int           boardId;
+    private final int           boardId;
     private String        name;
     @SerializedName("thread_id")
-    private int           threadId;
-    private boolean       op;
+    private final int           threadId;
+    private final boolean       op;
 
     public int getBoardId() {
         return boardId;
@@ -104,6 +126,26 @@ public class HanabiraPost extends HanabiraEntity {
 
     public int getDisplayId() {
         return displayId;
+    }
+
+    public boolean isUpToDate(LocalDateTime modifiedDate) {
+        return modifiedDate.isEqual(modifiedDate);
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setModifiedDate(LocalDateTime modifiedDate) {
+        this.modifiedDate = modifiedDate;
     }
 }
 

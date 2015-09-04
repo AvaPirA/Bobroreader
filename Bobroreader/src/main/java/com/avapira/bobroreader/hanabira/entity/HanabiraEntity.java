@@ -31,15 +31,12 @@
 
 package com.avapira.bobroreader.hanabira.entity;
 
+import com.avapira.bobroreader.hanabira.Cache;
 import com.google.gson.*;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
 import org.joda.time.LocalDateTime;
 
 import java.lang.reflect.Type;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  *
@@ -47,7 +44,11 @@ import java.util.TreeSet;
 abstract class HanabiraEntity {
 
     private static LocalDateTime extractLocatDateTime(JsonElement jsonElement) {
-         return LocalDateTime.parse(jsonElement.getAsString().replace(' ', 'T'));
+        if (jsonElement.isJsonNull()) {
+            return null;
+        } else {
+            return LocalDateTime.parse(jsonElement.getAsString().replace(' ', 'T'));
+        }
     }
 
     private static class LocalDateTimeDeserializer implements JsonDeserializer<LocalDateTime> {
@@ -77,33 +78,80 @@ abstract class HanabiraEntity {
             final Object capabilities = null;
 
             JsonArray threads = boardData.getAsJsonArray("threads");
-            final TreeSet<HanabiraThread> threadsSet = new TreeSet<>(new HanabiraThread.ModificationDateComparator());
-            for (JsonElement threadElement : threads) {
-                threadsSet.add(createThread(threadElement.getAsJsonObject()));
-            }
+            // fixme finish deserializer
         }
 
-        private HanabiraThread createThread(JsonObject threadObject) {
-
-            int dispayId = threadObject.get("display_id").getAsInt();
+        private HanabiraThread createThreadWithPreview(JsonObject threadObject) {
             int threadId = threadObject.get("thread_id").getAsInt();
-            boolean archived = threadObject.get("archived").getAsBoolean();
             LocalDateTime modifiedDate = extractLocatDateTime(threadObject.get("last_modified"));
-            int filesCount = threadObject.get("files_count").getAsInt();
-            String title = threadObject.get("title").getAsString();
-            int postsCount = threadObject.get("posts_count").getAsInt();
-            int boardId = HanabiraBoardInfo.getForBoard(boardKey).getId();
-            boolean autosage = threadObject.get("autosage").getAsBoolean();
-            LocalDateTime lastHit = extractLocatDateTime(threadObject.get("last_hit"));
 
-            JsonArray opAndEndOfThread = threadObject.getAsJsonArray("posts");
-            TreeSet<HanabiraPost> postsSet = new TreeSet<>(new HanabiraPost.ModificationDateComparator());
-            for(JsonElement postElement) {
+            HanabiraThread thread = Cache.findThreadById(threadId);
+            if (thread != null) {
+                if (modifiedDate == null || !thread.isUpToDate(modifiedDate)) {
+                    // update thread meta
+                    thread.setPostsCount(threadObject.get("posts_count").getAsInt());
+                    thread.setArchived(threadObject.get("archived").getAsBoolean());
+                    thread.setFilesCount(threadObject.get("files_count").getAsInt());
+                    thread.setTitle(threadObject.get("title").getAsString());
+                    thread.setLastHit(extractLocatDateTime(threadObject.get("last_hit")));
+                    thread.setModifiedDate(modifiedDate);
+                }
+                return thread;
+            } else {
+                // brand new thread
+                int displayId = threadObject.get("display_id").getAsInt();
+                boolean archived = threadObject.get("archived").getAsBoolean();
+                int postsCount = threadObject.get("posts_count").getAsInt();
+                int filesCount = threadObject.get("files_count").getAsInt();
+                String title = threadObject.get("title").getAsString();
+                int boardId = HanabiraBoardInfo.getForBoard(boardKey).getId();
+                boolean autosage = threadObject.get("autosage").getAsBoolean();
+                LocalDateTime lastHit = extractLocatDateTime(threadObject.get("last_hit"));
+
+                thread = new HanabiraThread(displayId, threadId, modifiedDate, postsCount, filesCount,
+                                            boardId, archived, title, autosage, lastHit);
+                Cache.saveThread(thread);
             }
-            LocalDateTime createdDate = postsSet.first().getDate(); // OP post and thread creation date is the same
-        }
-    }
 
+            // cache preview
+            for (JsonElement postElement : threadObject.getAsJsonArray("posts")) {
+                createAndSavePost(postElement.getAsJsonObject(), threadId);
+            }
+
+            return thread;
+        }
+
+        private HanabiraPost createAndSavePost(JsonObject postObject, int threadId) {
+            // todo files
+            int postId = postObject.get("post_id").getAsInt();
+            LocalDateTime modifiedDate = extractLocatDateTime(postObject.get("last_modified"));
+
+            HanabiraPost cachedPost = Cache.finPostById(postId);
+            if (cachedPost != null) {
+                if (modifiedDate == null || !cachedPost.isUpToDate(modifiedDate)) {
+                    // update
+                    cachedPost.setModifiedDate(modifiedDate);
+                    cachedPost.setMessage(postObject.get("message").getAsString());
+                    cachedPost.setName(postObject.get("name").getAsString());
+                    cachedPost.setSubject(postObject.get("subject").getAsString());
+                }
+            } else {
+                // brand new post
+                int displayId = postObject.get("display_id").getAsInt();
+                LocalDateTime createdDate = extractLocatDateTime(postObject.get("date"));
+                String message = postObject.get("message").getAsString();
+                String subject = postObject.get("subject").getAsString();
+                String name = postObject.get("name").getAsString();
+                boolean op = postObject.get("op").getAsBoolean();
+                int boardId = HanabiraBoardInfo.getForBoard(boardKey).getId();
+                cachedPost = new HanabiraPost(displayId, modifiedDate, createdDate, postId, message, subject, boardId,
+                                              name, threadId, op);
+                Cache.savePost(cachedPost);
+            }
+            return cachedPost;
+        }
+
+    }
 
     static {
         gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer()).create();

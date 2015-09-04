@@ -3,25 +3,41 @@ package com.avapira.bobroreader.hanabira.entity;
 import com.google.gson.annotations.SerializedName;
 import org.joda.time.LocalDateTime;
 
-import java.util.Comparator;
-import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  *
  */
 public class HanabiraThread extends HanabiraEntity{
 
-    static class ModificationDateComparator implements Comparator<HanabiraThread> {
-
-        @Override
-        public int compare(HanabiraThread lhs, HanabiraThread rhs) {
-            return lhs.modifiedDate.compareTo(rhs.modifiedDate);
-        }
+    HanabiraThread(int dispayId,
+                          int threadId,
+                          LocalDateTime modifiedDate,
+                          int postsCount,
+                          int filesCount,
+                          int boardId,
+                          boolean archived,
+                          String title,
+                          boolean autosage,
+                          LocalDateTime lastHit) {
+        this.dispayId = dispayId;
+        this.threadId = threadId;
+        this.modifiedDate = modifiedDate;
+        this.postsCount = postsCount;
+        this.filesCount = filesCount;
+        this.boardId = boardId;
+        this.archived = archived;
+        this.title = title;
+        this.autosage = autosage;
+        this.lastHit = lastHit;
+        posts = new TreeMap<>();
     }
 
     @SerializedName("display_id")
-    private int dispayId;   @SerializedName("thread_id")
-    private int threadId;
+    private final int dispayId;
+    @SerializedName("thread_id")
+    private final int threadId;
     @SerializedName("last_modified")
     private LocalDateTime modifiedDate;
     @SerializedName("created")
@@ -31,14 +47,49 @@ public class HanabiraThread extends HanabiraEntity{
     @SerializedName("files_count")
     private int           filesCount;
     @SerializedName("board_id")
-    private int           boardId;
+    private final int           boardId;
     private boolean       archived;
     private String        title;
-    private boolean       autosage;
+    private final boolean       autosage;
     @SerializedName("last_hit")
     private LocalDateTime lastHit;
 
-    private List<HanabiraPost> posts;
+    private final Map<LocalDateTime, Integer> posts;
 
 
+    public boolean isUpToDate(LocalDateTime modifiedDate) {
+        return modifiedDate.isEqual(modifiedDate);
+    }
+
+    public int getPostsCount() {
+        return postsCount;
+    }
+
+    public void setModifiedDate(LocalDateTime modifiedDate) {
+        this.modifiedDate = modifiedDate;
+    }
+
+    public void setPostsCount(int postsCount) {
+        this.postsCount = postsCount;
+    }
+
+    public void setFilesCount(int filesCount) {
+        this.filesCount = filesCount;
+    }
+
+    public void setArchived(boolean archived) {
+        this.archived = archived;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setCreatedDate(LocalDateTime createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public void setLastHit(LocalDateTime lastHit) {
+        this.lastHit = lastHit;
+    }
 }
