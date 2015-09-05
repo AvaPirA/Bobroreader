@@ -31,7 +31,7 @@
 
 package com.avapira.bobroreader.hanabira.entity;
 
-import com.avapira.bobroreader.hanabira.Cache;
+import com.avapira.bobroreader.hanabira.Hanabira;
 import com.google.gson.*;
 import org.joda.time.LocalDateTime;
 
@@ -61,6 +61,7 @@ abstract class HanabiraEntity {
 
     private static class HanabiraBoardDeserializer implements JsonDeserializer<HanabiraBoard> {
 
+
         String boardKey;
 
         @Override
@@ -76,10 +77,10 @@ abstract class HanabiraEntity {
             JsonObject boardObject = boardEntry.getValue().getAsJsonObject();
             int pages = boardObject.get("pages").getAsInt();
 
-            HanabiraBoard cachedBoard = Cache.findBoardByKey(boardKey);
+            HanabiraBoard cachedBoard = Hanabira.getCache().findBoardByKey(boardKey);
             if (cachedBoard == null) {
                 cachedBoard = new HanabiraBoard(boardKey, pages, null);
-                Cache.saveBoard(cachedBoard);
+                Hanabira.getCache().saveBoard(cachedBoard);
             } else {
                 cachedBoard.update(pages, null);
             }
@@ -100,7 +101,7 @@ abstract class HanabiraEntity {
             int threadId = threadObject.get("thread_id").getAsInt();
             LocalDateTime modifiedDate = extractLocatDateTime(threadObject.get("last_modified"));
 
-            HanabiraThread thread = Cache.findThreadById(threadId);
+            HanabiraThread thread = Hanabira.getCache().findThreadById(threadId);
             if (thread != null) {
                 if (modifiedDate == null || !thread.isUpToDate(modifiedDate)) {
                     // update thread meta
@@ -125,7 +126,7 @@ abstract class HanabiraEntity {
 
                 thread = new HanabiraThread(displayId, threadId, modifiedDate, postsCount, filesCount, boardId,
                                             archived, title, autosage, lastHit);
-                Cache.saveThread(thread);
+                Hanabira.getCache().saveThread(thread);
             }
 
             // cache preview
@@ -135,7 +136,7 @@ abstract class HanabiraEntity {
 
             // set thread creation date
             // always for OP post and thread `display_id` and `date` are equal
-            HanabiraPost opPost = Cache.finPostByDisplayId(thread.getDispayId());
+            HanabiraPost opPost = Hanabira.getCache().findPostByDisplayId(thread.getDispayId());
             if (opPost == null || !opPost.isOp()) {
                 throw new InputMismatchException("Op post not received");
             }
@@ -148,7 +149,7 @@ abstract class HanabiraEntity {
             int postId = postObject.get("post_id").getAsInt();
             LocalDateTime modifiedDate = extractLocatDateTime(postObject.get("last_modified"));
 
-            HanabiraPost cachedPost = Cache.finPostById(postId);
+            HanabiraPost cachedPost = Hanabira.getCache().findPostById(postId);
             if (cachedPost != null) {
                 if (modifiedDate == null || !cachedPost.isUpToDate(modifiedDate)) {
                     // update
@@ -168,7 +169,7 @@ abstract class HanabiraEntity {
                 int boardId = HanabiraBoard.Info.getIdForKey(boardKey);
                 cachedPost = new HanabiraPost(displayId, modifiedDate, createdDate, postId, message, subject, boardId,
                                               name, threadId, op);
-                Cache.savePost(cachedPost);
+                Hanabira.getCache().savePost(cachedPost);
             }
             return cachedPost;
         }
@@ -176,7 +177,8 @@ abstract class HanabiraEntity {
     }
 
     static {
-        gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer()).create();
+        gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer())
+                                .registerTypeAdapter(HanabiraBoard.class, new HanabiraBoardDeserializer()).create();
         prettyGson = new GsonBuilder().setPrettyPrinting().create();
     }
 

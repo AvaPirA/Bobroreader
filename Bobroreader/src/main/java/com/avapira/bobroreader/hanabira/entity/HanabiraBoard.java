@@ -1,15 +1,12 @@
 package com.avapira.bobroreader.hanabira.entity;
 
 import android.support.annotation.NonNull;
-import com.avapira.bobroreader.hanabira.Cache;
+import com.avapira.bobroreader.hanabira.Hanabira;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -153,8 +150,12 @@ public class HanabiraBoard {
 
     public List<HanabiraThread> getPageThreads(int num) {
         List<HanabiraThread> threads = new ArrayList<>();
-        for (Integer threadDisplayId : getPage(num)) {
-            threads.add(Cache.findThreadByDisplayId(threadDisplayId));
+        List<Integer> page =  getPage(num);
+        if (page == null) {
+            return Collections.emptyList();
+        }
+        for (Integer threadDisplayId : page) {
+            threads.add(Hanabira.getCache().findThreadByDisplayId(threadDisplayId));
         }
         return threads;
     }

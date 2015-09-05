@@ -11,7 +11,13 @@ public class Hanabira {
         return flower;
     }
 
+    public static HanabiraCache getCache() {
+        return getFlower().cacheImpl;
+    }
+
+    private final HanabiraCache cacheImpl;
 
     private Hanabira() {
+        cacheImpl = new ActiveCache();
     }
 }
