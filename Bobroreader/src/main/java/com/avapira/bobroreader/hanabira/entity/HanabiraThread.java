@@ -3,24 +3,15 @@ package com.avapira.bobroreader.hanabira.entity;
 import com.google.gson.annotations.SerializedName;
 import org.joda.time.LocalDateTime;
 
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  *
  */
 public class HanabiraThread extends HanabiraEntity {
 
-    HanabiraThread(int dispayId,
-                   int threadId,
-                   LocalDateTime modifiedDate,
-                   int postsCount,
-                   int filesCount,
-                   int boardId,
-                   boolean archived,
-                   String title,
-                   boolean autosage,
-                   LocalDateTime lastHit) {
+    HanabiraThread(int dispayId, int threadId, LocalDateTime modifiedDate, int postsCount, int filesCount, int boardId,
+                   boolean archived, String title, boolean autosage, LocalDateTime lastHit) {
         this.dispayId = dispayId;
         this.threadId = threadId;
         this.modifiedDate = modifiedDate;
@@ -54,7 +45,7 @@ public class HanabiraThread extends HanabiraEntity {
     @SerializedName("last_hit")
     private       LocalDateTime lastHit;
 
-    private final Map<LocalDateTime, Integer> posts;
+    private final TreeMap<LocalDateTime, Integer> posts;
 
 
     public boolean isUpToDate(LocalDateTime modifiedDate) {
@@ -133,7 +124,20 @@ public class HanabiraThread extends HanabiraEntity {
         return lastHit;
     }
 
-    public Map<LocalDateTime, Integer> getPosts() {
+    public TreeMap<LocalDateTime, Integer> getPosts() {
         return posts;
+    }
+
+    public List<Integer> getLastN(int n) {
+        int skip = n < posts.size() ? posts.size() - 1 : n;
+        List<Integer> returnList = new ArrayList<>(n);
+        Iterator<Map.Entry<LocalDateTime, Integer>> read = posts.entrySet().iterator();
+        while (skip-- > 0) {
+            read.next();
+        }
+        while (read.hasNext()) {
+            returnList.add(read.next().getValue());
+        }
+        return returnList;
     }
 }

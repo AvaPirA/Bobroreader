@@ -40,15 +40,21 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.method.LinkMovementMethod;
 import android.view.*;
+import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
+import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.util.TestCardViewFragment;
 import org.joda.time.format.DateTimeFormat;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -56,6 +62,13 @@ import java.util.List;
 public class BoardFragment extends Fragment {
 
     private static final String TAG = ThreadFragment.class.getSimpleName();
+
+
+    ProgressBar           progressBar;
+    GestureDetectorCompat detector;
+    RecyclerView          recycler;
+    private String board;
+    private int page;
 
     /**
      * Use this factory method to create a new instance of
@@ -76,6 +89,8 @@ public class BoardFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        board = savedInstanceState.getString("board");
+        switchPage(0);
     }
 
     @Override
@@ -83,10 +98,6 @@ public class BoardFragment extends Fragment {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_scroller, container, false);
     }
-
-    ProgressBar           progressBar;
-    GestureDetectorCompat detector;
-    RecyclerView          recycler;
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
@@ -98,11 +109,11 @@ public class BoardFragment extends Fragment {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                final ThreadAdapter threadAdapter = new ThreadAdapter(getPosts());
+                final BoardAdapter boardAdapter = new BoardAdapter(getThreads());
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        recycler.setAdapter(threadAdapter);
+                        recycler.setAdapter(boardAdapter);
                         progressBar.setVisibility(View.GONE);
                     }
                 });
@@ -110,77 +121,98 @@ public class BoardFragment extends Fragment {
         }).start();
     }
 
-    public List<HanabiraPost> getPosts() {
+    public List<HanabiraThread> getThreads() {
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        List<HanabiraPost> list = new ArrayList<>();
-        Resources res = getResources();
-        list.add(HanabiraPost.fromJson(Bober.rawJsonToString(res, R.raw.d_55048_57432), HanabiraPost.class));
-        list.add(HanabiraPost.fromJson(Bober.rawJsonToString(res, R.raw.d_55048_57442), HanabiraPost.class));
-        list.add(HanabiraPost.fromJson(Bober.rawJsonToString(res, R.raw.d_55048_57479), HanabiraPost.class));
+        List<HanabiraThread> list = new ArrayList<>();
+        list.add(Hanabira.getCache().findThreadByDisplayId(1));
+        list.add(Hanabira.getCache().findThreadByDisplayId(2));
+        list.add(Hanabira.getCache().findThreadByDisplayId(3));
         return list;
     }
 
 
-    private class ThreadAdapter extends RecyclerView.Adapter<ThreadAdapter.PostCardViewHolder> {
-        private class VIEW_TYPES {
-            public static final int Header = 1;
-            public static final int Normal = 2;
-            public static final int Footer = 3;
+    private class BoardAdapter extends RecyclerView.Adapter<BoardAdapter.ThreadPreviewViewHolder> {
+        private class ViewTypes {
+            public static final int PREV_PAGE = 1;
+            public static final int THREAD    = 2;
+            public static final int NEXT_PAGE = 3;
         }
 
-        List<HanabiraPost> posts = new ArrayList<>();
+        List<HanabiraThread> posts = new ArrayList<>();
 
-        public ThreadAdapter(List<HanabiraPost> pp) {
+        public BoardAdapter(List<HanabiraThread> pp) {
             posts = pp; // FIXME Aware of non-consistent pp changes
         }
 
         @Override
-        public PostCardViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public ThreadPreviewViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View postcard;
             switch (viewType) {
-                case VIEW_TYPES.Footer:
-                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.thread_footer, parent, false);
+                case ViewTypes.PREV_PAGE:
                     break;
-                case VIEW_TYPES.Normal:
-                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.card_post, parent, false);
+                case ViewTypes.THREAD:
+                    break;
+                case ViewTypes.NEXT_PAGE:
                     break;
                 default:
-                    throw new IllegalArgumentException("Wrong view type for this Recycler");
+                    throw new IllegalArgumentException("Wrong view type received");
             }
-            return new PostCardViewHolder(postcard);
+            return new ThreadPreviewViewHolder(postcard);
         }
 
         @Override
-        public void onBindViewHolder(PostCardViewHolder holder, int position) {
+        public void onBindViewHolder(ThreadPreviewViewHolder holder, int position) {
             if (position == posts.size()) {
                 return;
             }
-            View postcard = holder.view;
-            CardView card = (CardView) postcard.findViewById(R.id.post_card);
-            TextView displayId = (TextView) postcard.findViewById(R.id.post_display_id);
-            TextView authorName = (TextView) postcard.findViewById(R.id.post_author_name);
-            TextView rightHeader = (TextView) postcard.findViewById(R.id.post_right_header_text);
-            TextView text = (TextView) postcard.findViewById(R.id.post_text);
-            RecyclerView filesRecycler = (RecyclerView) postcard.findViewById(R.id.post_files_recycler);
-//            TextView replies = (TextView) postcard.findViewById(R.id.post_replies);
+            final View threadPreview = holder.itemView;
+            TextView threadTitle = (TextView) threadPreview.findViewById(R.id.text_thread_title);
+            CardView card = (CardView) threadPreview.findViewById(R.id.post_card);
+            TextView displayId = (TextView) threadPreview.findViewById(R.id.post_display_id);
+            TextView authorName = (TextView) threadPreview.findViewById(R.id.post_author_name);
+            TextView rightHeader = (TextView) threadPreview.findViewById(R.id.post_right_header_text);
+            TextView text = (TextView) threadPreview.findViewById(R.id.post_text);
+            RecyclerView filesRecycler = (RecyclerView) threadPreview.findViewById(R.id.post_files_recycler);
+            ListView previewList = (ListView) threadPreview.findViewById(R.id.list_preview_posts);
+//            TextView replies = (TextView) threadPreview.findViewById(R.id.post_replies);
 
-            HanabiraPost cursor = posts.get(position);
-            displayId.setText("№".concat(Integer.toString(cursor.getDisplayId())));
-            authorName.setText(cursor.getName());
-            rightHeader.setText(DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(cursor.getDate()));
-            text.setText(new HanabiraParser(cursor, getContext()).getFormatted());
+            HanabiraThread thread = posts.get(position);
+            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
+
+            threadTitle.setText(thread.getTitle());
+            displayId.setText("№".concat(Integer.toString(op.getDisplayId())));
+            authorName.setText(op.getName());
+            rightHeader.setText(DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(op.getDate()));
+            text.setText(new HanabiraParser(op, getContext()).getFormatted());
             text.setMovementMethod(LinkMovementMethod.getInstance());
-            if (cursor.isOp()) {
-                card.setCardElevation(5 * card.getCardElevation() / 2);
-            }
-
-            if (cursor.getFiles() == null || cursor.getFiles().size() == 0) {
+            card.setCardElevation(5 * card.getCardElevation() / 2);
+            if (op.getFiles() == null || op.getFiles().size() == 0) {
                 filesRecycler.setVisibility(View.GONE);
             }
+
+            final String[] mapKeys = {"subject", "text"};
+            int[] viewIds = {R.id.text_thread_preview_list_item_subject, R.id.text_thread_preview_list_item_text};
+            List<Map<String, CharSequence>> previewData = new ArrayList<>();
+            List<Integer> postsIds = thread.getLastN(3);
+            List<HanabiraPost> posts = new ArrayList<>();
+            for (Integer i : postsIds) {
+                posts.add(Hanabira.getCache().findPostByDisplayId(i));
+            }
+            for (final HanabiraPost p : posts) {
+                previewData.add(new HashMap<String, CharSequence>() {
+                    {
+                        put(mapKeys[0], p.getSubject());
+                        put(mapKeys[1], new HanabiraParser(p, threadPreview.getContext()).getFormatted());
+                    }
+                });
+            }
+            SimpleAdapter previewAdapter = new SimpleAdapter(threadPreview.getContext(), previewData, R.layout
+                    .thread_preview_list_item, mapKeys, viewIds);
+            previewList.setAdapter(previewAdapter);
 
 //            filesRecycler.setLayoutManager(
 //                    new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
@@ -189,22 +221,26 @@ public class BoardFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            return posts.size() + 1;
+            return posts.size() + 2; // prevPage+[threads]+nextPage
         }
 
         @Override
         public int getItemViewType(int position) {
-            if (position == posts.size()) {
-                return VIEW_TYPES.Footer;
-            } else { return VIEW_TYPES.Normal; }
+            if (position > 0) {
+                if (position < posts.size() + 1) {
+                    return ViewTypes.THREAD;
+                } else {
+                    return ViewTypes.NEXT_PAGE;
+                }
+            } else {
+                return ViewTypes.PREV_PAGE;
+            }
         }
 
-        protected class PostCardViewHolder extends RecyclerView.ViewHolder {
-            private View view;
+        protected class ThreadPreviewViewHolder extends RecyclerView.ViewHolder {
 
-            public PostCardViewHolder(View view) {
-                super(view);
-                this.view = view;
+            public ThreadPreviewViewHolder(View itemView) {
+                super(itemView);
             }
         }
     }
@@ -221,12 +257,12 @@ public class BoardFragment extends Fragment {
 
         public void onLongPress(MotionEvent e) {
             View view = recycler.findChildViewUnder(e.getX(), e.getY());
-            int position = recycler.getChildAdapterPosition(view);
-
-            // handle long press
-
+            View list = view.findViewById(R.id.list_preview_posts);
+            // switch preview list visibility on long press
+            list.setVisibility(list.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
             super.onLongPress(e);
         }
+
     }
 
 

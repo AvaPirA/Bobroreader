@@ -126,10 +126,9 @@ public class ThreadFragment extends Fragment {
 
 
     private class ThreadAdapter extends RecyclerView.Adapter<ThreadAdapter.PostCardViewHolder> {
-        private class VIEW_TYPES {
-            public static final int Header = 1;
-            public static final int Normal = 2;
-            public static final int Footer = 3;
+        private class ViewTypes {
+            public static final int POST    = 2;
+            public static final int NAV_BAR_FOOTER = 3;
         }
 
         List<HanabiraPost> posts = new ArrayList<>();
@@ -142,10 +141,10 @@ public class ThreadFragment extends Fragment {
         public PostCardViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View postcard;
             switch (viewType) {
-                case VIEW_TYPES.Footer:
+                case ViewTypes.NAV_BAR_FOOTER:
                     postcard = LayoutInflater.from(getContext()).inflate(R.layout.thread_footer, parent, false);
                     break;
-                case VIEW_TYPES.Normal:
+                case ViewTypes.POST:
                     postcard = LayoutInflater.from(getContext()).inflate(R.layout.card_post, parent, false);
                     break;
                 default:
@@ -195,8 +194,8 @@ public class ThreadFragment extends Fragment {
         @Override
         public int getItemViewType(int position) {
             if (position == posts.size()) {
-                return VIEW_TYPES.Footer;
-            } else { return VIEW_TYPES.Normal; }
+                return ViewTypes.NAV_BAR_FOOTER;
+            } else { return ViewTypes.POST; }
         }
 
         protected class PostCardViewHolder extends RecyclerView.ViewHolder {
@@ -231,6 +230,7 @@ public class ThreadFragment extends Fragment {
 
 
     private class FilesAdapter extends RecyclerView.Adapter {
+
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             return null;
@@ -248,11 +248,8 @@ public class ThreadFragment extends Fragment {
 
         protected class FileViewHolder extends RecyclerView.ViewHolder {
 
-            View view;
-
             public FileViewHolder(View view) {
                 super(view);
-                this.view = view;
             }
         }
     }

@@ -144,7 +144,7 @@ public class HanabiraParser {
         }
 
         @Override
-        public void updateMeasureState(TextPaint paint) {
+        public void updateMeasureState(@NonNull TextPaint paint) {
             applyCustomTypeFace(paint);
         }
 
@@ -237,7 +237,6 @@ public class HanabiraParser {
     }
 
     public static boolean contextInitCompleted = false;
-    private static float   boxedCodeFontSize;
     private static int     bulletMarginPerLevel;
     private static int     quoteColor;
     private static int     spoilerHiddenColor;
@@ -259,7 +258,6 @@ public class HanabiraParser {
 
     public HanabiraParser(HanabiraPost post, Context context) {
         if (!contextInitCompleted) {
-            boxedCodeFontSize = Utils.convertDpToPx(context, 12);
             bulletMarginPerLevel = Utils.convertDpToPx(context, 12);
             spoilerHiddenColor = context.getColor(R.color.dobro_dark);
             spoilerShownColor = context.getColor(R.color.dobro_primary_text);
@@ -273,7 +271,6 @@ public class HanabiraParser {
         builder = new SpannableStringBuilder(replaceInternalLinkWithReference(post.getMessage()));
         Linkify.addLinks(builder, Linkify.WEB_URLS);
     }
-
 
     public CharSequence getFormatted() {
         formatTwoLevelBulletList();
@@ -405,6 +402,7 @@ public class HanabiraParser {
         replaceAll(begin, end, factory, 0);
     }
 
+    @SuppressWarnings("ConstantConditions")
     private void replaceAll(String begin, String end, SpanObjectFactory factory, int flag) {
         int removedFormatCharsDelta = 0;
         Pattern pattern = Pattern.compile(String.format("(%s)(.+?)(%s)", begin, end), Pattern.MULTILINE | flag);
