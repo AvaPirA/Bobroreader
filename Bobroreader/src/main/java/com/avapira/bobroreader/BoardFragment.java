@@ -32,7 +32,6 @@
 package com.avapira.bobroreader;
 
 import android.app.Fragment;
-import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.widget.CardView;
@@ -44,8 +43,10 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import com.android.volley.Response;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
+import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.util.TestCardViewFragment;
@@ -67,8 +68,8 @@ public class BoardFragment extends Fragment {
     ProgressBar           progressBar;
     GestureDetectorCompat detector;
     RecyclerView          recycler;
-    private String board;
-    private int page;
+    private String boardKey;
+    private int    page;
 
     /**
      * Use this factory method to create a new instance of
@@ -87,10 +88,46 @@ public class BoardFragment extends Fragment {
     }
 
     @Override
+    public void onViewStateRestored(Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        if (savedInstanceState != null) {
+            boardKey = savedInstanceState.getString("board");
+            page = savedInstanceState.getInt("page");
+        }
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        board = savedInstanceState.getString("board");
-        switchPage(0);
+        boardKey = boardKey == null ? getArguments().getString("board") : boardKey;
+    }
+
+    private void switchPage(int newPage) {
+        progressBar.setVisibility(View.VISIBLE);
+        recycler.setVisibility(View.INVISIBLE);
+        page = newPage;
+        Hanabira.getFlower().updateBoardPage(boardKey, page, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                HanabiraBoard hanabiraBoard = HanabiraBoard.fromJson(response, HanabiraBoard.class);
+                final BoardAdapter boardAdapter = new BoardAdapter(hanabiraBoard.getPageThreads(page));
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        recycler.setAdapter(boardAdapter);
+                        progressBar.setVisibility(View.GONE);
+                        recycler.setVisibility(View.VISIBLE);
+                    }
+                });
+            }
+
+        });
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putString("board", boardKey);
+        outState.putInt("page", page);
     }
 
     @Override
@@ -106,34 +143,8 @@ public class BoardFragment extends Fragment {
         recycler.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
         recycler.addOnItemTouchListener(new TouchEventInterceptor());
         detector = new GestureDetectorCompat(getActivity(), new RecyclerGestureListener());
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final BoardAdapter boardAdapter = new BoardAdapter(getThreads());
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        recycler.setAdapter(boardAdapter);
-                        progressBar.setVisibility(View.GONE);
-                    }
-                });
-            }
-        }).start();
+        switchPage(page);
     }
-
-    public List<HanabiraThread> getThreads() {
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        List<HanabiraThread> list = new ArrayList<>();
-        list.add(Hanabira.getCache().findThreadByDisplayId(1));
-        list.add(Hanabira.getCache().findThreadByDisplayId(2));
-        list.add(Hanabira.getCache().findThreadByDisplayId(3));
-        return list;
-    }
-
 
     private class BoardAdapter extends RecyclerView.Adapter<BoardAdapter.ThreadPreviewViewHolder> {
         private class ViewTypes {
@@ -153,10 +164,13 @@ public class BoardFragment extends Fragment {
             View postcard;
             switch (viewType) {
                 case ViewTypes.PREV_PAGE:
+                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.board_header_view, parent, false);
                     break;
                 case ViewTypes.THREAD:
+                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.thread_with_preview, parent, false);
                     break;
                 case ViewTypes.NEXT_PAGE:
+                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.thread_footer, parent, false);
                     break;
                 default:
                     throw new IllegalArgumentException("Wrong view type received");
@@ -210,8 +224,8 @@ public class BoardFragment extends Fragment {
                     }
                 });
             }
-            SimpleAdapter previewAdapter = new SimpleAdapter(threadPreview.getContext(), previewData, R.layout
-                    .thread_preview_list_item, mapKeys, viewIds);
+            SimpleAdapter previewAdapter = new SimpleAdapter(threadPreview.getContext(), previewData,
+                                                             R.layout.thread_preview_list_item, mapKeys, viewIds);
             previewList.setAdapter(previewAdapter);
 
 //            filesRecycler.setLayoutManager(

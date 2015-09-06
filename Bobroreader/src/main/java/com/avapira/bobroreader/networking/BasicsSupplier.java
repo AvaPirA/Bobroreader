@@ -37,8 +37,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.avapira.bobroreader.util.Consumer;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
+import com.avapira.bobroreader.util.Consumer;
 import com.google.gson.Gson;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -54,10 +54,9 @@ public class BasicsSupplier {
 
     public static final String BASIC_DOMAIN = "http://dobrochan.ru";
 
-    public static final String diff = "/api/chan/stats/diff.json";
-    public static final String user = "/api/user.json";
-
-
+    public static final String diff      = BASIC_DOMAIN + "/api/chan/stats/diff.json";
+    public static final String user      = BASIC_DOMAIN + "/api/user.json";
+    public static final String boardPage = BASIC_DOMAIN + "/%s/%d.json";
 
     public static class PostSupplier {
         private static final String DISPLAY_ID           = "/api/post/%s.json";
@@ -68,9 +67,16 @@ public class BasicsSupplier {
 
     }
 
-    public static void getUser(Context ctx, final Consumer<HanabiraUser> consumer) {
-        RequestQueue queue = Volley.newRequestQueue(ctx);
-        StringRequest reqJson = new StringRequest(BASIC_DOMAIN + user, new Response.Listener<String>() {
+    private final Context      context;
+    private final RequestQueue volleyQueue;
+
+    public BasicsSupplier(Context context) {
+        this.context = context;
+        volleyQueue = Volley.newRequestQueue(context);
+    }
+
+    public void getUser(final Consumer<HanabiraUser> consumer) {
+        StringRequest reqJson = new StringRequest(user, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 Gson gson = new Gson();
@@ -78,24 +84,22 @@ public class BasicsSupplier {
                 consumer.accept(user);
             }
         }, errList);
-        queue.add(reqJson);
+        volleyQueue.add(reqJson);
     }
 
 
-    public static void getBoardsIds(Context ctx, final Consumer<Iterator<String>> consumer) {
-        RequestQueue queue = Volley.newRequestQueue(ctx);
-        JsonObjectRequest reqJson = new JsonObjectRequest(BASIC_DOMAIN + diff, new Response.Listener<JSONObject>() {
+    public void getBoardsIds(final Consumer<Iterator<String>> consumer) {
+        JsonObjectRequest reqJson = new JsonObjectRequest(diff, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
                 consumer.accept(response.keys());
             }
         }, errList);
-        queue.add(reqJson);
+        volleyQueue.add(reqJson);
     }
 
-    public static void getDiff(Context ctx, final Consumer<Map<String, Integer>> consumer) {
-        RequestQueue queue = Volley.newRequestQueue(ctx);
-        JsonObjectRequest reqJson = new JsonObjectRequest(BASIC_DOMAIN + diff, new Response.Listener<JSONObject>() {
+    public void getDiff(final Consumer<Map<String, Integer>> consumer) {
+        JsonObjectRequest reqJson = new JsonObjectRequest(diff, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
                 Map<String, Integer> diff = new HashMap<>();
@@ -111,13 +115,18 @@ public class BasicsSupplier {
                 consumer.accept(diff);
             }
         }, errList);
-        queue.add(reqJson);
+        volleyQueue.add(reqJson);
     }
 
-    private static final Response.ErrorListener errList = new Response.ErrorListener() {
+    private final Response.ErrorListener errList = new Response.ErrorListener() {
         public void onErrorResponse(VolleyError e) {
             e.printStackTrace();
         }
     };
 
+    public void getBoardPage(String boardkey, int pageNum,Response.Listener<String> consumer) {
+        String formattedUrl = String.format(boardPage, boardkey, pageNum);
+        StringRequest boardPageRequest = new StringRequest(formattedUrl, consumer, errList);
+        volleyQueue.add(boardPageRequest);
+    }
 }

@@ -1,4 +1,4 @@
-package com.avapira.bobroreader.hanabira;
+package com.avapira.bobroreader.hanabira.cache;
 
 import android.support.annotation.CallSuper;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;

@@ -1,5 +1,6 @@
-package com.avapira.bobroreader.hanabira;
+package com.avapira.bobroreader.hanabira.cache;
 
+import android.content.Context;
 import android.util.Log;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
@@ -14,6 +15,10 @@ import java.util.Map;
 public class ActiveCache extends PersistentCache implements HanabiraCache {
 
     private static final String TAG = ActiveCache.class.getSimpleName();
+
+    public ActiveCache(Context context) {
+
+    }
 
     public HanabiraBoard findBoardByKey(String boardKey) {
         HanabiraBoard retVal = indexedBoards.get(boardKey);
@@ -85,6 +90,7 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
     public void savePost(HanabiraPost cachedPost) {
         indexedPosts.put(cachedPost.getPostId(), cachedPost);
         indexedPostsDisplay.put(cachedPost.getDisplayId(), cachedPost);
+        findThreadById(cachedPost.getThreadId()).getPosts().put(cachedPost.getCreatedDate(), cachedPost.getDisplayId());
         super.savePost(cachedPost);
     }
 

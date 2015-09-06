@@ -1,4 +1,4 @@
-package com.avapira.bobroreader.hanabira;
+package com.avapira.bobroreader.hanabira.cache;
 
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;

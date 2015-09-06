@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 /**
  *
  */
-public class HanabiraBoard {
+public class HanabiraBoard extends HanabiraEntity{
 
     public static class Info {
 

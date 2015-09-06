@@ -44,7 +44,7 @@ import java.util.*;
 abstract class HanabiraEntity {
 
     private static LocalDateTime extractLocatDateTime(JsonElement jsonElement) {
-        if (jsonElement.isJsonNull()) {
+        if (jsonElement == null || jsonElement.isJsonNull()) {
             return null;
         } else {
             return LocalDateTime.parse(jsonElement.getAsString().replace(' ', 'T'));
@@ -60,7 +60,6 @@ abstract class HanabiraEntity {
     }
 
     private static class HanabiraBoardDeserializer implements JsonDeserializer<HanabiraBoard> {
-
 
         String boardKey;
 

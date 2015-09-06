@@ -51,9 +51,9 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
+import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
-import com.avapira.bobroreader.networking.BasicsSupplier;
 import com.avapira.bobroreader.networking.PersistentCookieStore;
 import com.avapira.bobroreader.util.Consumer;
 import com.avapira.bobroreader.util.TestCardViewFragment;
@@ -136,6 +136,7 @@ public class Bober extends AppCompatActivity {
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         HanabiraBoard.Info.loadBoardsInfo(rawJsonToString(getResources(), R.raw.boards));
+        Hanabira.init(this);
         setContentView(R.layout.activity_boards_navigation_drawer);
         Bober.this.bindCookies();
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -152,7 +153,7 @@ public class Bober extends AppCompatActivity {
     }
 
     private void showUserInfo() {
-        BasicsSupplier.getUser(this, new Consumer<HanabiraUser>() {
+        Hanabira.getFlower().getUser(new Consumer<HanabiraUser>() {
             @Override
             public void accept(HanabiraUser user) {
                 TextView tv = (TextView) findViewById(R.id.user_text);
@@ -176,7 +177,7 @@ public class Bober extends AppCompatActivity {
     }
 
     public void updateDrawerDiff() {
-        BasicsSupplier.getDiff(this, new Consumer<Map<String, Integer>>() {
+        Hanabira.getFlower().getDiff(new Consumer<Map<String, Integer>>() {
             @Override
             public void accept(final Map<String, Integer> diff) {
                 for (IDrawerItem item : drawer.getAdapter().getDrawerItems()) {
@@ -200,7 +201,8 @@ public class Bober extends AppCompatActivity {
                                   .addDrawerItems(new ShortSectionDivider().withName("Общее"),
                                                   new BoardDrawerItem("/b/", R.drawable.banners_b_b1).withIdentifier(
                                                           261),
-                                                  new BoardDrawerItem("/u/", R.drawable.banners_u_125860969598039),
+                                                  new BoardDrawerItem("/u/", R.drawable.banners_u_125860969598039)
+                                                          .withIdentifier(566),
                                                   new BoardDrawerItem("/rf/",
                                                                       R.drawable.banners_rf_125701163950149)
                                                           .withIdentifier(30),
