@@ -1,7 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
+<merge xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+       android:orientation="vertical"
+       xmlns:tools="http://schemas.android.com/tools"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content"
+       tools:showIn="@layout/layout_thread_with_preview">
+    <View android:layout_height="1dp"
+          android:layout_width="fill_parent"
+          android:background="#10000000"
+          android:layout_marginBottom="2dp"
+          android:layout_marginTop="2dp"/>
+    <RelativeLayout
+            android:orientation="horizontal"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent">
+        <LinearLayout
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_alignParentStart="true"
+                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                android:paddingEnd="@dimen/small"
+                android:paddingStart="@dimen/small">
+            <TextView android:id="@+id/thread_controls_delete"
+                      android:paddingTop="@dimen/small"
+                      android:paddingBottom="@dimen/small"
+                      android:paddingStart="@dimen/medium"
+                      android:paddingEnd="@dimen/medium"
+                      android:textSize="12sp"
+                      android:fontFamily="sans-serif-condensed"
+                      android:textStyle="bold"
+                      android:textColor="@color/dobro_secondary_text"
+                      android:textAllCaps="true"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="Hide"/>
+            <TextView android:id="@+id/thread_controls_fav"
+                      android:paddingTop="@dimen/small"
+                      android:paddingBottom="@dimen/small"
+                      android:paddingStart="@dimen/medium"
+                      android:paddingEnd="@dimen/medium"
+                      android:textSize="12sp"
+                      android:fontFamily="sans-serif-condensed"
+                      android:textStyle="bold"
+                      android:textColor="@color/dobro_primary_text"
+                      android:textAllCaps="true"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="Memory"/>
+        </LinearLayout>
+        <TextView android:id="@+id/thread_controls_expand"
+                  android:layout_centerInParent="true"
+                  android:paddingTop="@dimen/small"
+                  android:paddingBottom="@dimen/small"
+                  android:paddingStart="@dimen/medium"
+                  android:paddingEnd="@dimen/medium"
+                  android:textSize="12sp"
+                  android:fontFamily="sans-serif-condensed"
+                  android:textStyle="bold"
+                  android:textAllCaps="true"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="Expand"/>
+        <LinearLayout
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_alignParentEnd="true"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content">
+            <TextView android:id="@+id/thread_controls_recent"
+                      android:paddingTop="@dimen/small"
+                      android:paddingBottom="@dimen/small"
+                      android:paddingStart="@dimen/medium"
+                      android:paddingEnd="@dimen/medium"
+                      android:textSize="12sp"
+                      android:fontFamily="sans-serif-condensed"
+                      android:textStyle="bold"
+                      android:textColor="@color/dobro_primary_text"
+                      android:textAllCaps="true"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="Recents"/>
+            <TextView android:id="@+id/thread_controls_open"
+                      android:paddingTop="@dimen/small"
+                      android:paddingBottom="@dimen/small"
+                      android:paddingStart="@dimen/medium"
+                      android:paddingEnd="@dimen/medium"
+                      android:textSize="12sp"
+                      android:fontFamily="sans-serif-condensed"
+                      android:textStyle="bold"
+                      android:textColor="@color/dobro_secondary_text"
+                      android:textAllCaps="true"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="Open"/>
+        </LinearLayout>
+    </RelativeLayout>
 
-</LinearLayout>
+</merge>

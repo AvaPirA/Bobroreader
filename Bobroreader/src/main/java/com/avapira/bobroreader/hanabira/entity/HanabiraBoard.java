@@ -74,7 +74,7 @@ public class HanabiraBoard extends HanabiraEntity{
         private static final Map<Integer, Info> idToInfo    = new HashMap<>();
 
         public static void loadBoardsInfo(String json) {
-            if (isLoaded()) { throw new IllegalStateException("Boards already loaded"); }
+            if (isLoaded()) { return; }
             // read json
             boardsInfoStorage = new Gson().fromJson(json, new TypeToken<List<Info>>() {}.getType());
             // index data
