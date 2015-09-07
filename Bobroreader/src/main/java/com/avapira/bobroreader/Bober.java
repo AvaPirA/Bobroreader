@@ -37,7 +37,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.DrawableRes;
-import android.support.annotation.LayoutRes;
 import android.support.annotation.RawRes;
 import android.support.annotation.StringRes;
 import android.support.v7.app.AppCompatActivity;
@@ -55,12 +54,9 @@ import android.widget.TextView;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
-import com.avapira.bobroreader.networking.PersistentCookieStore;
 import com.avapira.bobroreader.util.Consumer;
-import com.avapira.bobroreader.util.TestCardViewFragment;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
-import com.mikepenz.materialdrawer.holder.StringHolder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.SectionDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
@@ -68,100 +64,95 @@ import org.joda.time.LocalDateTime;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.net.CookieHandler;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class Bober extends AppCompatActivity {
+    private static double DEBUG_INIT_START = DEBUG_time();
+
+    private static double DEBUG_time() {
+        return System.nanoTime();
+//        return System.currentTimeMillis();
+    }
+
+    private static double DEBUG_initRelativeTime() {
+        return (DEBUG_time() - DEBUG_INIT_START) / 10e5;
+    }
+
     static {
+        Log.d("Init", DEBUG_initRelativeTime() + " Start. Joda Time initialization...");
         // Build the local caches inside Joda Time immediately instead of lazily
         new LocalDateTime();
+        Log.d("Init", DEBUG_initRelativeTime() + " Joda Time init");
+    }
+
+    private static final class DrawerIdentifier {
+        private static final int SETTINGS = 239;
     }
 
     private Drawer drawer = null;
 
-    private static class ShortSectionDivider extends SectionDrawerItem {
-        @Override
-        @LayoutRes
-        public int getLayoutRes() {
-            return R.layout.section_divider;
-        }
-    }
-
-    private class BoardSwitcher implements Drawer.OnDrawerItemClickListener {
+    private class BoardSwitcher implements com.mikepenz.materialdrawer.Drawer.OnDrawerItemClickListener {
         @Override
         public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
             if (drawerItem != null) {
-                Intent intent = null;
-                switch (drawerItem.getIdentifier()) {
-                    case 239:
-                        intent = new Intent(Bober.this, SettingsActivity.class);
-                        break;
-                    case 30:
-                        getFragmentManager().beginTransaction()
-                                            .replace(R.id.frame_container, new TestCardViewFragment())
-                                            .commit();
-                        break;
-                    case 261:
-                        getFragmentManager().beginTransaction()
-                                            .replace(R.id.frame_container, new ThreadFragment())
-                                            .commit();
-                        break;
-                    case 566:
-                        String boardKey = HanabiraBoard.Info.cutSlashes(((BoardDrawerItem) drawerItem).getName().getText
-                                ());
-                        Fragment boardFragment = new BoardFragment();
-                        Bundle b = new Bundle();
-                        b.putString("board", boardKey);
-                        boardFragment.setArguments(b);
-                        getFragmentManager().beginTransaction().replace(R.id.frame_container, boardFragment).commit();
-                        break;
-                }
-                if (intent != null) {
-                    Bober.this.startActivity(intent);
+                if (drawerItem instanceof BoardDrawerItem) {
+                    BoardDrawerItem boxedItem = (BoardDrawerItem) drawerItem;
+                    String boardKey = HanabiraBoard.Info.cutSlashes(boxedItem.getName().getText());
+                    Fragment boardFragment = new BoardFragment();
+                    Bundle b = new Bundle();
+                    b.putString("board", boardKey);
+                    boardFragment.setArguments(b);
+                    getFragmentManager().beginTransaction().replace(R.id.frame_container, boardFragment).commit();
+                } else {
+                    Intent intent = null;
+                    switch (drawerItem.getIdentifier()) {
+                        case DrawerIdentifier.SETTINGS:
+                            intent = new Intent(Bober.this, SettingsActivity.class);
+                            break;
+                    }
+                    if (intent != null) {
+                        Bober.this.startActivity(intent);
+                    }
                 }
             }
-
             return false;
         }
     }
 
-    private void bindCookies() {
-        CookieManager cookieManager = new CookieManager(new PersistentCookieStore(this.getApplicationContext()),
-                                                        CookiePolicy.ACCEPT_ORIGINAL_SERVER);
-        CookieHandler.setDefault(cookieManager);
-    }
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
+        Log.d("Init", DEBUG_initRelativeTime() + " onCreate() start");
         super.onCreate(savedInstanceState);
+        Log.d("Init", DEBUG_initRelativeTime() + " supermethod invocation");
+        Hanabira.bind(this);
+        Log.d("Init", DEBUG_initRelativeTime() + " core coalesce");
         HanabiraBoard.Info.loadBoardsInfo(rawJsonToString(getResources(), R.raw.boards));
-        Hanabira.init(this);
+        Log.d("Init", DEBUG_initRelativeTime() + " boards info loaded");
         setContentView(R.layout.activity_boards_navigation_drawer);
-        Bober.this.bindCookies();
+        Log.d("Init", DEBUG_initRelativeTime() + " content view applied");
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        Log.d("Init", DEBUG_initRelativeTime() + " toolbar prepared");
+        Log.d("Init", DEBUG_initRelativeTime() + " drawer generation...");
         drawer = generateBuilder(savedInstanceState, toolbar).build();
+        Log.d("Init", DEBUG_initRelativeTime() + " drawer generated. onCreate() finish");
     }
 
     @Override
     protected void onStart() {
+        Log.d("Init", DEBUG_initRelativeTime() + " onStart() start");
         super.onStart();
+        drawer.openDrawer();
         // todo show pretty /news/ index page
 //        updateDrawerDiff();
 //        showUserInfo();
+        Log.d("Init", DEBUG_initRelativeTime() + " onStart() start");
     }
 
-    private void showUserInfo() {
-        Hanabira.getFlower().getUser(new Consumer<HanabiraUser>() {
-            @Override
-            public void accept(HanabiraUser user) {
-                TextView tv = (TextView) findViewById(R.id.user_text);
-                tv.setText(user.toString());
-            }
-        });
-    }
 
     public static String rawJsonToString(Resources res, @RawRes int resId) {
         String name = res.getResourceName(resId);
@@ -177,7 +168,7 @@ public class Bober extends AppCompatActivity {
         }
     }
 
-    public void updateDrawerDiff() {
+    private void updateDrawerDiff() {
         Hanabira.getFlower().getDiff(new Consumer<Map<String, Integer>>() {
             @Override
             public void accept(final Map<String, Integer> diff) {
@@ -193,114 +184,160 @@ public class Bober extends AppCompatActivity {
         });
     }
 
-    private DrawerBuilder generateBuilder(Bundle savedInstanceState, Toolbar toolbar) {
+    private void showUserInfo() {
+        Hanabira.getFlower().getUser(new Consumer<HanabiraUser>() {
+            @Override
+            public void accept(HanabiraUser user) {
+                TextView tv = (TextView) findViewById(R.id.user_text);
+                tv.setText(user.toString());
+            }
+        });
+    }
 
-        ImageView image = (ImageView) LayoutInflater.from(getApplicationContext()).inflate(R.layout.drawer_header_horo,null);
+    private class BoardItemGenerator {
+        private final Map<String, int[]> pics            = new LinkedHashMap<String, int[]>() {
+            {
+                put("b",
+                        new int[]{R.drawable.banners_b_125700861425839, R.drawable.banners_b_125860969605710, R
+                                .drawable.banners_b_b1});
+                put("u", new int[]{R.drawable.banners_u_125860969598039});
+                put("rf",
+                        new int[]{R.drawable.banners_rf_125699252353074, R.drawable.banners_rf_125701163950149, R
+                                .drawable.banners_rf_125701647009375, R.drawable.banners_rf_125736226221120, R
+                                .drawable.banners_rf_125861026695515});
+
+                put("dt", new int[]{R.drawable.banners_dt_125697739438064});
+                put("vg",
+                        new int[]{R.drawable.banners_vg_125701543235898, R.drawable.banners_vg_125701543238460, R
+                                .drawable.banners_vg_125709977081546, R.drawable.banners_vg_125718465081528, R
+                                .drawable.banners_vg_125725276436260, R.drawable.banners_vg_125752214930592, R
+                                .drawable.banners_vg_125787756729250, R.drawable.banners_vg_125860991758021});
+                put("r", new int[]{R.drawable.banners_r_125699732718180, R.drawable.banners_r_r});
+                put("cr",
+                        new int[]{R.drawable.banners_cr_cr2, R.drawable.banners_cr_cr4, R.drawable
+                                .banners_cr_cr_vampire});
+                put("mu",
+                        new int[]{R.drawable.banners_mu_125701524833743, R.drawable.banners_mu_125706039606802, R
+                                .drawable.banners_mu_125758466249422, R.drawable.banners_mu_125758466251705, R
+                                .drawable.banners_mu_125861048005976, R.drawable.banners_mu___116});
+                put("oe", new int[]{});
+                put("s", new int[]{R.drawable.banners_s_125776130692418, R.drawable.banners_s_125860969610249});
+                put("w", new int[]{});
+                put("hr", new int[]{});
+                put("a",
+                        new int[]{R.drawable.banners_a_125700436332204, R.drawable.banners_a_125701704962528, R
+                                .drawable.banners_a_125702195165767, R.drawable.banners_a_125761210590870, R.drawable
+                                .banners_a_125768405443972});
+                put("ma", new int[]{R.drawable.banners_ma_125860969613262, R.drawable.banners_ma_ma});
+                put("sw", new int[]{R.drawable.banners_sw_125861045421667, R.drawable.banners_sw_125694314851117});
+                put("hau", new int[]{R.drawable.banners_hau_125861045418626});
+                put("azu", new int[]{});
+                put("tv",
+                        new int[]{R.drawable.banners_tv_2bd020d5bb30, R.drawable.banners_tv_2e04001fa57f, R.drawable
+                                .banners_tv_snapshot20100724100336, R.drawable.banners_tv_ccd7cbf4e061, R.drawable
+                                .banners_tv_55555, R.drawable.banners_tv_46599021_1248208279_clapperboardmanresized2,
+                                R.drawable.banners_tv_3672202a3ac0});
+                put("cp", new int[]{R.drawable.banners_cp_g125788239756657});
+                put("gf", new int[]{R.drawable.banners_gf_125860979571217});
+                put("bo", new int[]{});
+                put("di",
+                        new int[]{R.drawable.banners_di_125702135915554, R.drawable.banners_di_125762259407262, R
+                                .drawable.banners_di_125860991769106});
+                put("vn", new int[]{R.drawable.banners_vn_125861005475361});
+                put("ve",
+                        new int[]{R.drawable.banners_ve_125698553182650, R.drawable.banners_ve_125698880498448, R
+                                .drawable.banners_ve_125699339172544});
+                put("wh",
+                        new int[]{R.drawable.banners_wh_125697147834527, R.drawable.banners_wh_wh2, R.drawable
+                                .banners_wh_wh1, R.drawable.banners_wh_125861075646865});
+                put("fur", new int[]{R.drawable.banners_fur_125861026701646});
+                put("to",
+                        new int[]{R.drawable.banners_to_to_oppai_edition__lewd_, R.drawable.banners_to_to_lunatic, R
+                                .drawable.banners_to_to_cosplay, R.drawable.banners_to_to_cirnotopter, R.drawable
+                                .banners_to_125861045424732});
+                put("bg",
+                        new int[]{R.drawable.banners_bg_bg, R.drawable.banners_bg_125861578033434, R.drawable
+                                .banners_bg_125697224028122});
+                put("wn", new int[]{R.drawable.banners_wn_125701591350076, R.drawable.banners_wn_125861005478345});
+                put("slow",
+                        new int[]{R.drawable.banners_slow_slow_2_copy_new, R.drawable.banners_slow_slow_3, R.drawable
+                                .banners_slow_slow_4});
+                put("mad", new int[]{R.drawable.banners_mad_mad});
+                put("d", new int[]{R.drawable.banners_d_125711152029591, R.drawable.banners_d_d_motherland_hears_you});
+                put("news", new int[]{R.drawable.banners_news_125710395977840});
+            }
+        };
+        private final int[]              SECTION_LENGTHS = {12, 5, 14, 2};
+        private final String[]           SECTION_TITLES  = {"Общее", "Аниме", "На пробу", "Доброчан", "Other"};
+        private final Random             r               = new Random();
+
+        public ArrayList<IDrawerItem> getItems() {
+            int toSection = 0;
+            int nextSectionIndex = 0;
+            ArrayList<IDrawerItem> items = new ArrayList<>();
+            for (Map.Entry<String, int[]> entry : pics.entrySet()) {
+                if (toSection-- == 0) {
+                    items.add(new SectionDrawerItem().withName(SECTION_TITLES[nextSectionIndex]));
+                    toSection = SECTION_LENGTHS[nextSectionIndex++];
+                }
+                String name = slashify(entry.getKey());
+                Drawable drw = getRandomDrawable(entry.getKey());
+                items.add(new BoardDrawerItem(name, drw));
+            }
+            items.add(new SectionDrawerItem().withName(SECTION_TITLES[nextSectionIndex]));
+            items.add(new SettingsDrawerItem());
+            Log.d("Init", DEBUG_initRelativeTime() + " items loaded");
+            return items;
+        }
+
+        private Drawable getRandomDrawable(String key) {
+            int[] ids = pics.get(key);
+            int id;
+            Drawable empty = getDrawable(R.drawable.banners_empty);
+            if (ids.length != 0) {
+                if (ids.length == 1) {
+                    id = ids[0];
+                } else {
+                    id = ids[r.nextInt(ids.length)];
+                }
+            } else {
+                return empty;
+            }
+            return getDrawable(id);
+        }
+
+        private String slashify(String key) {
+            return new StringBuilder("/").append(key).append('/').toString();
+        }
+    }
+
+    private DrawerBuilder generateBuilder(Bundle savedInstanceState, Toolbar toolbar) {
+        ImageView image = (ImageView) LayoutInflater.from(getApplicationContext())
+                                                    .inflate(R.layout.drawer_header_horo, null);
         Drawable horo = getDrawable(R.drawable.acc39fc867f_transparent);
         image.setImageDrawable(horo);
+        Log.d("Init", DEBUG_initRelativeTime() + " header loaded");
         return new DrawerBuilder().withActivity(Bober.this)
                                   .withFullscreen(true)
                                   .withToolbar(toolbar)
                                   .withHeaderDivider(false)
                                   .withHeader(image)
-                                  .addDrawerItems(new ShortSectionDivider().withName("Общее"),
-                                                  new BoardDrawerItem("/b/", R.drawable.banners_b_b1).withIdentifier(
-                                                          261),
-                                                  new BoardDrawerItem("/u/", R.drawable.banners_u_125860969598039)
-                                                          .withIdentifier(566),
-                                                  new BoardDrawerItem("/rf/",
-                                                                      R.drawable.banners_rf_125701163950149)
-                                                          .withIdentifier(30),
-                                                  new BoardDrawerItem("/dt/", R.drawable.banners_dt_125697739438064),
-                                                  new BoardDrawerItem("/vg/", R.drawable.banners_vg_125709977081546),
-                                                  new BoardDrawerItem("/r/", R.drawable.banners_r_125699732718180),
-                                                  new BoardDrawerItem("/cr/", R.drawable.banners_cr_cr4),
-                                                  new BoardDrawerItem("/mu/", R.drawable.banners_mu_125861048005976),
-                                                  new BoardDrawerItem("/oe/", R.drawable.banners_empty),
-                                                  new BoardDrawerItem("/s/", R.drawable.banners_s_125776130692418),
-                                                  new BoardDrawerItem("/w/", R.drawable.banners_empty),
-                                                  new BoardDrawerItem("/hr/", R.drawable.banners_empty),
-                                                  //
-                                                  new ShortSectionDivider().withName("Аниме"),
-                                                  new BoardDrawerItem("/a/", R.drawable.banners_a_125768405443972),
-                                                  new BoardDrawerItem("/ma/", R.drawable.banners_ma_125860969613262),
-                                                  new BoardDrawerItem("/sw/", R.drawable.banners_sw_125861045421667),
-                                                  new BoardDrawerItem("/hau/", R.drawable.banners_hau_125861045418626),
-                                                  new BoardDrawerItem("/azu/", R.drawable.banners_empty),
-                                                  //
-                                                  new ShortSectionDivider().withName("На пробу"),
-                                                  new BoardDrawerItem("/tv/", R.drawable.banners_tv_55555),
-                                                  new BoardDrawerItem("/cp/", R.drawable.banners_cp_g125788239756657),
-                                                  new BoardDrawerItem("/gf/", R.drawable.banners_gf_125860979571217),
-                                                  new BoardDrawerItem("/bo/", R.drawable.banners_empty),
-                                                  new BoardDrawerItem("/di/", R.drawable.banners_di_125762259407262),
-                                                  new BoardDrawerItem("/vn/", R.drawable.banners_vn_125861005475361),
-                                                  new BoardDrawerItem("/ve/", R.drawable.banners_ve_125698880498448),
-                                                  new BoardDrawerItem("/wh/", R.drawable.banners_wh_125861075646865),
-                                                  new BoardDrawerItem("/fur/", R.drawable.banners_fur_125861026701646),
-                                                  new BoardDrawerItem("/to/", R.drawable.banners_to_125861045424732),
-                                                  new BoardDrawerItem("/bg/", R.drawable.banners_bg_125861578033434),
-                                                  new BoardDrawerItem("/wn/", R.drawable.banners_wn_125861005478345),
-                                                  new BoardDrawerItem("/slow/", R.drawable.banners_slow_slow_4),
-                                                  new BoardDrawerItem("/mad/", R.drawable.banners_mad_mad),
-                                                  //
-                                                  new ShortSectionDivider().withName("Доброчан"),
-                                                  new BoardDrawerItem("/d/", R.drawable.banners_d_125711152029591),
-                                                  new BoardDrawerItem("/news/",
-                                                                      R.drawable.banners_news_125710395977840),
-                                                  new SectionDrawerItem().withName("Other stuff"),
-                                                  new SettingsDrawerItem().withIdentifier(239).withSelectable(false))
+                                  .withDrawerItems(new BoardItemGenerator().getItems())
                                   .withSavedInstance(savedInstanceState)
                                   .withOnDrawerItemClickListener(new BoardSwitcher())
                                   .withOnDrawerListener(new Drawer.OnDrawerListener() {
-
-                                      private static final float MENU_CLOSING_THRESHOLD = 1f / 3f;
-                                      private static final float MENU_SHOWING_THRESHOLD = 1f - MENU_CLOSING_THRESHOLD;
-
                                       @Override
                                       public void onDrawerOpened(View drawerView) {
                                           Bober.this.invalidateOptionsMenu();
-                                          sliderThinksClosing = null;
                                       }
 
                                       @Override
                                       public void onDrawerClosed(View drawerView) {
                                           Bober.this.invalidateOptionsMenu();
-                                          sliderThinksClosing = null;
                                       }
-
-                                      private float previousOffset;
 
                                       @Override
-                                      public void onDrawerSlide(View arg0, float slideOffset) {
-//                                          sliderThinksClosing = drawer.isDrawerOpen();
-//                                          if (!sliderThinksClosing) {                    // Opening...
-//                                              if (slideOffset > MENU_SHOWING_THRESHOLD) {// ..more half completed...
-//                                                  if (slideOffset > previousOffset) {    // ..from this moment
-//                                                      sliderHide = true;
-//                                                      invalidateOptionsMenu();
-//                                                  }                                      // .. else already hidden
-//                                              } else {                                   // ..less half completed...
-//                                                  if (slideOffset < previousOffset) {    // ..from this moment
-//                                                      sliderHide = false;
-//                                                      invalidateOptionsMenu();
-//                                                  }                                      // else already shown
-//                                              }
-//                                          } else {                                       // Closing..
-//                                              if (slideOffset > MENU_CLOSING_THRESHOLD) {// ..less half completed..
-//                                                  if (slideOffset > previousOffset) {    // ..from now
-//                                                      sliderHide = true;
-//                                                      invalidateOptionsMenu();
-//                                                  }                                      // else already hidden
-//                                              } else {                                   // ..more half completed..
-//                                                  if (slideOffset < previousOffset) {    // ..from now
-//                                                      sliderHide = false;
-//                                                      invalidateOptionsMenu();
-//                                                  }                                      // else already shown
-//                                              }
-//                                          }
-//                                          previousOffset = slideOffset;
-                                      }
+                                      public void onDrawerSlide(View arg0, float slideOffset) {}
 
                                   })
                                   .withActionBarDrawerToggleAnimated(true);
@@ -309,10 +346,6 @@ public class Bober extends AppCompatActivity {
     private String shortenizeBoardName(String name) {
         return name.substring(1, name.length() - 1);
     }
-
-    Boolean sliderThinksClosing;
-    boolean sliderHide;
-    Menu    menu;
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -337,12 +370,7 @@ public class Bober extends AppCompatActivity {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        boolean valToSetVisibility;
-        if (sliderThinksClosing != null) { // sliding now
-            valToSetVisibility = !sliderHide;
-        } else { // not sliding
-            valToSetVisibility = !drawer.isDrawerOpen();
-        }
+        boolean valToSetVisibility = !drawer.isDrawerOpen();
         for (int i = 0; i < menu.size(); i++) {
             menu.getItem(i).setVisible(valToSetVisibility);
         }
@@ -374,9 +402,7 @@ public class Bober extends AppCompatActivity {
         d.setTint(getColor(R.color.dobro_primary_text));
         v.setImageDrawable(d);
 //        searchView.setOnQueryTextListener(this);
-        this.menu = menu;
         return super.onPrepareOptionsMenu(menu);
-//        return true;
     }
 
     public static final class BoardDrawerItem extends PrimaryDrawerItem {
@@ -391,34 +417,16 @@ public class Bober extends AppCompatActivity {
 
         }
 
-        public BoardDrawerItem(String s) {
+        public BoardDrawerItem(String s, Drawable icon) {
             this();
             withName(s);
+            withIcon(icon);
         }
 
-        public BoardDrawerItem(@StringRes int id) {
+        public BoardDrawerItem(@StringRes int id, @DrawableRes int idIcon) {
             this();
             withName(id);
-        }
-
-        public BoardDrawerItem(StringHolder s) {
-            this();
-            withName(s);
-        }
-
-        public BoardDrawerItem(String s, @DrawableRes int dId) {
-            this(s);
-            withIcon(dId);
-        }
-
-        public BoardDrawerItem(@StringRes int id, @DrawableRes int dId) {
-            this(id);
-            withIcon(dId);
-        }
-
-        public BoardDrawerItem(StringHolder s, @DrawableRes int dId) {
-            this(s);
-            withIcon(dId);
+            withIcon(idIcon);
         }
 
     }
@@ -426,6 +434,8 @@ public class Bober extends AppCompatActivity {
     public static final class SettingsDrawerItem extends PrimaryDrawerItem {
         public SettingsDrawerItem() {
             super();
+            withIdentifier(DrawerIdentifier.SETTINGS);
+            withSelectable(false);
             withName("Settings");
         }
 

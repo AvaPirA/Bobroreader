@@ -38,6 +38,8 @@ import android.app.Fragment;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.view.GestureDetectorCompat;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -67,6 +69,7 @@ public class BoardFragment extends Fragment {
 
     private static final String TAG = ThreadFragment.class.getSimpleName();
 
+    ActionBar             toolbar;
     FrameLayout           toolbarContainer;
     ProgressBar           progressBar;
     GestureDetectorCompat detector;
@@ -106,13 +109,17 @@ public class BoardFragment extends Fragment {
     }
 
     private void switchPage(int newPage) {
+        toolbar = ((AppCompatActivity)getActivity()).getSupportActionBar();
+        if(toolbar != null) {
+            toolbar.setTitle("Page loading...");
+        }
         progressBar.setVisibility(View.VISIBLE);
         recycler.setVisibility(View.INVISIBLE);
         page = newPage;
         Hanabira.getFlower().updateBoardPage(boardKey, page, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                HanabiraBoard hanabiraBoard = HanabiraBoard.fromJson(response, HanabiraBoard.class);
+                final HanabiraBoard hanabiraBoard = HanabiraBoard.fromJson(response, HanabiraBoard.class);
                 final BoardAdapter boardAdapter = new BoardAdapter(hanabiraBoard.getPageThreads(page));
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
@@ -120,6 +127,13 @@ public class BoardFragment extends Fragment {
                         recycler.setAdapter(boardAdapter);
                         progressBar.setVisibility(View.GONE);
                         recycler.setVisibility(View.VISIBLE);
+
+                        String title = String.format("/%s/ - %s " + "[%s]", hanabiraBoard.getKey(),
+                                hanabiraBoard.getInfo().title, page);
+
+                        if (toolbar != null) {
+                            toolbar.setTitle(title);
+                        }
                     }
                 });
             }
@@ -314,8 +328,7 @@ public class BoardFragment extends Fragment {
                     throw new IllegalArgumentException("Wrong view type received");
             }
             ThreadPreviewViewHolder tpvh = new ThreadPreviewViewHolder(postcard, threadTitle, card, displayId,
-                                                                       authorName, rightHeader, text, filesRecycler,
-                                                                       previewList, replies);
+                    authorName, rightHeader, text, filesRecycler, previewList, replies);
             long time = System.nanoTime() - start;
             Log.i("onCreateViewHolder", "Time: " + Double.toString(((double) time) / 10e6));
             return tpvh;
@@ -367,7 +380,7 @@ public class BoardFragment extends Fragment {
                 });
             }
             SimpleAdapter previewAdapter = new SimpleAdapter(getContext(), previewData,
-                                                             R.layout.thread_preview_list_item, mapKeys, viewIds);
+                    R.layout.thread_preview_list_item, mapKeys, viewIds);
             holder.previewList.setAdapter(previewAdapter);
 
 //            filesRecycler.setLayoutManager(
@@ -441,8 +454,8 @@ public class BoardFragment extends Fragment {
             CharSequence displId = ((TextView) view.findViewById(R.id.post_display_id)).getText();
             float elevation = view.findViewById(R.id.post_card).getElevation();
             Toast.makeText(getContext(),
-                           displId + " " + Float.toString(elevation) + "|" + Float.toString(view.getElevation()),
-                           Toast.LENGTH_SHORT).show();
+                    displId + " " + Float.toString(elevation) + "|" + Float.toString(view.getElevation()),
+                    Toast.LENGTH_SHORT).show();
 
             tv.onTouchEvent(e);
             return super.onSingleTapConfirmed(e);

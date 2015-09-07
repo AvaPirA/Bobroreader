@@ -9,10 +9,14 @@ import com.avapira.bobroreader.hanabira.cache.ActiveCache;
 import com.avapira.bobroreader.hanabira.cache.HanabiraCache;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.networking.BasicsSupplier;
+import com.avapira.bobroreader.networking.PersistentCookieStore;
 import com.avapira.bobroreader.util.Consumer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.util.Map;
 
 /**
@@ -28,10 +32,17 @@ public class Hanabira {
 
     private Hanabira() {}
 
-    public static void init(Context ctx) {
+    public static void bind(Context ctx) {
         flower.context = ctx;
         flower.cacheImpl = new ActiveCache(flower.context);
         flower.network = new BasicsSupplier(flower.context);
+        flower.bindCookies();
+    }
+
+    private void bindCookies() {
+        CookieManager cookieManager = new CookieManager(new PersistentCookieStore(context),
+                CookiePolicy.ACCEPT_ORIGINAL_SERVER);
+        CookieHandler.setDefault(cookieManager);
     }
 
     public static Hanabira getFlower() {
