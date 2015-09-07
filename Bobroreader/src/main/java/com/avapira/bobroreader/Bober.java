@@ -45,6 +45,7 @@ import android.support.v7.widget.Toolbar;
 import android.text.SpannableStringBuilder;
 import android.text.style.StyleSpan;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -193,11 +194,15 @@ public class Bober extends AppCompatActivity {
     }
 
     private DrawerBuilder generateBuilder(Bundle savedInstanceState, Toolbar toolbar) {
+
+        ImageView image = (ImageView) LayoutInflater.from(getApplicationContext()).inflate(R.layout.drawer_header_horo,null);
+        Drawable horo = getDrawable(R.drawable.acc39fc867f_transparent);
+        image.setImageDrawable(horo);
         return new DrawerBuilder().withActivity(Bober.this)
                                   .withFullscreen(true)
                                   .withToolbar(toolbar)
                                   .withHeaderDivider(false)
-                                  .withHeader(R.layout.drawer_header_horo)
+                                  .withHeader(image)
                                   .addDrawerItems(new ShortSectionDivider().withName("Общее"),
                                                   new BoardDrawerItem("/b/", R.drawable.banners_b_b1).withIdentifier(
                                                           261),
