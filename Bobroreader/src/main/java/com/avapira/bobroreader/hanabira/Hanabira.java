@@ -1,7 +1,10 @@
 package com.avapira.bobroreader.hanabira;
 
 import android.content.Context;
+import android.preference.PreferenceManager;
 import com.android.volley.Response;
+import com.avapira.bobroreader.Bober;
+import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.cache.ActiveCache;
 import com.avapira.bobroreader.hanabira.cache.HanabiraCache;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
@@ -17,8 +20,8 @@ public class Hanabira {
 
     private static Hanabira flower = new Hanabira();
 
-    private Context       context;
-    private HanabiraCache cacheImpl;
+    private Context        context;
+    private HanabiraCache  cacheImpl;
     private BasicsSupplier network;
 
     private Hanabira() {}
@@ -37,8 +40,16 @@ public class Hanabira {
         return getFlower().cacheImpl;
     }
 
+    private boolean useMockedNetwork() {
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("pref_mocked_network", false);
+    }
+
     public void updateBoardPage(String boardKey, int pageNum, Response.Listener<String> andThen) {
-        network.getBoardPage(boardKey, pageNum, andThen);
+        if (useMockedNetwork()) {
+            andThen.onResponse(Bober.rawJsonToString(context.getResources(), R.raw.u_0));
+        } else {
+            network.getBoardPage(boardKey, pageNum, andThen);
+        }
     }
 
     public void getUser(Consumer<HanabiraUser> consumer) {

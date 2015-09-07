@@ -25,9 +25,9 @@
                     android:id="@+id/post_header"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="@dimen/margin_tiny"
-                    android:paddingStart="@dimen/margin_small"
-                    android:paddingEnd="@dimen/margin_small"
+                    android:paddingTop="@dimen/tiny"
+                    android:paddingStart="@dimen/small"
+                    android:paddingEnd="@dimen/small"
                     >
                 <TextView
                         android:id="@+id/post_right_header_text"
@@ -73,7 +73,7 @@
                         android:layout_below="@id/post_author_name"
                         android:layout_width="fill_parent"
                         android:layout_height="150dp"
-                        android:layout_marginTop="@dimen/margin_tiny"
+                        android:layout_marginTop="@dimen/tiny"
                         android:orientation="horizontal"
                         android:descendantFocusability="blocksDescendants"/>
             </RelativeLayout>
@@ -87,9 +87,9 @@
                     android:id="@+id/post_content"
                     android:layout_height="wrap_content"
                     android:layout_width="wrap_content"
-                    android:paddingBottom="@dimen/margin_small"
-                    android:paddingStart="@dimen/margin_small"
-                    android:paddingEnd="@dimen/margin_small">
+                    android:paddingBottom="@dimen/small"
+                    android:paddingStart="@dimen/small"
+                    android:paddingEnd="@dimen/small">
                 <TextView
                         android:id="@+id/post_text"
                         android:layout_width="wrap_content"

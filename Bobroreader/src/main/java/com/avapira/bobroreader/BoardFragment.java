@@ -38,11 +38,9 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.method.LinkMovementMethod;
+import android.util.Log;
 import android.view.*;
-import android.widget.ListView;
-import android.widget.ProgressBar;
-import android.widget.SimpleAdapter;
-import android.widget.TextView;
+import android.widget.*;
 import com.android.volley.Response;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
@@ -153,14 +151,33 @@ public class BoardFragment extends Fragment {
             public static final int NEXT_PAGE = 3;
         }
 
-        List<HanabiraThread> posts = new ArrayList<>();
+        List<HanabiraThread> threads = new ArrayList<>();
+        List<CharSequence> cachedParsedPosts;
 
-        public BoardAdapter(List<HanabiraThread> pp) {
-            posts = pp; // FIXME Aware of non-consistent pp changes
+        public BoardAdapter(List<HanabiraThread> tt) {
+            threads = tt;
+            cachedParsedPosts = new ArrayList<>(threads.size());
+            new Thread(new Runnable() {
+                public void run() {
+                    for (int i = 0; i < threads.size(); i++) {
+                        HanabiraPost post = Hanabira.getCache().findPostByDisplayId(threads.get(i).getDispayId());
+                        cachedParsedPosts.add(i, new HanabiraParser(post, getContext()).getFormatted());
+                    }
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getContext(), "parsed", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }).start();
         }
+
+        private final float opPostElevation = 5 * BoardFragment.this.getResources().getDimension(R.dimen.micro) / 2;
 
         @Override
         public ThreadPreviewViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            long start = System.nanoTime();
             View postcard;
             switch (viewType) {
                 case ViewTypes.PREV_PAGE:
@@ -175,12 +192,16 @@ public class BoardFragment extends Fragment {
                 default:
                     throw new IllegalArgumentException("Wrong view type received");
             }
-            return new ThreadPreviewViewHolder(postcard);
+            ThreadPreviewViewHolder tpvh = new ThreadPreviewViewHolder(postcard);
+            long time = System.nanoTime() - start;
+            Log.i("onCreateViewHolder", "Time: "+Double.toString(((double) time) / 10e6));
+            return tpvh;
         }
 
         @Override
         public void onBindViewHolder(ThreadPreviewViewHolder holder, int position) {
-            if (position == posts.size()) {
+            long start = System.nanoTime();
+            if (position == 0 || position == threads.size() + 1) {
                 return;
             }
             final View threadPreview = holder.itemView;
@@ -194,16 +215,23 @@ public class BoardFragment extends Fragment {
             ListView previewList = (ListView) threadPreview.findViewById(R.id.list_preview_posts);
 //            TextView replies = (TextView) threadPreview.findViewById(R.id.post_replies);
 
-            HanabiraThread thread = posts.get(position);
+            int threadNumOnPage = position - 1;
+
+            HanabiraThread thread = threads.get(threadNumOnPage);
             HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
 
             threadTitle.setText(thread.getTitle());
             displayId.setText("№".concat(Integer.toString(op.getDisplayId())));
             authorName.setText(op.getName());
             rightHeader.setText(DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(op.getDate()));
-            text.setText(new HanabiraParser(op, getContext()).getFormatted());
+            if (cachedParsedPosts.size() > threadNumOnPage) {
+                text.setText(cachedParsedPosts.get(threadNumOnPage));
+            } else {
+                text.setText(new HanabiraParser(op, getContext()).getFormatted());
+                Log.w("onBindViewHolder", "Parser cache miss at " + threadNumOnPage);
+            }
             text.setMovementMethod(LinkMovementMethod.getInstance());
-            card.setCardElevation(5 * card.getCardElevation() / 2);
+            card.setCardElevation(opPostElevation);
             if (op.getFiles() == null || op.getFiles().size() == 0) {
                 filesRecycler.setVisibility(View.GONE);
             }
@@ -220,7 +248,7 @@ public class BoardFragment extends Fragment {
                 previewData.add(new HashMap<String, CharSequence>() {
                     {
                         put(mapKeys[0], p.getSubject());
-                        put(mapKeys[1], new HanabiraParser(p, threadPreview.getContext()).getFormatted());
+                        put(mapKeys[1], p.getMessage());
                     }
                 });
             }
@@ -231,17 +259,19 @@ public class BoardFragment extends Fragment {
 //            filesRecycler.setLayoutManager(
 //                    new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
 //            filesRecycler.setAdapter(new FilesAdapter(/*todo*/));
+            long time = System.nanoTime() - start;
+            Log.i("onBindViewHolder", "Time: "+Double.toString(((double) time) / 10e6));
         }
 
         @Override
         public int getItemCount() {
-            return posts.size() + 2; // prevPage+[threads]+nextPage
+            return threads.size() + 2; // prevPage+[threads]+nextPage
         }
 
         @Override
         public int getItemViewType(int position) {
             if (position > 0) {
-                if (position < posts.size() + 1) {
+                if (position < threads.size() + 1) {
                     return ViewTypes.THREAD;
                 } else {
                     return ViewTypes.NEXT_PAGE;
@@ -264,6 +294,13 @@ public class BoardFragment extends Fragment {
         public boolean onSingleTapConfirmed(MotionEvent e) {
             View view = recycler.findChildViewUnder(e.getX(), e.getY());
             TextView tv = ((TextView) view.findViewById(R.id.post_text));
+
+            CharSequence displId = ((TextView) view.findViewById(R.id.post_display_id)).getText();
+            float elevation = view.findViewById(R.id.post_card).getElevation();
+            Toast.makeText(getContext(),
+                           displId +" "+ Float.toString(elevation) + "|" + Float.toString(view.getElevation()),
+                           Toast.LENGTH_SHORT).show();
+
             tv.onTouchEvent(e);
             return super.onSingleTapConfirmed(e);
         }

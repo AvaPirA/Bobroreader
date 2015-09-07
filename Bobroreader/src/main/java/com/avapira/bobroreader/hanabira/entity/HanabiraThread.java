@@ -129,7 +129,7 @@ public class HanabiraThread extends HanabiraEntity {
     }
 
     public List<Integer> getLastN(int n) {
-        int skip = n < posts.size() ? posts.size() - 1 : n;
+        int skip = n > posts.size() ? posts.size() - 1 : n;
         List<Integer> returnList = new ArrayList<>(n);
         Iterator<Map.Entry<LocalDateTime, Integer>> read = posts.entrySet().iterator();
         while (skip-- > 0) {

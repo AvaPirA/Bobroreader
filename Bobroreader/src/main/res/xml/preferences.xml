@@ -33,7 +33,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory
             android:title="Navigation drawer"
-            android:key="pref_drawer_setting">
+            android:key="pref_cat_drawer_setting">
         <SwitchPreference
                 android:key="pref_drawer_show_banners"
                 android:title="Show board banner"
@@ -45,4 +45,25 @@
                 android:defaultValue="true"
                 android:dependency="pref_drawer_show_banners"/>
     </PreferenceCategory>
+    <SwitchPreference
+        android:key="pref_developer"
+        android:title="Developer"
+        android:summary="iddqd"
+        android:defaultValue="false"/>
+    <PreferenceCategory
+            android:title="Developer options"
+            android:key="pref_cat_dev"
+            android:dependency="pref_developer">
+        <SwitchPreference
+                android:key="pref_mocked_network"
+                android:title="Mock network requests"
+                android:summary="Feature for testing app on non-live data not to load data from web server"
+                android:defaultValue="false"/>
+        <CheckBoxPreference
+            android:key="pref_zzz"
+            android:title="Zzz"
+            android:summary="I want to sleep"
+            android:defaultValue="true"/>
+    </PreferenceCategory>
+
 </PreferenceScreen>
