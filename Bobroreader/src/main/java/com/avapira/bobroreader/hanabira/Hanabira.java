@@ -10,6 +10,8 @@ import com.avapira.bobroreader.hanabira.cache.HanabiraCache;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.networking.BasicsSupplier;
 import com.avapira.bobroreader.util.Consumer;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.Map;
 
@@ -53,10 +55,24 @@ public class Hanabira {
     }
 
     public void getUser(Consumer<HanabiraUser> consumer) {
-        network.getUser(consumer);
+        if (useMockedNetwork()) {
+            String raw = Bober.rawJsonToString(context.getResources(), R.raw.user);
+            consumer.accept(HanabiraUser.fromJson(raw, HanabiraUser.class));
+        } else {
+            network.getUser(consumer);
+        }
     }
 
     public void getDiff(Consumer<Map<String, Integer>> consumer) {
-        network.getDiff(consumer);
+        if (useMockedNetwork()) {
+            String raw = Bober.rawJsonToString(context.getResources(), R.raw.diff);
+            try {
+                consumer.accept(BasicsSupplier.collectDiff(new JSONObject(raw)));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        } else {
+            network.getDiff(consumer);
+        }
     }
 }

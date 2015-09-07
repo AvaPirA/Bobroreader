@@ -31,6 +31,7 @@
 package com.avapira.bobroreader.networking;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -102,20 +103,26 @@ public class BasicsSupplier {
         JsonObjectRequest reqJson = new JsonObjectRequest(diff, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
-                Map<String, Integer> diff = new HashMap<>();
-                Iterator<String> keys = response.keys();
-                while (keys.hasNext()) {
-                    String k = keys.next();
-                    try {
-                        diff.put(k, response.getInt(k));
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
+                Map<String, Integer> diff = collectDiff(response);
                 consumer.accept(diff);
             }
         }, errList);
         volleyQueue.add(reqJson);
+    }
+
+    @NonNull
+    public static Map<String, Integer> collectDiff(JSONObject response) {
+        Map<String, Integer> diff = new HashMap<>();
+        Iterator<String> keys = response.keys();
+        while (keys.hasNext()) {
+            String k = keys.next();
+            try {
+                diff.put(k, response.getInt(k));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return diff;
     }
 
     private final Response.ErrorListener errList = new Response.ErrorListener() {
