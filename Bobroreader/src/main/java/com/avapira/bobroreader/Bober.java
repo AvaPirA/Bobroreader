@@ -37,6 +37,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.DrawableRes;
+import android.support.annotation.LayoutRes;
 import android.support.annotation.RawRes;
 import android.support.annotation.StringRes;
 import android.support.v7.app.AppCompatActivity;
@@ -44,10 +45,7 @@ import android.support.v7.widget.Toolbar;
 import android.text.SpannableStringBuilder;
 import android.text.style.StyleSpan;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
+import android.view.*;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -92,7 +90,16 @@ public class Bober extends AppCompatActivity {
         private static final int SETTINGS = 239;
     }
 
-    private Drawer drawer = null;
+    private Drawer boardsDrawer   = null;
+    private Drawer featuresDrawer = null;
+
+    private static class ShortSectionDivider extends SectionDrawerItem {
+        @Override
+        @LayoutRes
+        public int getLayoutRes() {
+            return R.layout.section_divider;
+        }
+    }
 
     private class BoardSwitcher implements com.mikepenz.materialdrawer.Drawer.OnDrawerItemClickListener {
         @Override
@@ -138,15 +145,16 @@ public class Bober extends AppCompatActivity {
         setSupportActionBar(toolbar);
         Log.d("Init", DEBUG_initRelativeTime() + " toolbar prepared");
         Log.d("Init", DEBUG_initRelativeTime() + " drawer generation...");
-        drawer = generateBuilder(savedInstanceState, toolbar).build();
+        boardsDrawer = generateBoardsDrawerBuilder(savedInstanceState, toolbar).build();
         Log.d("Init", DEBUG_initRelativeTime() + " drawer generated. onCreate() finish");
+        featuresDrawer = generateFeaturesDrawerBuilder(savedInstanceState).append(boardsDrawer);
+        boardsDrawer.openDrawer();
     }
 
     @Override
     protected void onStart() {
         Log.d("Init", DEBUG_initRelativeTime() + " onStart() start");
         super.onStart();
-        drawer.openDrawer();
         // todo show pretty /news/ index page
 //        updateDrawerDiff();
 //        showUserInfo();
@@ -172,14 +180,14 @@ public class Bober extends AppCompatActivity {
         Hanabira.getFlower().getDiff(new Consumer<Map<String, Integer>>() {
             @Override
             public void accept(final Map<String, Integer> diff) {
-                for (IDrawerItem item : drawer.getAdapter().getDrawerItems()) {
+                for (IDrawerItem item : boardsDrawer.getAdapter().getDrawerItems()) {
                     if (item instanceof BoardDrawerItem) {
                         BoardDrawerItem i = (BoardDrawerItem) item;
                         String boardKey = shortenizeBoardName(i.getName().getText());
                         i.withBadge(String.format("[%s]", diff.get(boardKey)));
                     }
                 }
-                drawer.getAdapter().notifyDataSetChanged();
+                boardsDrawer.getAdapter().notifyDataSetChanged();
             }
         });
     }
@@ -192,6 +200,163 @@ public class Bober extends AppCompatActivity {
                 tv.setText(user.toString());
             }
         });
+    }
+
+  private DrawerBuilder generateBoardsDrawerBuilder(Bundle savedInstanceState, Toolbar toolbar) {
+        ImageView image = (ImageView) LayoutInflater.from(getApplicationContext())
+                                                    .inflate(R.layout.drawer_header_horo, null);
+        Drawable horo = getDrawable(R.drawable.acc39fc867f_transparent);
+        image.setImageDrawable(horo);
+        Log.d("Init", DEBUG_initRelativeTime() + " header loaded");
+        return new DrawerBuilder().withActivity(Bober.this)
+                                  .withFullscreen(true)
+                                  .withToolbar(toolbar)
+                                  .withHeaderDivider(false)
+                                  .withHeader(image)
+                                  .withDrawerItems(new BoardItemGenerator().getItems())
+                                  .withSavedInstance(savedInstanceState)
+                                  .withOnDrawerItemClickListener(new BoardSwitcher())
+                                  .withOnDrawerListener(new Drawer.OnDrawerListener() {
+                                      @Override
+                                      public void onDrawerOpened(View drawerView) {
+                                          Bober.this.invalidateOptionsMenu();
+                                      }
+
+                                      @Override
+                                      public void onDrawerClosed(View drawerView) {
+                                          Bober.this.invalidateOptionsMenu();
+                                      }
+
+                                      @Override
+                                      public void onDrawerSlide(View arg0, float slideOffset) {}
+
+                                  })
+                                  .withActionBarDrawerToggleAnimated(true);
+    }
+
+    private DrawerBuilder generateFeaturesDrawerBuilder(Bundle sIS) {
+        return new DrawerBuilder().withDrawerGravity(Gravity.END)
+                                  .withActivity(this)
+                                  .withHeaderDivider(false)
+                                  .withSelectedItem(-1)
+                                  .withFullscreen(false)
+                                  .withSavedInstance(sIS)
+                                  .addDrawerItems(new PrimaryDrawerItem().withName("History")
+                                                                         .withIdentifier(0)
+                                                                         .withSelectable(false), new PrimaryDrawerItem()
+                                                  .withName("Thread AutoHide")
+                                                  .withIdentifier(1)
+                                                  .withSelectable(false), new PrimaryDrawerItem().withName("Bookmarks")
+                                                                                                 .withIdentifier(2)
+                                                                                                 .withSelectable(false),
+                                          new SettingsDrawerItem().withIdentifier(3).withSelectable(false))
+                                  .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
+                                      @Override
+                                      public boolean onItemClick(View view, int i, IDrawerItem iDrawerItem) {
+                                          switch (iDrawerItem.getIdentifier()) {
+                                              case 0:
+                                              case 1:
+                                              case 2:
+                                              case 3:
+                                                  startActivity(
+                                                          new Intent(getApplicationContext(), SettingsActivity.class));
+                                          }
+                                          return false;
+                                      }
+                                  });
+    }
+
+    private String shortenizeBoardName(String name) {
+        return name.substring(1, name.length() - 1);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        //add the values which need to be saved from the drawer to the bundle
+        outState = boardsDrawer.saveInstanceState(outState);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                onBackPressed();
+                return true;
+            case R.id.show_goto:
+
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        boolean valToSetVisibility = !boardsDrawer.isDrawerOpen();
+        for (int i = 0; i < menu.size(); i++) {
+            menu.getItem(i).setVisible(valToSetVisibility);
+        }
+        return true;
+    }
+
+    @Override
+    public void onBackPressed() {
+        //handle the back press :D close the drawer first and if the drawer is closed close the activity
+        if (boardsDrawer != null && boardsDrawer.isDrawerOpen()) {
+            boardsDrawer.closeDrawer();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.default_menu, menu);
+        // todo draw a proper icon for Go-To-Ref-Link
+        SearchView searchView = (SearchView) menu.findItem(R.id.show_goto).getActionView();
+        int searchImgId = getResources().getIdentifier("android:id/search_button", null, null);
+        ImageView v = (ImageView) searchView.findViewById(searchImgId);
+        SpannableStringBuilder ssb = new SpannableStringBuilder("board/post");
+        ssb.setSpan(new StyleSpan(Typeface.MONOSPACE.getStyle()), 0, 10, 0);
+//        ImageView icon = (ImageView)searchView.findViewById(android.R.id.search_mag_icon);
+        searchView.setQueryHint(ssb);
+        Drawable d = getDrawable(android.R.drawable.ic_media_ff);
+        d.setTint(getColor(R.color.dobro_primary_text));
+        v.setImageDrawable(d);
+//        searchView.setOnQueryTextListener(this);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    public static final class BoardDrawerItem extends PrimaryDrawerItem {
+
+        @Override
+        public int getLayoutRes() {
+            return R.layout.drawer_item_board;
+        }
+
+        public BoardDrawerItem(String s, Drawable icon) {
+            super();
+            withName(s);
+            withIcon(icon);
+        }
+
+        public BoardDrawerItem(@StringRes int id, @DrawableRes int idIcon) {
+            super();
+            withName(id);
+            withIcon(idIcon);
+        }
+
+    }
+
+    public static final class SettingsDrawerItem extends PrimaryDrawerItem {
+        public SettingsDrawerItem() {
+            super();
+            withIdentifier(DrawerIdentifier.SETTINGS);
+            withSelectable(false);
+            withName("Settings");
+        }
+
     }
 
     private class BoardItemGenerator {
@@ -268,7 +433,7 @@ public class Bober extends AppCompatActivity {
             }
         };
         private final int[]              SECTION_LENGTHS = {12, 5, 14, 2};
-        private final String[]           SECTION_TITLES  = {"Общее", "Аниме", "На пробу", "Доброчан", "Other"};
+        private final String[]           SECTION_TITLES  = {"Общее", "Аниме", "На пробу", "Доброчан"};
         private final Random             r               = new Random();
 
         public ArrayList<IDrawerItem> getItems() {
@@ -277,15 +442,13 @@ public class Bober extends AppCompatActivity {
             ArrayList<IDrawerItem> items = new ArrayList<>();
             for (Map.Entry<String, int[]> entry : pics.entrySet()) {
                 if (toSection-- == 0) {
-                    items.add(new SectionDrawerItem().withName(SECTION_TITLES[nextSectionIndex]));
+                    items.add(new ShortSectionDivider().withName(SECTION_TITLES[nextSectionIndex]));
                     toSection = SECTION_LENGTHS[nextSectionIndex++];
                 }
                 String name = slashify(entry.getKey());
                 Drawable drw = getRandomDrawable(entry.getKey());
                 items.add(new BoardDrawerItem(name, drw));
             }
-            items.add(new SectionDrawerItem().withName(SECTION_TITLES[nextSectionIndex]));
-            items.add(new SettingsDrawerItem());
             Log.d("Init", DEBUG_initRelativeTime() + " items loaded");
             return items;
         }
@@ -309,136 +472,6 @@ public class Bober extends AppCompatActivity {
         private String slashify(String key) {
             return new StringBuilder("/").append(key).append('/').toString();
         }
-    }
-
-    private DrawerBuilder generateBuilder(Bundle savedInstanceState, Toolbar toolbar) {
-        ImageView image = (ImageView) LayoutInflater.from(getApplicationContext())
-                                                    .inflate(R.layout.drawer_header_horo, null);
-        Drawable horo = getDrawable(R.drawable.acc39fc867f_transparent);
-        image.setImageDrawable(horo);
-        Log.d("Init", DEBUG_initRelativeTime() + " header loaded");
-        return new DrawerBuilder().withActivity(Bober.this)
-                                  .withFullscreen(true)
-                                  .withToolbar(toolbar)
-                                  .withHeaderDivider(false)
-                                  .withHeader(image)
-                                  .withDrawerItems(new BoardItemGenerator().getItems())
-                                  .withSavedInstance(savedInstanceState)
-                                  .withOnDrawerItemClickListener(new BoardSwitcher())
-                                  .withOnDrawerListener(new Drawer.OnDrawerListener() {
-                                      @Override
-                                      public void onDrawerOpened(View drawerView) {
-                                          Bober.this.invalidateOptionsMenu();
-                                      }
-
-                                      @Override
-                                      public void onDrawerClosed(View drawerView) {
-                                          Bober.this.invalidateOptionsMenu();
-                                      }
-
-                                      @Override
-                                      public void onDrawerSlide(View arg0, float slideOffset) {}
-
-                                  })
-                                  .withActionBarDrawerToggleAnimated(true);
-    }
-
-    private String shortenizeBoardName(String name) {
-        return name.substring(1, name.length() - 1);
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        //add the values which need to be saved from the drawer to the bundle
-        outState = drawer.saveInstanceState(outState);
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                onBackPressed();
-                return true;
-            case R.id.show_goto:
-
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
-
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        boolean valToSetVisibility = !drawer.isDrawerOpen();
-        for (int i = 0; i < menu.size(); i++) {
-            menu.getItem(i).setVisible(valToSetVisibility);
-        }
-        return true;
-    }
-
-    @Override
-    public void onBackPressed() {
-        //handle the back press :D close the drawer first and if the drawer is closed close the activity
-        if (drawer != null && drawer.isDrawerOpen()) {
-            drawer.closeDrawer();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.default_menu, menu);
-        // todo draw a proper icon for Go-To-Ref-Link
-        SearchView searchView = (SearchView) menu.findItem(R.id.show_goto).getActionView();
-        int searchImgId = getResources().getIdentifier("android:id/search_button", null, null);
-        ImageView v = (ImageView) searchView.findViewById(searchImgId);
-        SpannableStringBuilder ssb = new SpannableStringBuilder("board/post");
-        ssb.setSpan(new StyleSpan(Typeface.MONOSPACE.getStyle()), 0, 10, 0);
-//        ImageView icon = (ImageView)searchView.findViewById(android.R.id.search_mag_icon);
-        searchView.setQueryHint(ssb);
-        Drawable d = getDrawable(android.R.drawable.ic_media_ff);
-        d.setTint(getColor(R.color.dobro_primary_text));
-        v.setImageDrawable(d);
-//        searchView.setOnQueryTextListener(this);
-        return super.onPrepareOptionsMenu(menu);
-    }
-
-    public static final class BoardDrawerItem extends PrimaryDrawerItem {
-
-        @Override
-        public int getLayoutRes() {
-            return R.layout.drawer_item_board;
-        }
-
-        public BoardDrawerItem() {
-            super();
-
-        }
-
-        public BoardDrawerItem(String s, Drawable icon) {
-            this();
-            withName(s);
-            withIcon(icon);
-        }
-
-        public BoardDrawerItem(@StringRes int id, @DrawableRes int idIcon) {
-            this();
-            withName(id);
-            withIcon(idIcon);
-        }
-
-    }
-
-    public static final class SettingsDrawerItem extends PrimaryDrawerItem {
-        public SettingsDrawerItem() {
-            super();
-            withIdentifier(DrawerIdentifier.SETTINGS);
-            withSelectable(false);
-            withName("Settings");
-        }
-
     }
 
 }

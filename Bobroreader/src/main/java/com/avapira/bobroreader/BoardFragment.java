@@ -449,12 +449,11 @@ public class BoardFragment extends Fragment {
         @Override
         public boolean onSingleTapConfirmed(MotionEvent e) {
             View view = recycler.findChildViewUnder(e.getX(), e.getY());
+            CardView cv = (CardView) view.findViewById(R.id.post_card);
             TextView tv = ((TextView) view.findViewById(R.id.post_text));
 
-            CharSequence displId = ((TextView) view.findViewById(R.id.post_display_id)).getText();
-            float elevation = view.findViewById(R.id.post_card).getElevation();
             Toast.makeText(getContext(),
-                    displId + " " + Float.toString(elevation) + "|" + Float.toString(view.getElevation()),
+                    tv.getHeight()+":"+cv.getHeight(),
                     Toast.LENGTH_SHORT).show();
 
             tv.onTouchEvent(e);
