@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:paddingBottom="@dimen/small"
+              android:paddingStart="@dimen/small"
+              android:paddingEnd="@dimen/small" tools:showIn="@layout/layout_post">
+    <TextView
+            android:id="@+id/text_post_content_message"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/dobro_primary_text"
+            android:textSize="@dimen/font_text"
+            android:text="@string/lorem_ipsum_half"
+            />
+    <TextView
+            android:id="@+id/text_post_content_replies"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/font_text"
+            android:text=">>12312, >>12321, >>12312"
+            android:visibility="gone"/>
+</LinearLayout>

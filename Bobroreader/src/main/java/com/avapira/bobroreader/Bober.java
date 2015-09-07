@@ -97,7 +97,7 @@ public class Bober extends AppCompatActivity {
         @Override
         @LayoutRes
         public int getLayoutRes() {
-            return R.layout.section_divider;
+            return R.layout.activity_bober_drawer_boards_section_divider;
         }
     }
 
@@ -139,7 +139,7 @@ public class Bober extends AppCompatActivity {
         Log.d("Init", DEBUG_initRelativeTime() + " core coalesce");
         HanabiraBoard.Info.loadBoardsInfo(rawJsonToString(getResources(), R.raw.boards));
         Log.d("Init", DEBUG_initRelativeTime() + " boards info loaded");
-        setContentView(R.layout.activity_boards_navigation_drawer);
+        setContentView(R.layout.activity_bober);
         Log.d("Init", DEBUG_initRelativeTime() + " content view applied");
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -204,7 +204,7 @@ public class Bober extends AppCompatActivity {
 
   private DrawerBuilder generateBoardsDrawerBuilder(Bundle savedInstanceState, Toolbar toolbar) {
         ImageView image = (ImageView) LayoutInflater.from(getApplicationContext())
-                                                    .inflate(R.layout.drawer_header_horo, null);
+                                                    .inflate(R.layout.activity_bober_drawer_boards_header_horo, null);
         Drawable horo = getDrawable(R.drawable.acc39fc867f_transparent);
         image.setImageDrawable(horo);
         Log.d("Init", DEBUG_initRelativeTime() + " header loaded");
@@ -332,7 +332,7 @@ public class Bober extends AppCompatActivity {
 
         @Override
         public int getLayoutRes() {
-            return R.layout.drawer_item_board;
+            return R.layout.activity_bober_drawer_boards_item;
         }
 
         public BoardDrawerItem(String s, Drawable icon) {

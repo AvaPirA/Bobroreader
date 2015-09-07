@@ -54,20 +54,17 @@ import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
-import com.avapira.bobroreader.util.TestCardViewFragment;
 import org.joda.time.format.DateTimeFormat;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  *
  */
 public class BoardFragment extends Fragment {
 
-    private static final String TAG = ThreadFragment.class.getSimpleName();
+    private static final String TAG = BoardFragment.class.getSimpleName();
 
     ActionBar             toolbar;
     FrameLayout           toolbarContainer;
@@ -83,8 +80,8 @@ public class BoardFragment extends Fragment {
      *
      * @return A new instance of fragment NotificationFragment.
      */
-    public static TestCardViewFragment newInstance() {
-        TestCardViewFragment fragment = new TestCardViewFragment();
+    public static BoardFragment newInstance() {
+        BoardFragment fragment = new BoardFragment();
         fragment.setRetainInstance(true);
         return fragment;
     }
@@ -300,8 +297,8 @@ public class BoardFragment extends Fragment {
             TextView threadTitle = null, displayId = null, authorName = null, rightHeader = null, text = null,
                     replies = null;
             CardView card = null;
-            RecyclerView filesRecycler = null;
-            ListView previewList = null;
+            HorizontalScrollView filesScroller = null;
+            LinearLayout expandablePreviews = null;
             switch (viewType) {
                 case ViewType.PREV_PAGE:
                     postcard = LayoutInflater.from(getContext()).inflate(R.layout.board_header_view, parent, false);
@@ -310,16 +307,16 @@ public class BoardFragment extends Fragment {
                     }
                     break;
                 case ViewType.THREAD:
-                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.thread_with_preview, parent, false);
+                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.layout_thread_with_preview, parent, false);
                     threadTitle = (TextView) postcard.findViewById(R.id.text_thread_title);
-                    displayId = (TextView) postcard.findViewById(R.id.post_display_id);
-                    authorName = (TextView) postcard.findViewById(R.id.post_author_name);
-                    rightHeader = (TextView) postcard.findViewById(R.id.post_right_header_text);
-                    text = (TextView) postcard.findViewById(R.id.post_text);
-                    replies = (TextView) postcard.findViewById(R.id.post_replies);
-                    card = (CardView) postcard.findViewById(R.id.post_card);
-                    filesRecycler = (RecyclerView) postcard.findViewById(R.id.post_files_recycler);
-                    previewList = (ListView) postcard.findViewById(R.id.list_preview_posts);
+                    displayId = (TextView) postcard.findViewById(R.id.text_post_header_display_id);
+                    authorName = (TextView) postcard.findViewById(R.id.text_post_header_author_name);
+                    rightHeader = (TextView) postcard.findViewById(R.id.text_post_header_datetime);
+                    text = (TextView) postcard.findViewById(R.id.text_post_content_message);
+                    replies = (TextView) postcard.findViewById(R.id.text_post_content_replies);
+                    card = (CardView) postcard.findViewById(R.id.card_post);
+                    filesScroller = (HorizontalScrollView) postcard.findViewById(R.id.post_files_scroller);
+                    expandablePreviews = (LinearLayout) postcard.findViewById(R.id.layout_thread_expandable_posts_preview);
                     break;
                 case ViewType.NEXT_PAGE:
                     postcard = LayoutInflater.from(getContext()).inflate(R.layout.board_footer_view, parent, false);
@@ -328,7 +325,7 @@ public class BoardFragment extends Fragment {
                     throw new IllegalArgumentException("Wrong view type received");
             }
             ThreadPreviewViewHolder tpvh = new ThreadPreviewViewHolder(postcard, threadTitle, card, displayId,
-                    authorName, rightHeader, text, filesRecycler, previewList, replies);
+                    authorName, rightHeader, text, filesScroller, expandablePreviews, replies);
             long time = System.nanoTime() - start;
             Log.i("onCreateViewHolder", "Time: " + Double.toString(((double) time) / 10e6));
             return tpvh;
@@ -362,26 +359,6 @@ public class BoardFragment extends Fragment {
             if (op.getFiles() == null || op.getFiles().size() == 0) {
                 holder.filesRecycler.setVisibility(View.GONE);
             }
-
-            final String[] mapKeys = {"subject", "text"};
-            int[] viewIds = {R.id.text_thread_preview_list_item_subject, R.id.text_thread_preview_list_item_text};
-            List<Map<String, CharSequence>> previewData = new ArrayList<>();
-            List<Integer> postsIds = thread.getLastN(3);
-            List<HanabiraPost> posts = new ArrayList<>();
-            for (Integer i : postsIds) {
-                posts.add(Hanabira.getCache().findPostByDisplayId(i));
-            }
-            for (final HanabiraPost p : posts) {
-                previewData.add(new HashMap<String, CharSequence>() {
-                    {
-                        put(mapKeys[0], p.getSubject());
-                        put(mapKeys[1], p.getMessage());
-                    }
-                });
-            }
-            SimpleAdapter previewAdapter = new SimpleAdapter(getContext(), previewData,
-                    R.layout.thread_preview_list_item, mapKeys, viewIds);
-            holder.previewList.setAdapter(previewAdapter);
 
 //            filesRecycler.setLayoutManager(
 //                    new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
@@ -417,8 +394,8 @@ public class BoardFragment extends Fragment {
             public final TextView     authorName;
             public final TextView     rightHeader;
             public final TextView     text;
-            public final RecyclerView filesRecycler;
-            public final ListView     previewList;
+            public final HorizontalScrollView filesRecycler;
+            public final LinearLayout     previewList;
             public final TextView     replies;
 
             public ThreadPreviewViewHolder(View itemView,
@@ -428,8 +405,8 @@ public class BoardFragment extends Fragment {
                                            TextView authorName,
                                            TextView rightHeader,
                                            TextView text,
-                                           RecyclerView filesRecycler,
-                                           ListView previewList,
+                                           HorizontalScrollView filesRecycler,
+                                           LinearLayout previewList,
                                            TextView replies) {
                 super(itemView);
                 this.threadTitle = threadTitle;
@@ -449,8 +426,8 @@ public class BoardFragment extends Fragment {
         @Override
         public boolean onSingleTapConfirmed(MotionEvent e) {
             View view = recycler.findChildViewUnder(e.getX(), e.getY());
-            CardView cv = (CardView) view.findViewById(R.id.post_card);
-            TextView tv = ((TextView) view.findViewById(R.id.post_text));
+            CardView cv = (CardView) view.findViewById(R.id.card_post);
+            TextView tv = ((TextView) view.findViewById(R.id.text_post_content_message));
 
             Toast.makeText(getContext(),
                     tv.getHeight()+":"+cv.getHeight(),
@@ -463,7 +440,7 @@ public class BoardFragment extends Fragment {
 
         public void onLongPress(MotionEvent e) {
             View view = recycler.findChildViewUnder(e.getX(), e.getY());
-            View list = view.findViewById(R.id.list_preview_posts);
+            View list = view.findViewById(R.id.layout_thread_expandable_posts_preview);
             // switch preview list visibility on long press
             list.setVisibility(list.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
             super.onLongPress(e);
