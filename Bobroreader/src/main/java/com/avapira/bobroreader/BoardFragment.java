@@ -38,24 +38,24 @@ import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.LayoutRes;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.*;
 import android.view.animation.LinearInterpolator;
-import android.widget.*;
+import android.widget.FrameLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import com.android.volley.Response;
 import com.avapira.bobroreader.hanabira.Hanabira;
-import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
-import org.joda.time.format.DateTimeFormat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -260,121 +260,66 @@ public class BoardFragment extends Fragment {
         }
     }
 
-    private class BoardAdapter extends RecyclerView.Adapter<BoardAdapter.ThreadPreviewViewHolder> {
-        private class ViewType {
-            public static final int PREV_PAGE = 1;
-            public static final int THREAD    = 2;
-            public static final int NEXT_PAGE = 3;
-        }
-
+    private class BoardAdapter extends RecyclerView.Adapter<ThreadWithPreviewViewHolder> {
+        public static final int VIEW_TYPE_PREV_PAGE = 1;
+        public static final int VIEW_TYPE_THREAD    = 2;
+        public static final int VIEW_TYPE_NEXT_PAGE = 3;
+        private final       int recentListSize      = 3;
         List<HanabiraThread> threads = new ArrayList<>();
-        List<CharSequence> cachedParsedPosts;
+
 
         public BoardAdapter(List<HanabiraThread> tt) {
             threads = tt;
-            cachedParsedPosts = new ArrayList<>(threads.size());
-            new Thread(new Runnable() {
-                public void run() {
-                    for (int i = 0; i < threads.size(); i++) {
-                        HanabiraPost post = Hanabira.getCache().findPostByDisplayId(threads.get(i).getDispayId());
-                        cachedParsedPosts.add(i, new HanabiraParser(post, getContext()).getFormatted());
-                    }
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getContext(), "parsed", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-            }).start();
+            Hanabira.getCache().asyncParse(threads, recentListSize);
         }
 
-        private final float opPostElevation = 5 * BoardFragment.this.getResources().getDimension(R.dimen.micro) / 2;
-
-        @Override
-        public ThreadPreviewViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            long start = System.nanoTime();
-            View postcard;
-            TextView threadTitle = null, displayId = null, authorName = null, rightHeader = null, text = null,
-                    replies = null, recentBtn = null;
-            CardView card = null;
-            HorizontalScrollView filesScroller = null;
-            LinearLayout expandablePreviews = null;
+        @LayoutRes
+        public int getLayoutIdForViewType(int viewType) {
             switch (viewType) {
-                case ViewType.PREV_PAGE:
-                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.board_header_view, parent, false);
-                    if (page == 0) {
-                        postcard.findViewById(R.id.frame_header_container).setVisibility(View.GONE);
-                    }
-                    break;
-                case ViewType.THREAD:
-                    postcard = LayoutInflater.from(getContext())
-                                             .inflate(R.layout.layout_thread_with_preview, parent, false);
-                    threadTitle = (TextView) postcard.findViewById(R.id.text_thread_title);
-                    displayId = (TextView) postcard.findViewById(R.id.text_post_header_display_id);
-                    authorName = (TextView) postcard.findViewById(R.id.text_post_header_author_name);
-                    rightHeader = (TextView) postcard.findViewById(R.id.text_post_header_datetime);
-                    text = (TextView) postcard.findViewById(R.id.text_post_content_message);
-                    replies = (TextView) postcard.findViewById(R.id.text_post_content_replies);
-                    card = (CardView) postcard.findViewById(R.id.card_post);
-                    filesScroller = (HorizontalScrollView) postcard.findViewById(R.id.post_files_scroller);
-                    expandablePreviews = (LinearLayout) postcard.findViewById(
-                            R.id.layout_thread_expandable_posts_preview);
-                    recentBtn = (TextView) postcard.findViewById(R.id.thread_controls_recent);
-                    break;
-                case ViewType.NEXT_PAGE:
-                    postcard = LayoutInflater.from(getContext()).inflate(R.layout.board_footer_view, parent, false);
-                    break;
+                case VIEW_TYPE_PREV_PAGE:
+                    return R.layout.board_header_view;
+                case VIEW_TYPE_THREAD:
+                    return R.layout.layout_thread_with_preview;
+                case VIEW_TYPE_NEXT_PAGE:
+                    return R.layout.board_footer_view;
                 default:
                     throw new IllegalArgumentException("Wrong view type received");
             }
-            ThreadPreviewViewHolder tpvh = new ThreadPreviewViewHolder(postcard, threadTitle, card, displayId,
-                    authorName, rightHeader, text, filesScroller, expandablePreviews, replies, recentBtn);
-            long time = System.nanoTime() - start;
-            Log.i("onCreateViewHolder", "Time: " + Double.toString(((double) time) / 10e6));
+        }
+
+        @Override
+        public ThreadWithPreviewViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            double start = System.nanoTime();
+            View postcard = LayoutInflater.from(getContext()).inflate(getLayoutIdForViewType(viewType), parent, false);
+            if (page == 0 && viewType == VIEW_TYPE_PREV_PAGE) {
+                postcard.findViewById(R.id.frame_header_container).setVisibility(View.GONE);
+            }
+            ThreadWithPreviewViewHolder tpvh = new ThreadWithPreviewViewHolder(postcard, recentListSize, getContext());
+            Log.i("onCreateViewHolder", "Time: " + Double.toString(((double) System.nanoTime() - start) / 10e5));
             return tpvh;
         }
 
         @Override
-        public void onBindViewHolder(final ThreadPreviewViewHolder holder, int position) {
+        public void onBindViewHolder(final ThreadWithPreviewViewHolder holder, int position) {
             long start = System.nanoTime();
             switch (getItemViewType(position)) {
-                case ViewType.NEXT_PAGE:
-                case ViewType.PREV_PAGE:
+                case VIEW_TYPE_NEXT_PAGE:
+                case VIEW_TYPE_PREV_PAGE:
                     return;
             }
-            int threadNumOnPage = position - 1;
+            int threadIndex = position - 1;
 
-            HanabiraThread thread = threads.get(threadNumOnPage);
-            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
+            HanabiraThread thread = threads.get(threadIndex);
+            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getDispayId());
+//            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
 
-            holder.threadTitle.setText(thread.getTitle());
-            holder.displayId.setText("№".concat(Integer.toString(op.getDisplayId())));
-            holder.authorName.setText(op.getName());
-            holder.rightHeader.setText(DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(op.getDate()));
-            if (cachedParsedPosts.size() > threadNumOnPage) {
-                holder.text.setText(cachedParsedPosts.get(threadNumOnPage));
-            } else {
-                holder.text.setText(new HanabiraParser(op, getContext()).getFormatted());
-                Log.w("onBindViewHolder", "Parser cache miss at " + threadNumOnPage);
-            }
-            holder.text.setMovementMethod(LinkMovementMethod.getInstance());
-            holder.card.setCardElevation(opPostElevation);
+            holder.setStaticText(thread, op);
+            holder.opPost.message.setMovementMethod(LinkMovementMethod.getInstance());
+
             if (op.getFiles() == null || op.getFiles().size() == 0) {
-                holder.filesRecycler.setVisibility(View.GONE);
+                holder.filesScroller.setVisibility(View.GONE);
             }
-            final int[] PREVIEW_HEIGHT = new int[1];
-            holder.itemView.findViewById(R.id.layout_thread_expandable_posts_preview).getViewTreeObserver()
-                       .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
 
-                           @Override
-                           public void onGlobalLayout() {
-                               PREVIEW_HEIGHT[0] = holder.previewList.getHeight();
-                               holder.previewList.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                               holder.previewList.setVisibility(View.GONE);
-                           }
-
-                       });
             holder.recentBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -388,12 +333,12 @@ public class BoardFragment extends Fragment {
 
                 private void expand(final View v) {
                     v.setVisibility(View.VISIBLE);
-                    ValueAnimator mAnimator = slideAnimator(0, PREVIEW_HEIGHT[0]);
+                    ValueAnimator mAnimator = slideAnimator(0, holder.recentsHeight);
                     mAnimator.start();
                 }
 
                 private void collapse(final View v) {
-                    ValueAnimator mAnimator = slideAnimator(PREVIEW_HEIGHT[0], 0);
+                    ValueAnimator mAnimator = slideAnimator(holder.recentsHeight, 0);
                     mAnimator.addListener(new Animator.AnimatorListener() {
                         @Override
                         public void onAnimationStart(Animator animation) {}
@@ -431,11 +376,14 @@ public class BoardFragment extends Fragment {
                     return animator;
                 }
             });
-//            filesRecycler.setLayoutManager(
+
+//            filesScroller.setLayoutManager(
 //                    new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-//            filesRecycler.setAdapter(new FilesAdapter(/*todo*/));
-            long time = System.nanoTime() - start;
-            Log.i("onBindViewHolder", "Time: " + Double.toString(((double) time) / 10e6));
+//            filesScroller.setAdapter(new FilesAdapter(/*todo*/));
+            double ms = ((double) (System.nanoTime() - start)) / 10e5;
+            if (ms > 16) {
+                Log.w("onBindViewHolder", "Time: " + ms);
+            } else { Log.i("onBindViewHolder", "Time: " + ms); }
         }
 
 
@@ -448,64 +396,23 @@ public class BoardFragment extends Fragment {
         public int getItemViewType(int position) {
             if (position > 0) {
                 if (position < threads.size() + 1) {
-                    return ViewType.THREAD;
+                    return VIEW_TYPE_THREAD;
                 } else {
-                    return ViewType.NEXT_PAGE;
+                    return VIEW_TYPE_NEXT_PAGE;
                 }
             } else {
-                return ViewType.PREV_PAGE;
+                return VIEW_TYPE_PREV_PAGE;
             }
         }
 
-
-        protected class ThreadPreviewViewHolder extends RecyclerView.ViewHolder {
-
-            public final TextView             threadTitle;
-            public final CardView             card;
-            public final TextView             displayId;
-            public final TextView             authorName;
-            public final TextView             rightHeader;
-            public final TextView             text;
-            public final HorizontalScrollView filesRecycler;
-            public final LinearLayout         previewList;
-            public final TextView             replies;
-            public final TextView             recentBtn;
-
-            public ThreadPreviewViewHolder(View itemView,
-                                           TextView threadTitle,
-                                           CardView card,
-                                           TextView displayId,
-                                           TextView authorName,
-                                           TextView rightHeader,
-                                           TextView text,
-                                           HorizontalScrollView filesRecycler,
-                                           final LinearLayout previewList,
-                                           TextView replies,
-                                           TextView recentBtn) {
-                super(itemView);
-                this.threadTitle = threadTitle;
-                this.card = card;
-                this.displayId = displayId;
-                this.authorName = authorName;
-                this.rightHeader = rightHeader;
-                this.text = text;
-                this.filesRecycler = filesRecycler;
-                this.previewList = previewList;
-                this.replies = replies;
-                this.recentBtn = recentBtn;
-            }
-        }
     }
+
 
     private class RecyclerGestureListener extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onSingleTapConfirmed(MotionEvent e) {
             View view = recycler.findChildViewUnder(e.getX(), e.getY());
-            CardView cv = (CardView) view.findViewById(R.id.card_post);
             TextView tv = ((TextView) view.findViewById(R.id.text_post_content_message));
-
-            Toast.makeText(getContext(), tv.getHeight() + ":" + cv.getHeight(), Toast.LENGTH_SHORT).show();
-
             tv.onTouchEvent(e);
             return super.onSingleTapConfirmed(e);
         }

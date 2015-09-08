@@ -10,8 +10,16 @@ import java.util.*;
  */
 public class HanabiraThread extends HanabiraEntity {
 
-    HanabiraThread(int dispayId, int threadId, LocalDateTime modifiedDate, int postsCount, int filesCount, int boardId,
-                   boolean archived, String title, boolean autosage, LocalDateTime lastHit) {
+    HanabiraThread(int dispayId,
+                   int threadId,
+                   LocalDateTime modifiedDate,
+                   int postsCount,
+                   int filesCount,
+                   int boardId,
+                   boolean archived,
+                   String title,
+                   boolean autosage,
+                   LocalDateTime lastHit) {
         this.dispayId = dispayId;
         this.threadId = threadId;
         this.modifiedDate = modifiedDate;
@@ -128,11 +136,13 @@ public class HanabiraThread extends HanabiraEntity {
         return posts;
     }
 
-    public List<Integer> getLastN(int n) {
-        int skip = n > posts.size() ? posts.size() - 1 : n;
-        List<Integer> returnList = new ArrayList<>(n);
+    public List<Integer> getLastN(int want) {
+        if (postsCount < 2) { return Collections.emptyList(); }
+        int have = posts.size() - 1;
+        int skip = want > have ? 1 : have - want;
+        List<Integer> returnList = new ArrayList<>(Math.min(want, have));
         Iterator<Map.Entry<LocalDateTime, Integer>> read = posts.entrySet().iterator();
-        while (skip-- > 0) {
+        while (skip-- >= 0) {
             read.next();
         }
         while (read.hasNext()) {

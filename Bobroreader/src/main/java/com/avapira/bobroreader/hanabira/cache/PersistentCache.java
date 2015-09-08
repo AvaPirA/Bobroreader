@@ -5,10 +5,17 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 
+import java.util.List;
+
 /**
  *
  */
 public class PersistentCache implements HanabiraCache {
+    @Override
+    public void asyncParse(List<HanabiraThread> threads, int recentDepth) {
+        //do nothing
+    }
+
     @Override
     @CallSuper
     public HanabiraBoard findBoardByKey(String boardKey) {
@@ -36,6 +43,11 @@ public class PersistentCache implements HanabiraCache {
     @Override
     @CallSuper
     public HanabiraPost findPostByDisplayId(int postDisplayId) {
+        return null;
+    }
+
+    @Override
+    public CharSequence getParsedPost(int postDisplayId) {
         return null;
     }
 

@@ -34,7 +34,8 @@
                       android:textAllCaps="true"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="Hide"/>
+                      android:text="Hide"
+                    android:clickable="true"/>
             <TextView android:id="@+id/thread_controls_fav"
                       android:paddingTop="@dimen/small"
                       android:paddingBottom="@dimen/small"
@@ -47,7 +48,8 @@
                       android:textAllCaps="true"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="Memory"/>
+                      android:text="Memory"
+                      android:clickable="true"/>
         </LinearLayout>
         <TextView android:id="@+id/thread_controls_expand"
                   android:layout_centerInParent="true"
@@ -61,7 +63,8 @@
                   android:textAllCaps="true"
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:text="Expand"/>
+                  android:text="Expand"
+                  android:clickable="true"/>
         <LinearLayout
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
@@ -80,7 +83,8 @@
                       android:textAllCaps="true"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="Recents"/>
+                      android:text="Recents"
+                      android:clickable="true"/>
             <TextView android:id="@+id/thread_controls_open"
                       android:paddingTop="@dimen/small"
                       android:paddingBottom="@dimen/small"
@@ -93,7 +97,8 @@
                       android:textAllCaps="true"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="Open"/>
+                      android:text="Open"
+                      android:clickable="true"/>
         </LinearLayout>
     </RelativeLayout>
 

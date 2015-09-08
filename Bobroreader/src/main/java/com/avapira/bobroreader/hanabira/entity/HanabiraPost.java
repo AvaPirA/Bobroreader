@@ -136,10 +136,6 @@ public class HanabiraPost extends HanabiraEntity {
         return op;
     }
 
-    public LocalDateTime getDate() {
-        return createdDate;
-    }
-
     public List getFiles() {
         return null;
     }
@@ -167,6 +163,7 @@ public class HanabiraPost extends HanabiraEntity {
     void setModifiedDate(LocalDateTime modifiedDate) {
         this.modifiedDate = modifiedDate;
     }
+
 }
 
 
