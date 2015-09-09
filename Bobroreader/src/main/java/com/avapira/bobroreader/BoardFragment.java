@@ -159,10 +159,10 @@ public class BoardFragment extends Fragment {
         progressBar = (ProgressBar) view.findViewById(R.id.pb);
         recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
-        recycler.addOnItemTouchListener(new TouchEventInterceptor());
+//        recycler.addOnItemTouchListener(new TouchEventInterceptor());
         scrollListener = new HidingScrollListener();
         recycler.addOnScrollListener(scrollListener);
-        detector = new GestureDetectorCompat(getActivity(), new RecyclerGestureListener());
+//        detector = new GestureDetectorCompat(getActivity(), new RecyclerGestureListener());
         switchPage(page);
     }
 
@@ -267,6 +267,7 @@ public class BoardFragment extends Fragment {
         public static final int VIEW_TYPE_PREV_PAGE = 1;
         public static final int VIEW_TYPE_THREAD    = 2;
         public static final int VIEW_TYPE_NEXT_PAGE = 3;
+        private final       int ELLIPSIZE_MAX_LINES = 15;
         private final       int recentListSize      = 3;
         List<HanabiraThread> threads = new ArrayList<>();
 
@@ -306,7 +307,6 @@ public class BoardFragment extends Fragment {
         @Override
         public void onBindViewHolder(final ThreadWithPreviewViewHolder holder, int position) {
             long start = System.nanoTime();
-            DebugTimer.start();
             switch (getItemViewType(position)) {
                 case VIEW_TYPE_NEXT_PAGE:
                 case VIEW_TYPE_PREV_PAGE:
@@ -317,24 +317,22 @@ public class BoardFragment extends Fragment {
             HanabiraThread thread = threads.get(threadIndex);
             HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getDispayId());
 //            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
-            DebugTimer.lap("cache");
             holder.setStaticText(thread, op);
 
             if (op.getFiles() == null || op.getFiles().size() == 0) {
                 holder.filesScroller.setVisibility(View.GONE);
             }
+            holder.expandBtn.setEnabled(true);
+            holder.expandBtn.setText("Expand");
             holder.recentBtn.setEnabled(thread.getPostsCount() > 1);
-            DebugTimer.lap("flags");
 
             keeper.bind(holder, position);
-            DebugTimer.lap("kpbind");
 
 //            filesScroller.setLayoutManager(
 //                    new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
 //            filesScroller.setAdapter(new FilesAdapter(/*todo*/));
             double ms = ((double) (System.nanoTime() - start)) / 10e5;
             if (ms > 16) {
-                DebugTimer.logLaps();
                 Log.w("onBindViewHolder", "Time: " + ms);
             } else { Log.i("onBindViewHolder", "Time: " + ms); }
         }
@@ -361,30 +359,57 @@ public class BoardFragment extends Fragment {
         public class ThreadWithPreviewViewHolder extends RecyclerView.ViewHolder implements Expandable {
 
             public final TextView             threadTitle;
-            public final PostHolder           opPost;
+            public final PostHolder           postHolder;
             public final HorizontalScrollView filesScroller;
             public final LinearLayout         previewList;
             public final TextView             replies;
-            public final TextView             recentBtn;
-            public final List<PostHolder>     recents;
+            public final Button               optionsBtn;
+            public final Button               expandBtn;
+            public final Button               recentBtn;
+            public final Button               openBtn;
+
+
+            public final List<PostHolder> recents;
 
             public ThreadWithPreviewViewHolder(View itemView) {
                 super(itemView);
                 threadTitle = (TextView) itemView.findViewById(R.id.text_thread_title);
 
-                opPost = new PostHolder(itemView);
+                postHolder = new PostHolder(itemView);
                 replies = (TextView) itemView.findViewById(R.id.text_post_content_replies);
                 filesScroller = (HorizontalScrollView) itemView.findViewById(R.id.post_files_scroller);
                 previewList = (LinearLayout) itemView.findViewById(R.id.layout_thread_expandable_posts_preview);
-                recentBtn = (TextView) itemView.findViewById(R.id.thread_controls_recent);
+                optionsBtn = (Button) itemView.findViewById(R.id.thread_controls_options);
+                expandBtn = (Button) itemView.findViewById(R.id.thread_controls_expand);
+                recentBtn = (Button) itemView.findViewById(R.id.thread_controls_recent);
+                openBtn = (Button) itemView.findViewById(R.id.thread_controls_open);
 
-                if (recentBtn != null) {
+                if (optionsBtn != null) {
+                    optionsBtn.setOnClickListener(null);
+                    // hope either not null
+                    expandBtn.setOnClickListener(new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View v) {
+                            System.out.println(v);
+                            expandBtn.setEnabled(postHolder.message.getLineCount() > ELLIPSIZE_MAX_LINES);
+                            if (postHolder.message.getMaxLines() == Integer.MAX_VALUE) {
+                                postHolder.message.setMaxLines(ELLIPSIZE_MAX_LINES);
+                                expandBtn.setText("Expand");
+                            } else {
+                                postHolder.message.setMaxLines(Integer.MAX_VALUE);
+                                expandBtn.setText("Collapse");
+                            }
+
+                        }
+                    });
                     recentBtn.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             keeper.toggle(ThreadWithPreviewViewHolder.this);
                         }
                     });
+                    openBtn.setOnClickListener(null);
                 }
 
                 recents = new ArrayList<>(recentListSize);
@@ -404,11 +429,9 @@ public class BoardFragment extends Fragment {
 
             public void setStaticText(HanabiraThread thread, HanabiraPost op) {
                 threadTitle.setText(thread.getTitle());
-                DebugTimer.lap(" titl");
-                opPost.fillWithData(op);
-                DebugTimer.lap(" op");
+                postHolder.fillWithData(op);
+                postHolder.message.setMaxLines(ELLIPSIZE_MAX_LINES);
                 List<Integer> recentsList = thread.getLastN(3);
-                DebugTimer.lap(" last");
                 int i = 0;
                 for (; i < recentsList.size(); i++) {
                     recents.get(i).fillWithData(recentsList.get(i));
@@ -416,7 +439,6 @@ public class BoardFragment extends Fragment {
                 for (; i < recents.size(); i++) {
                     recents.get(i).hide();
                 }
-                DebugTimer.lap(" hide");
             }
 
             private View createDivider(Context context, int oneDp) {
@@ -576,12 +598,12 @@ public class BoardFragment extends Fragment {
     private class RecyclerGestureListener extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onSingleTapConfirmed(MotionEvent e) {
-            View view = recycler.findChildViewUnder(e.getX(), e.getY());
-            for (View v : view.getTouchables()) {
-                if (v.getId() == R.id.text_post_content_message) {
-                    v.onTouchEvent(e);
-                }
-            }
+//            View view = recycler.findChildViewUnder(e.getX(), e.getY());
+//            for (View v : view.getTouchables()) {
+//                if (v.getId() == R.id.text_post_content_message) {
+//                    v.onTouchEvent(e);
+//                }
+//            }
             return super.onSingleTapConfirmed(e);
         }
 

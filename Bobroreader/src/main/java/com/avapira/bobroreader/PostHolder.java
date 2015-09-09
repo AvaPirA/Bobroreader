@@ -1,6 +1,9 @@
 package com.avapira.bobroreader;
 
-import android.text.method.LinkMovementMethod;
+import android.text.Layout;
+import android.text.Spanned;
+import android.text.style.ClickableSpan;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
 import com.avapira.bobroreader.hanabira.Hanabira;
@@ -34,23 +37,16 @@ public class PostHolder {
 
     public void fillWithData(HanabiraPost post) {
         displayId.setText(formatDisplayId(post.getDisplayId()));
-        DebugTimer.lap("  disp");
         date.setText(formatDate(post.getCreatedDate()));
-        DebugTimer.lap("  date");
         name.setText(post.getName());
-        DebugTimer.lap("  name");
-        final CharSequence parsedPost = Hanabira.getCache().getParsedPost(post.getDisplayId());
-        DebugTimer.lap("  cache msg");
-        message.setText(parsedPost);
-        DebugTimer.lap("  msg");
-        message.setMovementMethod(LinkMovementMethod.getInstance());
-        DebugTimer.lap("  movement");
+        message.setText(Hanabira.getCache().getParsedPost(post.getDisplayId()));
+//        message.setMovementMethod(LinkMovementMethod.getInstance());
+        message.setOnTouchListener(new LinkMovementMethodOverride());
     }
 
     public void fillWithData(int postDisplayId) {
         fillWithData(Hanabira.getCache().findPostByDisplayId(postDisplayId));
         show();
-        DebugTimer.lap("  cache post");
     }
 
     public void show() {
@@ -67,5 +63,50 @@ public class PostHolder {
 
     private static CharSequence formatDate(LocalDateTime localDateTime) {
         return DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(localDateTime);
+    }
+    public class LinkMovementMethodOverride implements View.OnTouchListener{
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            TextView widget = (TextView) v;
+            Object text = widget.getText();
+            if (text instanceof Spanned) {
+                Spanned buffer = (Spanned) text;
+
+                int action = event.getAction();
+
+                if (action == MotionEvent.ACTION_UP
+                        || action == MotionEvent.ACTION_DOWN) {
+                    int x = (int) event.getX();
+                    int y = (int) event.getY();
+
+                    x -= widget.getTotalPaddingLeft();
+                    y -= widget.getTotalPaddingTop();
+
+                    x += widget.getScrollX();
+                    y += widget.getScrollY();
+
+                    Layout layout = widget.getLayout();
+                    int line = layout.getLineForVertical(y);
+                    int off = layout.getOffsetForHorizontal(line, x);
+
+                    ClickableSpan[] link = buffer.getSpans(off, off,
+                                                           ClickableSpan.class);
+
+                    if (link.length != 0) {
+                        if (action == MotionEvent.ACTION_UP) {
+                            for(ClickableSpan l : link) {
+                                l.onClick(widget);
+                            }
+                        }
+                        return true;
+                    }
+                }
+
+            }
+
+            return false;
+        }
+
     }
 }

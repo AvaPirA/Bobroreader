@@ -3,7 +3,8 @@
         xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical" tools:showIn="@layout/card_post">
+        android:orientation="vertical" tools:showIn="@layout/card_post"
+        android:animateLayoutChanges="true">
     <include layout="@layout/post_header"/>
 
     <View android:layout_height="1dp"
@@ -31,16 +32,19 @@
                 android:paddingStart="@dimen/small"
                 android:paddingEnd="@dimen/small"
                 android:animateLayoutChanges="true"
+                android:isScrollContainer="false"
                 >
-            <com.avapira.bobroreader.EllipsizingTextView
+            <TextView
                     android:id="@+id/text_post_content_message"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textColor="@color/dobro_primary_text"
                     android:textSize="@dimen/font_text"
                     android:text="@string/lorem_ipsum_half"
-                    android:maxLines="15"
                     android:clickable="true"
+
+                    android:isScrollContainer="false"
+                    android:animateLayoutChanges="true"
                     />
             <TextView
                     android:id="@+id/text_post_content_replies"

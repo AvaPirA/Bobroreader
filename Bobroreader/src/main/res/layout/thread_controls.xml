@@ -6,7 +6,7 @@
               android:layout_height="wrap_content"
               tools:showIn="@layout/layout_thread_with_preview"
               style="?android:attr/buttonBarStyle">
-    <Button android:id="@+id/thread_controls_delete"
+    <Button android:id="@+id/thread_controls_options"
             android:textSize="12sp"
             android:fontFamily="sans-serif-condensed"
             android:textColor="@color/dobro_secondary_text"
