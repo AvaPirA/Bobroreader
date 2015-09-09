@@ -6,7 +6,7 @@
         >
 
     <TextView android:id="@+id/text_thread_title"
-              android:layout_width="fill_parent"
+              android:layout_width="match_parent"
               android:layout_height="wrap_content"
               android:gravity="center"
               android:text="Lorem ipsum dolor"
@@ -41,7 +41,7 @@
             <include layout="@layout/divider"/>
             <include layout="@layout/thread_controls"/>
             <LinearLayout android:id="@+id/layout_thread_expandable_posts_preview"
-                          android:layout_width="fill_parent"
+                          android:layout_width="match_parent"
                           android:layout_height="wrap_content"
                           android:layout_marginStart="16dp"
                           android:layout_marginEnd="16dp"

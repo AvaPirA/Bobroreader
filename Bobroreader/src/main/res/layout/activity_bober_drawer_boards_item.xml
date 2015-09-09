@@ -32,10 +32,10 @@
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 xmlns:tools="http://schemas.android.com/tools"
-                android:layout_width="fill_parent"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
-    <RelativeLayout android:layout_width="fill_parent"
+    <RelativeLayout android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp">
@@ -50,7 +50,7 @@
                        android:layout_width="150dp"
                        android:layout_height="50dp"
                        android:src="@drawable/banners_a_125761210590870"/>
-            <LinearLayout android:layout_width="fill_parent"
+            <LinearLayout android:layout_width="match_parent"
                           android:layout_height="match_parent"
                           android:gravity="center_vertical"
                           android:orientation="vertical">
@@ -102,7 +102,7 @@
     </RelativeLayout>
     <View
             android:id="@+id/drawer_subdivider"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_alignParentBottom="true"
             android:layout_marginEnd="55dp"

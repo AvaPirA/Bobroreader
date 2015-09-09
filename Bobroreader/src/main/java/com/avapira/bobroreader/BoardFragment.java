@@ -33,8 +33,11 @@ package com.avapira.bobroreader;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.app.Fragment;
+import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
@@ -45,10 +48,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.*;
-import android.widget.FrameLayout;
-import android.widget.ProgressBar;
-import android.widget.Toast;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.*;
 import com.android.volley.Response;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
@@ -163,11 +166,6 @@ public class BoardFragment extends Fragment {
         switchPage(page);
     }
 
-    /**
-     * Thanks <a href =http://rylexr.tinbytes.com/2015/04/27/how-to-hideshow-android-toolbar-when-scrolling-google
-     * -play-musics-behavior>that</a> blog for a complete solution
-     * TODO apply fixes from comments
-     */
     public class HidingScrollListener extends RecyclerView.OnScrollListener {
         private final float TOOLBAR_ELEVATION = getResources().getDimension(R.dimen.tiny);
         int     verticalOffset;
@@ -265,14 +263,14 @@ public class BoardFragment extends Fragment {
         }
     }
 
-    private class BoardAdapter extends RecyclerView.Adapter<ThreadWithPreviewViewHolder> {
+    private class BoardAdapter extends RecyclerView.Adapter<BoardAdapter.ThreadWithPreviewViewHolder> {
         public static final int VIEW_TYPE_PREV_PAGE = 1;
         public static final int VIEW_TYPE_THREAD    = 2;
         public static final int VIEW_TYPE_NEXT_PAGE = 3;
         private final       int recentListSize      = 3;
         List<HanabiraThread> threads = new ArrayList<>();
 
-        KeepOneH<ThreadWithPreviewViewHolder> keeper = new KeepOneH<>();
+        KeepOneHolderOpen keeper = new KeepOneHolderOpen();
 
         public BoardAdapter(List<HanabiraThread> tt) {
             threads = tt;
@@ -300,8 +298,7 @@ public class BoardFragment extends Fragment {
             if (page == 0 && viewType == VIEW_TYPE_PREV_PAGE) {
                 postcard.findViewById(R.id.frame_header_container).setVisibility(View.GONE);
             }
-            ThreadWithPreviewViewHolder tpvh = new ThreadWithPreviewViewHolder(postcard, recentListSize, getContext(),
-                                                                               keeper);
+            ThreadWithPreviewViewHolder tpvh = new ThreadWithPreviewViewHolder(postcard);
             Log.i("onCreateViewHolder", "Time: " + Double.toString(((double) System.nanoTime() - start) / 10e5));
             return tpvh;
         }
@@ -329,7 +326,7 @@ public class BoardFragment extends Fragment {
             holder.recentBtn.setEnabled(thread.getPostsCount() > 1);
             DebugTimer.lap("flags");
 
-            keeper.bind(holder, position, scrollListener);
+            keeper.bind(holder, position);
             DebugTimer.lap("kpbind");
 
 //            filesScroller.setLayoutManager(
@@ -361,6 +358,218 @@ public class BoardFragment extends Fragment {
             }
         }
 
+        public class ThreadWithPreviewViewHolder extends RecyclerView.ViewHolder implements Expandable {
+
+            public final TextView             threadTitle;
+            public final PostHolder           opPost;
+            public final HorizontalScrollView filesScroller;
+            public final LinearLayout         previewList;
+            public final TextView             replies;
+            public final TextView             recentBtn;
+            public final List<PostHolder>     recents;
+
+            public ThreadWithPreviewViewHolder(View itemView) {
+                super(itemView);
+                threadTitle = (TextView) itemView.findViewById(R.id.text_thread_title);
+
+                opPost = new PostHolder(itemView);
+                replies = (TextView) itemView.findViewById(R.id.text_post_content_replies);
+                filesScroller = (HorizontalScrollView) itemView.findViewById(R.id.post_files_scroller);
+                previewList = (LinearLayout) itemView.findViewById(R.id.layout_thread_expandable_posts_preview);
+                recentBtn = (TextView) itemView.findViewById(R.id.thread_controls_recent);
+
+                if (recentBtn != null) {
+                    recentBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            keeper.toggle(ThreadWithPreviewViewHolder.this);
+                        }
+                    });
+                }
+
+                recents = new ArrayList<>(recentListSize);
+                if (previewList != null) {
+                    previewList.removeAllViews();
+                    int oneDp = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1,
+                                                                getResources().getDisplayMetrics());
+                    for (int i = 0; i < recentListSize; i++) {
+                        previewList.addView(createDivider(getContext(), oneDp));
+                        LayoutInflater.from(getContext()).inflate(R.layout.layout_post, previewList);
+                        View v = previewList.getChildAt(2 * i + 1);
+                        recents.add(new PostHolder(v));
+                    }
+                }
+
+            }
+
+            public void setStaticText(HanabiraThread thread, HanabiraPost op) {
+                threadTitle.setText(thread.getTitle());
+                DebugTimer.lap(" titl");
+                opPost.fillWithData(op);
+                DebugTimer.lap(" op");
+                List<Integer> recentsList = thread.getLastN(3);
+                DebugTimer.lap(" last");
+                int i = 0;
+                for (; i < recentsList.size(); i++) {
+                    recents.get(i).fillWithData(recentsList.get(i));
+                }
+                for (; i < recents.size(); i++) {
+                    recents.get(i).hide();
+                }
+                DebugTimer.lap(" hide");
+            }
+
+            private View createDivider(Context context, int oneDp) {
+                View divider = new View(context);
+                ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, oneDp);
+                ViewGroup.MarginLayoutParams mlp = new ViewGroup.MarginLayoutParams(lp);
+                mlp.setMargins(0, 2 * oneDp, 0, 2 * oneDp);
+                divider.setLayoutParams(mlp);
+                return divider;
+            }
+
+            @Override
+            public View getExpandView() {
+                return previewList;
+            }
+
+            public void openHolder(final boolean animate) {
+                final View expandView = getExpandView();
+                if (animate) {
+                    expandView.setVisibility(View.VISIBLE);
+                    final Animator animator = animateItemViewHeight();
+                    animator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            final ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(expandView, View.ALPHA, 1);
+                            alphaAnimator.addListener(new NotRecycleAdapter());
+                            alphaAnimator.setInterpolator(new DecelerateInterpolator());
+                            alphaAnimator.start();
+                        }
+                    });
+                    animator.start();
+                } else {
+                    expandView.setVisibility(View.VISIBLE);
+                    expandView.setAlpha(1);
+                }
+            }
+
+            public void closeHolder(final boolean animate) {
+                final View expandView = getExpandView();
+                if (animate) {
+                    expandView.setVisibility(View.GONE);
+                    final Animator animator = animateItemViewHeight();
+                    expandView.setVisibility(View.VISIBLE);
+                    animator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            final ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(expandView, View.ALPHA, 0);
+                            alphaAnimator.addListener(new NotRecycleAdapter());
+                            alphaAnimator.setInterpolator(new DecelerateInterpolator());
+                            alphaAnimator.start();
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            expandView.setVisibility(View.GONE);
+                            expandView.setAlpha(0);
+                        }
+
+                        @Override
+                        public void onAnimationCancel(Animator animation) {
+                            expandView.setVisibility(View.GONE);
+                            expandView.setAlpha(0);
+                        }
+                    });
+                    animator.start();
+                } else {
+                    expandView.setVisibility(View.GONE);
+                    expandView.setAlpha(0);
+                }
+            }
+
+            public Animator animateItemViewHeight() {
+                View parent = (View) itemView.getParent();
+                if (parent == null) {
+                    throw new IllegalStateException("Cannot animate the layout of a view that has no parent");
+                }
+
+                int start = itemView.getMeasuredHeight();
+                itemView.measure(View.MeasureSpec.makeMeasureSpec(parent.getMeasuredWidth(), View.MeasureSpec.AT_MOST),
+                                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                int end = itemView.getMeasuredHeight();
+
+                final ValueAnimator animator = ValueAnimator.ofInt(start, end);
+                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animation) {
+                        final ViewGroup.LayoutParams lp = itemView.getLayoutParams();
+                        lp.height = (int) animation.getAnimatedValue();
+                        itemView.setLayoutParams(lp);
+                    }
+
+                });
+
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        final ViewGroup.LayoutParams params = itemView.getLayoutParams();
+                        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                        itemView.setLayoutParams(params);
+                    }
+                });
+
+                animator.setInterpolator(new FastOutSlowInInterpolator());
+                animator.addListener(new NotRecycleAdapter());
+
+                return animator;
+            }
+
+            public class NotRecycleAdapter extends AnimatorListenerAdapter {
+
+                @Override
+                public void onAnimationStart(Animator animation) { setIsRecyclable(false); }
+
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    setIsRecyclable(true);
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animation) { setIsRecyclable(true); }
+            }
+        }
+
+    }
+
+    public class KeepOneHolderOpen {
+        private int _opened = -1;
+
+        public void bind(BoardAdapter.ThreadWithPreviewViewHolder holder, int pos) {
+            if (pos == _opened) { holder.openHolder(false); } else {
+                holder.closeHolder(false);
+            }
+        }
+
+        public void toggle(BoardAdapter.ThreadWithPreviewViewHolder holder) {
+            scrollListener.expandTriggered();
+            if (_opened == holder.getLayoutPosition()) {
+                _opened = -1;
+                holder.closeHolder(true);
+            } else {
+                int previous = _opened;
+                _opened = holder.getLayoutPosition();
+                holder.openHolder(true);
+
+                final BoardAdapter.ThreadWithPreviewViewHolder oldHolder = (BoardAdapter.ThreadWithPreviewViewHolder)
+                        ((RecyclerView) holder.itemView
+                        .getParent()).findViewHolderForLayoutPosition(previous);
+                if (oldHolder != null) { oldHolder.closeHolder(true); }
+            }
+        }
+
     }
 
 
@@ -368,15 +577,7 @@ public class BoardFragment extends Fragment {
         @Override
         public boolean onSingleTapConfirmed(MotionEvent e) {
             View view = recycler.findChildViewUnder(e.getX(), e.getY());
-            Toast.makeText(getContext(), Integer.toString(recycler.getChildViewHolder(view).getLayoutPosition()),
-                           Toast.LENGTH_SHORT).show();
             for (View v : view.getTouchables()) {
-                if (v.getId() == R.id.text_post_content_message) {
-                    v.onTouchEvent(e);
-                }
-            }
-            View view2 = view.findViewById(R.id.layout_thread_expandable_posts_preview);
-            for (View v : view2.getTouchables()) {
                 if (v.getId() == R.id.text_post_content_message) {
                     v.onTouchEvent(e);
                 }
