@@ -49,8 +49,10 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.util.TypedValue;
-import android.view.*;
-import android.view.animation.DecelerateInterpolator;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.*;
 import android.widget.*;
 import com.android.volley.Response;
 import com.avapira.bobroreader.hanabira.Hanabira;
@@ -76,6 +78,8 @@ public class BoardFragment extends Fragment {
     HidingScrollListener  scrollListener;
     private String boardKey;
     private int    page;
+    Animation animRotateForward;
+    Animation animRotateBackward;
 
     /**
      * Use this factory method to create a new instance of
@@ -105,7 +109,13 @@ public class BoardFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        loadSomeResources();
         boardKey = boardKey == null ? getArguments().getString("board") : boardKey;
+    }
+
+    private void loadSomeResources() {
+        animRotateForward = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_around_center_point_fwd);
+        animRotateBackward = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_around_center_point_bwd);
     }
 
     private void switchPage(int newPage) {
@@ -322,9 +332,8 @@ public class BoardFragment extends Fragment {
             if (op.getFiles() == null || op.getFiles().size() == 0) {
                 holder.filesScroller.setVisibility(View.GONE);
             }
-            holder.expandBtn.setEnabled(true);
-            holder.expandBtn.setText("Expand");
             holder.recentBtn.setEnabled(thread.getPostsCount() > 1);
+            holder.expandBtn.setRotation(0f);
 
             keeper.prepare(holder, position);
 
@@ -364,14 +373,14 @@ public class BoardFragment extends Fragment {
             public final LinearLayout         previewList;
             public final TextView             replies;
             public final Button               optionsBtn;
-            public final Button               expandBtn;
+            public final ImageButton          expandBtn;
             public final Button               recentBtn;
             public final Button               openBtn;
 
 
             public final List<PostHolder> recents;
 
-            public ThreadWithPreviewViewHolder(View itemView) {
+            public ThreadWithPreviewViewHolder(final View itemView) {
                 super(itemView);
                 threadTitle = (TextView) itemView.findViewById(R.id.text_thread_title);
 
@@ -380,7 +389,7 @@ public class BoardFragment extends Fragment {
                 filesScroller = (HorizontalScrollView) itemView.findViewById(R.id.post_files_scroller);
                 previewList = (LinearLayout) itemView.findViewById(R.id.layout_thread_expandable_posts_preview);
                 optionsBtn = (Button) itemView.findViewById(R.id.thread_controls_options);
-                expandBtn = (Button) itemView.findViewById(R.id.thread_controls_expand);
+                expandBtn = (ImageButton) itemView.findViewById(R.id.thread_controls_expand);
                 recentBtn = (Button) itemView.findViewById(R.id.thread_controls_recent);
                 openBtn = (Button) itemView.findViewById(R.id.thread_controls_open);
 
@@ -390,17 +399,77 @@ public class BoardFragment extends Fragment {
                     expandBtn.setOnClickListener(new View.OnClickListener() {
 
                         @Override
-                        public void onClick(View v) {
-                            System.out.println(v);
-                            expandBtn.setEnabled(postHolder.message.getLineCount() > ELLIPSIZE_MAX_LINES);
-                            if (postHolder.message.getMaxLines() == Integer.MAX_VALUE) {
-                                postHolder.message.setMaxLines(ELLIPSIZE_MAX_LINES);
-                                expandBtn.setText("Expand");
-                            } else {
-                                postHolder.message.setMaxLines(Integer.MAX_VALUE);
-                                expandBtn.setText("Collapse");
+                        public void onClick(View imageButton) {
+                            System.out.println(imageButton.getRotation());
+                            final int now = postHolder.message.getMaxLines();
+                            final int will = now == Integer.MAX_VALUE ? ELLIPSIZE_MAX_LINES : Integer.MAX_VALUE;
+                            final boolean growth = will > now;
+                            if (postHolder.message.getLineCount() <= ELLIPSIZE_MAX_LINES) {
+                                expandBtn.animate()
+                                         .rotation(360f)
+                                         .setDuration(500)
+                                         .setInterpolator(new BounceInterpolator())
+                                         .withEndAction(new Runnable() {
+                                             @Override
+                                             public void run() {
+                                                 expandBtn.setRotation(0);
+                                             }
+                                         })
+                                         .start();
+                                return;
                             }
-                            animateItemViewHeight().start();
+                            postHolder.message.setMaxLines(will); // set to measure
+                            final View v = postHolder.message, parent = (View) v.getParent();
+
+                            int start = v.getMeasuredHeight();
+                            v.measure(View.MeasureSpec.makeMeasureSpec(parent.getMeasuredWidth(),
+                                            View.MeasureSpec.AT_MOST),
+                                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                            int end = v.getMeasuredHeight();
+
+                            final ValueAnimator animator = ValueAnimator.ofInt(start, end);
+                            animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+
+                                @Override
+                                public void onAnimationUpdate(ValueAnimator animation) {
+                                    final ViewGroup.LayoutParams lp = v.getLayoutParams();
+                                    lp.height = (int) animation.getAnimatedValue();
+                                    v.setLayoutParams(lp);
+                                }
+
+                            });
+                            animator.addListener(new AnimatorListenerAdapter() {
+                                @Override
+                                public void onAnimationEnd(Animator animation) {
+                                    final ViewGroup.LayoutParams params = v.getLayoutParams();
+                                    params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                                    params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                                    v.setLayoutParams(params);
+                                    postHolder.message.setMaxLines(will);
+                                }
+
+                                @Override
+                                public void onAnimationStart(Animator animation) {
+                                    expandBtn.animate().rotation(growth ? 180f : 360f).withEndAction(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            expandBtn.setRotation(growth ? 180f : 0f);
+                                        }
+                                    }).setInterpolator(new AccelerateDecelerateInterpolator()).start();
+                                    postHolder.message.setMaxLines(Integer.MAX_VALUE);
+                                }
+                            });
+                            animator.setInterpolator(new FastOutSlowInInterpolator());
+                            animator.addListener(new NotRecycleAdapter());
+
+                            animator.addListener(new AnimatorListenerAdapter() {
+                                @Override
+                                public void onAnimationEnd(Animator animation) {
+
+                                }
+
+                            });
+                            animator.start();
                         }
                     });
                     recentBtn.setOnClickListener(new View.OnClickListener() {
@@ -521,6 +590,11 @@ public class BoardFragment extends Fragment {
                         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
                 int end = itemView.getMeasuredHeight();
 
+                return animateItemViewHeightInternal(start, end);
+
+            }
+
+            private Animator animateItemViewHeightInternal(int start, int end) {
                 final ValueAnimator animator = ValueAnimator.ofInt(start, end);
                 animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
 
@@ -566,6 +640,14 @@ public class BoardFragment extends Fragment {
 
     }
 
+    static class ViewHolder {
+        TextView text;
+        TextView timestamp;
+        ImageView icon;
+        ProgressBar progress;
+        int position;
+    }
+
     public class KeepOneHolderOpen {
         private int showRecentPosition = -239;
 
@@ -593,7 +675,6 @@ public class BoardFragment extends Fragment {
                 if (oldHolder != null) { oldHolder.closeHolder(true); }
             }
         }
-
     }
 
     private class FilesAdapter extends RecyclerView.Adapter {

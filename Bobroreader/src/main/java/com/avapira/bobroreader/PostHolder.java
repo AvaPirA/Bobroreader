@@ -89,10 +89,7 @@ public class PostHolder {
                     Layout layout = widget.getLayout();
                     int line = layout.getLineForVertical(y);
                     int off = layout.getOffsetForHorizontal(line, x);
-
-                    ClickableSpan[] link = buffer.getSpans(off, off,
-                                                           ClickableSpan.class);
-
+                    ClickableSpan[] link = buffer.getSpans(off, off,ClickableSpan.class);
                     if (link.length != 0) {
                         if (action == MotionEvent.ACTION_UP) {
                             for(ClickableSpan l : link) {
@@ -102,11 +99,8 @@ public class PostHolder {
                         return true;
                     }
                 }
-
             }
-
             return false;
         }
-
     }
 }

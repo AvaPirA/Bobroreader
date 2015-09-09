@@ -17,17 +17,6 @@
             android:textStyle="bold"
             android:text="Options"
             style="?android:attr/buttonBarButtonStyle"/>
-    <Button android:id="@+id/thread_controls_expand"
-            android:textSize="12sp"
-            android:fontFamily="sans-serif-condensed"
-            android:textColor="@color/dobro_primary_text"
-            android:textAllCaps="true"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:textStyle="bold"
-            android:text="Expand"
-            style="?android:attr/buttonBarButtonStyle"/>
     <Button android:id="@+id/thread_controls_recent"
             android:textSize="12sp"
             android:fontFamily="sans-serif-condensed"
