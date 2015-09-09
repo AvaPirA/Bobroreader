@@ -44,6 +44,11 @@
                 android:summary="Restart required for proper result"
                 android:defaultValue="true"
                 android:dependency="pref_drawer_show_banners"/>
+        <SwitchPreference
+            android:key="pref_load_diff"
+            android:title="Load diff in drawer"
+            android:defaultValue="false"
+            />
     </PreferenceCategory>
     <SwitchPreference
         android:key="pref_developer"

@@ -400,7 +400,7 @@ public class BoardFragment extends Fragment {
                                 postHolder.message.setMaxLines(Integer.MAX_VALUE);
                                 expandBtn.setText("Collapse");
                             }
-
+                            animateItemViewHeight().start();
                         }
                     });
                     recentBtn.setOnClickListener(new View.OnClickListener() {

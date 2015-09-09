@@ -74,7 +74,7 @@ public class Hanabira {
         }
     }
 
-    public void getDiff(Consumer<Map<String, Integer>> consumer) {
+    public void getDiff(boolean wait, Consumer<Map<String, Integer>> consumer) {
         if (useMockedNetwork()) {
             String raw = Bober.rawJsonToString(context.getResources(), R.raw.diff);
             try {
@@ -83,7 +83,7 @@ public class Hanabira {
                 e.printStackTrace();
             }
         } else {
-            network.getDiff(consumer);
+            network.getDiff(wait, consumer);
         }
     }
 }

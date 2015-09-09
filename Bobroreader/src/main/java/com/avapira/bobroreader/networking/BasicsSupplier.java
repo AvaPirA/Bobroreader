@@ -32,6 +32,7 @@ package com.avapira.bobroreader.networking;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -47,6 +48,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 /**
  *
@@ -68,8 +70,9 @@ public class BasicsSupplier {
 
     }
 
-    private final Context      context;
-    private final RequestQueue volleyQueue;
+    private final Context        context;
+    private final RequestQueue   volleyQueue;
+    private       CountDownLatch requestDiff;
 
     public BasicsSupplier(Context context) {
         this.context = context;
@@ -99,7 +102,30 @@ public class BasicsSupplier {
         volleyQueue.add(reqJson);
     }
 
-    public void getDiff(final Consumer<Map<String, Integer>> consumer) {
+    public void getDiff(boolean wait, final Consumer<Map<String, Integer>> consumer) {
+        Log.w("GO", "DIFF " + wait);
+        if (wait) {
+            requestDiff = new CountDownLatch(1);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Log.d("GO", "start wait " + System.nanoTime());
+                        requestDiff.await();
+                        Log.d("GO", "endof wait " + System.nanoTime());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    getDiffInternal(consumer);
+                }
+            }).start();
+        } else {
+            getDiffInternal(consumer);
+        }
+
+    }
+
+    private void getDiffInternal(final Consumer<Map<String, Integer>> consumer) {
         JsonObjectRequest reqJson = new JsonObjectRequest(diff, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
@@ -107,6 +133,7 @@ public class BasicsSupplier {
                 consumer.accept(diff);
             }
         }, errList);
+        Log.w("GO", "DIFF");
         volleyQueue.add(reqJson);
     }
 
@@ -131,9 +158,18 @@ public class BasicsSupplier {
         }
     };
 
-    public void getBoardPage(String boardkey, int pageNum,Response.Listener<String> consumer) {
+    public void getBoardPage(String boardkey, int pageNum, final Response.Listener<String> consumer) {
+        Log.w("GO", "BOARD");
         String formattedUrl = String.format(boardPage, boardkey, pageNum);
-        StringRequest boardPageRequest = new StringRequest(formattedUrl, consumer, errList);
+        StringRequest boardPageRequest = new StringRequest(formattedUrl, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                Log.w("GO", "COUNTDOWN");
+                requestDiff.countDown();
+                consumer.onResponse(response);
+            }
+        }, errList);
         volleyQueue.add(boardPageRequest);
+
     }
 }
