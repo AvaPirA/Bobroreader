@@ -35,6 +35,7 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.DrawableRes;
@@ -68,7 +69,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 
-public class Bober extends AppCompatActivity {
+public class Bober extends AppCompatActivity implements BoardFragment.OnThreadOpenedListener,
+                                                        ThreadFragment.OnFragmentInteractionListener {
     private static double DEBUG_INIT_START = DEBUG_time();
     private boolean loadDiff;
 
@@ -79,6 +81,19 @@ public class Bober extends AppCompatActivity {
 
     private static double DEBUG_initRelativeTime() {
         return (DEBUG_time() - DEBUG_INIT_START) / 10e5;
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
+    }
+
+    @Override
+    public void onThreadSelected(int threadId) {
+        Fragment threadFragment = ThreadFragment.newInstance(threadId);
+        getFragmentManager().beginTransaction()
+                            .addToBackStack("board_open_thread")
+                            .replace(R.id.frame_container, threadFragment).commit();
     }
 
     static {
@@ -108,31 +123,17 @@ public class Bober extends AppCompatActivity {
         public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
             if (drawerItem != null) {
                 if (drawerItem instanceof BoardDrawerItem) {
-                    BoardDrawerItem boxedItem = (BoardDrawerItem) drawerItem;
-                    String boardKey = HanabiraBoard.Info.cutSlashes(boxedItem.getName().getText());
-                    Fragment boardFragment = new BoardFragment();
-                    Bundle b = new Bundle();
-                    b.putString("board", boardKey);
-                    boardFragment.setArguments(b);
+                    BoardDrawerItem clickedItem = (BoardDrawerItem) drawerItem;
+                    String boardKey = HanabiraBoard.Info.cutSlashes(clickedItem.getName().getText());
+                    Fragment boardFragment = BoardFragment.newInstance(boardKey);
                     getFragmentManager().beginTransaction().replace(R.id.frame_container, boardFragment).commit();
-                } else {
-                    Intent intent = null;
-                    switch (drawerItem.getIdentifier()) {
-                        case DrawerIdentifier.SETTINGS:
-                            intent = new Intent(Bober.this, SettingsActivity.class);
-                            break;
-                    }
-                    if (intent != null) {
-                        Bober.this.startActivity(intent);
-                    }
                 }
             }
             updateDrawerDiff(true);
             return false;
         }
+
     }
-
-
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {

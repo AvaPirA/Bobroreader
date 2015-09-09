@@ -35,13 +35,11 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
-import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
-import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -68,18 +66,25 @@ import java.util.List;
  */
 public class BoardFragment extends Fragment {
 
-    private static final String TAG = BoardFragment.class.getSimpleName();
-
-    ActionBar             toolbar;
-    FrameLayout           toolbarContainer;
-    ProgressBar           progressBar;
-    GestureDetectorCompat detector;
-    RecyclerView          recycler;
-    HidingScrollListener  scrollListener;
+    private static final String TAG                 = BoardFragment.class.getSimpleName();
+    private static final String ARG_KEY             = "arg_board_key";
+    private static final String ARG_PAGE            = "arg_board_page";
+    private static final String ARG_RECYCLER_LAYOUT = "arg_board_recycler_layout";
+    ProgressBar          progressBar;
+    RecyclerView         recycler;
+    HidingScrollListener scrollListener;
     private String boardKey;
     private int    page;
     Animation animRotateForward;
     Animation animRotateBackward;
+    private OnThreadOpenedListener threadOpenCallback;
+
+    /**
+     *
+     */
+    public interface OnThreadOpenedListener {
+        void onThreadSelected(int threadId);
+    }
 
     /**
      * Use this factory method to create a new instance of
@@ -87,8 +92,11 @@ public class BoardFragment extends Fragment {
      *
      * @return A new instance of fragment NotificationFragment.
      */
-    public static BoardFragment newInstance() {
+    public static BoardFragment newInstance(String boardKey) {
         BoardFragment fragment = new BoardFragment();
+        Bundle b = new Bundle();
+        b.putString(ARG_KEY, boardKey);
+        fragment.setArguments(b);
         fragment.setRetainInstance(true);
         return fragment;
     }
@@ -109,17 +117,15 @@ public class BoardFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        loadSomeResources();
-        boardKey = boardKey == null ? getArguments().getString("board") : boardKey;
-    }
-
-    private void loadSomeResources() {
         animRotateForward = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_around_center_point_fwd);
         animRotateBackward = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_around_center_point_bwd);
+        if (getArguments() != null) {
+            boardKey = boardKey == null ? getArguments().getString(ARG_KEY) : boardKey;
+        }
     }
 
     private void switchPage(int newPage) {
-        toolbar = ((AppCompatActivity) getActivity()).getSupportActionBar();
+        final ActionBar toolbar = ((AppCompatActivity) getActivity()).getSupportActionBar();
         if (toolbar != null) {
             toolbar.setTitle("Page loading...");
         }
@@ -151,10 +157,41 @@ public class BoardFragment extends Fragment {
         });
     }
 
+    /**
+     * @deprecated Use {@link #onAttach(Context)} instead.
+     */
+    @Deprecated
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        try {
+            threadOpenCallback = (OnThreadOpenedListener) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString() + " must implement OnFragmentInteractionListener");
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        threadOpenCallback = null;
+    }
+
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putString("board", boardKey);
-        outState.putInt("page", page);
+        super.onSaveInstanceState(outState);
+        outState.putString(ARG_KEY, boardKey);
+        outState.putInt(ARG_PAGE, page);
+        outState.putParcelable(ARG_RECYCLER_LAYOUT, recycler.getLayoutManager().onSaveInstanceState());
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        if (savedInstanceState != null) {
+            boardKey = savedInstanceState.getString(ARG_KEY, null);
+            page = savedInstanceState.getInt(ARG_PAGE, 0);
+            recycler.getLayoutManager().onRestoreInstanceState(savedInstanceState.getParcelable(ARG_RECYCLER_LAYOUT));
+        }
     }
 
     @Override
@@ -165,113 +202,16 @@ public class BoardFragment extends Fragment {
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
-        toolbarContainer = (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container);
         progressBar = (ProgressBar) view.findViewById(R.id.pb);
         recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
-//        recycler.addOnItemTouchListener(new TouchEventInterceptor());
-        scrollListener = new HidingScrollListener();
+        scrollListener = new HidingScrollListener((FrameLayout) getActivity().findViewById(R.id
+                .frame_toolbar_container), (int) getResources().getDimension(R.dimen.tiny));
         recycler.addOnScrollListener(scrollListener);
-//        detector = new GestureDetectorCompat(getActivity(), new RecyclerGestureListener());
         switchPage(page);
     }
 
-    public class HidingScrollListener extends RecyclerView.OnScrollListener {
-        private final float TOOLBAR_ELEVATION = getResources().getDimension(R.dimen.tiny);
-        int     verticalOffset;
-        boolean scrollingUp;
-        boolean expandTriggered = false;
 
-        @Override
-        public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                final int height = toolbarContainer.getHeight();
-                if (scrollingUp) {
-                    if (expandTriggered) {
-                        toolbarAnimateShow();
-                    } else {
-                        if (verticalOffset > height && toolbarContainer.getTranslationY() < height * -0.5) {
-                            toolbarAnimateHide();
-                        } else {
-                            toolbarAnimateShow();
-                        }
-                    }
-                } else {
-                    if (verticalOffset > height && toolbarContainer.getTranslationY() < height * -0.5) {
-                        toolbarAnimateHide();
-                    } else {
-                        toolbarAnimateShow();
-                    }
-                }
-            }
-        }
-
-        @Override
-        public final void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-            verticalOffset += dy;
-            scrollingUp = dy < 0;
-            int toolbarYOffset = (int) (dy - toolbarContainer.getTranslationY());
-            toolbarYOffset = Math.max(0, toolbarYOffset);
-            toolbarContainer.animate().cancel();
-            final int height = toolbarContainer.getHeight();
-            if (scrollingUp) {
-                if (toolbarYOffset < height) {
-                    if (verticalOffset > height) {
-                        toolbarSetElevation(TOOLBAR_ELEVATION);
-                    }
-                    toolbarContainer.setTranslationY(-toolbarYOffset);
-                } else {
-                    toolbarSetElevation(1);
-                    toolbarContainer.setTranslationY(-height);
-                }
-            } else {
-                if (toolbarYOffset < 0) {
-                    if (verticalOffset <= 0) {
-                        toolbarSetElevation(0);
-                    }
-                    toolbarContainer.setTranslationY(0);
-                } else {
-                    if (verticalOffset > height) {
-                        toolbarSetElevation(TOOLBAR_ELEVATION);
-                    }
-                    toolbarContainer.setTranslationY(-toolbarYOffset);
-                }
-            }
-        }
-
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-        private void toolbarSetElevation(float elevation) {
-            toolbarContainer.setElevation(elevation);
-        }
-
-        private void toolbarAnimateShow() {
-            toolbarContainer.animate()
-                            .translationY(0)
-                            .setInterpolator(new FastOutSlowInInterpolator())
-                            .setListener(new AnimatorListenerAdapter() {
-                                @Override
-                                public void onAnimationStart(Animator animation) {
-                                    toolbarSetElevation(verticalOffset == 0 ? 0 : TOOLBAR_ELEVATION);
-                                }
-                            });
-        }
-
-        private void toolbarAnimateHide() {
-            toolbarContainer.animate()
-                            .translationY(-toolbarContainer.getHeight())
-                            .setInterpolator(new FastOutSlowInInterpolator())
-                            .setListener(new AnimatorListenerAdapter() {
-                                @Override
-                                public void onAnimationEnd(Animator animation) {
-                                    toolbarSetElevation(0);
-                                }
-                            });
-        }
-
-        public void expandTriggered() {
-            expandTriggered = true;
-        }
-    }
 
     private class BoardAdapter extends RecyclerView.Adapter<BoardAdapter.ThreadWithPreviewViewHolder> {
         public static final int VIEW_TYPE_PREV_PAGE = 1;
@@ -378,7 +318,7 @@ public class BoardFragment extends Fragment {
             public final Button               openBtn;
 
 
-            public final List<PostHolder> recents;
+            public final PostHolder[] recents;
 
             public ThreadWithPreviewViewHolder(final View itemView) {
                 super(itemView);
@@ -478,10 +418,15 @@ public class BoardFragment extends Fragment {
                             keeper.toggle(ThreadWithPreviewViewHolder.this);
                         }
                     });
-                    openBtn.setOnClickListener(null);
+                    openBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            threadOpenCallback.onThreadSelected(threads.get(getAdapterPosition() - 1).getThreadId());
+                        }
+                    });
                 }
 
-                recents = new ArrayList<>(recentListSize);
+                recents = new PostHolder[recentListSize];
                 if (previewList != null) {
                     previewList.removeAllViews();
                     int oneDp = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1,
@@ -490,7 +435,7 @@ public class BoardFragment extends Fragment {
                         previewList.addView(createDivider(getContext(), oneDp));
                         LayoutInflater.from(getContext()).inflate(R.layout.layout_post, previewList);
                         View v = previewList.getChildAt(2 * i + 1);
-                        recents.add(new PostHolder(v));
+                        recents[i] = new PostHolder(v);
                     }
                 }
 
@@ -503,10 +448,10 @@ public class BoardFragment extends Fragment {
                 List<Integer> recentsList = thread.getLastN(3);
                 int i = 0;
                 for (; i < recentsList.size(); i++) {
-                    recents.get(i).fillWithData(recentsList.get(i));
+                    recents[i].fillWithData(recentsList.get(i));
                 }
-                for (; i < recents.size(); i++) {
-                    recents.get(i).hide();
+                for (; i < recents.length; i++) {
+                    recents[i].hide();
                 }
             }
 
@@ -640,19 +585,11 @@ public class BoardFragment extends Fragment {
 
     }
 
-    static class ViewHolder {
-        TextView text;
-        TextView timestamp;
-        ImageView icon;
-        ProgressBar progress;
-        int position;
-    }
-
     public class KeepOneHolderOpen {
-        private int showRecentPosition = -239;
+        private int whereIsRecentsShownPosition = -239;
 
         public void prepare(BoardAdapter.ThreadWithPreviewViewHolder holder, int position) {
-            if (position == showRecentPosition) {
+            if (position == whereIsRecentsShownPosition) {
                 holder.openHolder(false);
             } else {
                 holder.closeHolder(false);
@@ -661,12 +598,12 @@ public class BoardFragment extends Fragment {
 
         public void toggle(BoardAdapter.ThreadWithPreviewViewHolder holder) {
             scrollListener.expandTriggered();
-            if (showRecentPosition == holder.getLayoutPosition()) {
-                showRecentPosition = -239;
+            if (whereIsRecentsShownPosition == holder.getLayoutPosition()) {
+                whereIsRecentsShownPosition = -239;
                 holder.closeHolder(true);
             } else {
-                int previous = showRecentPosition;
-                showRecentPosition = holder.getLayoutPosition();
+                int previous = whereIsRecentsShownPosition;
+                whereIsRecentsShownPosition = holder.getLayoutPosition();
                 holder.openHolder(true);
 
                 final BoardAdapter.ThreadWithPreviewViewHolder oldHolder = (BoardAdapter.ThreadWithPreviewViewHolder)

@@ -65,6 +65,10 @@ public class Hanabira {
         }
     }
 
+    public void updateThread(int threadId){
+        //TODO
+    }
+
     public void getUser(Consumer<HanabiraUser> consumer) {
         if (useMockedNetwork()) {
             String raw = Bober.rawJsonToString(context.getResources(), R.raw.user);
