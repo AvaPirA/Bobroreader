@@ -129,7 +129,7 @@ public class BoardFragment extends Fragment {
                         recycler.setVisibility(View.VISIBLE);
 
                         String title = String.format("/%s/ - %s " + "[%s]", hanabiraBoard.getKey(),
-                                                     hanabiraBoard.getInfo().title, page);
+                                hanabiraBoard.getInfo().title, page);
 
                         if (toolbar != null) {
                             toolbar.setTitle(title);
@@ -326,7 +326,7 @@ public class BoardFragment extends Fragment {
             holder.expandBtn.setText("Expand");
             holder.recentBtn.setEnabled(thread.getPostsCount() > 1);
 
-            keeper.bind(holder, position);
+            keeper.prepare(holder, position);
 
 //            filesScroller.setLayoutManager(
 //                    new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
@@ -416,7 +416,7 @@ public class BoardFragment extends Fragment {
                 if (previewList != null) {
                     previewList.removeAllViews();
                     int oneDp = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1,
-                                                                getResources().getDisplayMetrics());
+                            getResources().getDisplayMetrics());
                     for (int i = 0; i < recentListSize; i++) {
                         previewList.addView(createDivider(getContext(), oneDp));
                         LayoutInflater.from(getContext()).inflate(R.layout.layout_post, previewList);
@@ -518,7 +518,7 @@ public class BoardFragment extends Fragment {
 
                 int start = itemView.getMeasuredHeight();
                 itemView.measure(View.MeasureSpec.makeMeasureSpec(parent.getMeasuredWidth(), View.MeasureSpec.AT_MOST),
-                                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
                 int end = itemView.getMeasuredHeight();
 
                 final ValueAnimator animator = ValueAnimator.ofInt(start, end);
@@ -567,22 +567,24 @@ public class BoardFragment extends Fragment {
     }
 
     public class KeepOneHolderOpen {
-        private int _opened = -1;
+        private int showRecentPosition = -239;
 
-        public void bind(BoardAdapter.ThreadWithPreviewViewHolder holder, int pos) {
-            if (pos == _opened) { holder.openHolder(false); } else {
+        public void prepare(BoardAdapter.ThreadWithPreviewViewHolder holder, int position) {
+            if (position == showRecentPosition) {
+                holder.openHolder(false);
+            } else {
                 holder.closeHolder(false);
             }
         }
 
         public void toggle(BoardAdapter.ThreadWithPreviewViewHolder holder) {
             scrollListener.expandTriggered();
-            if (_opened == holder.getLayoutPosition()) {
-                _opened = -1;
+            if (showRecentPosition == holder.getLayoutPosition()) {
+                showRecentPosition = -239;
                 holder.closeHolder(true);
             } else {
-                int previous = _opened;
-                _opened = holder.getLayoutPosition();
+                int previous = showRecentPosition;
+                showRecentPosition = holder.getLayoutPosition();
                 holder.openHolder(true);
 
                 final BoardAdapter.ThreadWithPreviewViewHolder oldHolder = (BoardAdapter.ThreadWithPreviewViewHolder)
@@ -593,27 +595,6 @@ public class BoardFragment extends Fragment {
         }
 
     }
-
-
-    private class RecyclerGestureListener extends GestureDetector.SimpleOnGestureListener {
-        @Override
-        public boolean onSingleTapConfirmed(MotionEvent e) {
-//            View view = recycler.findChildViewUnder(e.getX(), e.getY());
-//            for (View v : view.getTouchables()) {
-//                if (v.getId() == R.id.text_post_content_message) {
-//                    v.onTouchEvent(e);
-//                }
-//            }
-            return super.onSingleTapConfirmed(e);
-        }
-
-
-        public void onLongPress(MotionEvent e) {
-            super.onLongPress(e);
-        }
-
-    }
-
 
     private class FilesAdapter extends RecyclerView.Adapter {
         @Override
@@ -639,24 +620,6 @@ public class BoardFragment extends Fragment {
                 super(view);
                 this.view = view;
             }
-        }
-    }
-
-    private class TouchEventInterceptor implements RecyclerView.OnItemTouchListener {
-        @Override
-        public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
-            detector.onTouchEvent(e);
-            return false;
-        }
-
-        @Override
-        public void onTouchEvent(RecyclerView rv, MotionEvent e) {
-
-        }
-
-        @Override
-        public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-
         }
     }
 }
