@@ -49,7 +49,7 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
                 }
             }
             Log.w(TAG, Thread.currentThread().toString() + " completed parsing for " +
-                    ((System.nanoTime() - start) / 10e5));
+                    ((System.nanoTime() - start) / 10e5)+"ms");
         }
 
         private void cachePost(int postDisplayId) {

@@ -139,7 +139,7 @@ public class HanabiraThread extends HanabiraEntity {
     public List<Integer> getLastN(int want) {
         if (postsCount < 2) { return Collections.emptyList(); }
         int have = posts.size() - 1;
-        int skip = want > have ? 1 : have - want;
+        int skip = want > have ? 0 : have - want;
         List<Integer> returnList = new ArrayList<>(Math.min(want, have));
         Iterator<Map.Entry<LocalDateTime, Integer>> read = posts.entrySet().iterator();
         while (skip-- >= 0) {

@@ -1,5 +1,6 @@
 package com.avapira.bobroreader;
 
+import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.widget.TextView;
 import com.avapira.bobroreader.hanabira.Hanabira;
@@ -33,22 +34,38 @@ public class PostHolder {
 
     public void fillWithData(HanabiraPost post) {
         displayId.setText(formatDisplayId(post.getDisplayId()));
+        DebugTimer.lap("  disp");
         date.setText(formatDate(post.getCreatedDate()));
+        DebugTimer.lap("  date");
         name.setText(post.getName());
-        message.setText(Hanabira.getCache().getParsedPost(post.getDisplayId()));
+        DebugTimer.lap("  name");
+        final CharSequence parsedPost = Hanabira.getCache().getParsedPost(post.getDisplayId());
+        DebugTimer.lap("  cache msg");
+        message.setText(parsedPost);
+        DebugTimer.lap("  msg");
+        message.setMovementMethod(LinkMovementMethod.getInstance());
+        DebugTimer.lap("  movement");
     }
 
     public void fillWithData(int postDisplayId) {
         fillWithData(Hanabira.getCache().findPostByDisplayId(postDisplayId));
+        show();
+        DebugTimer.lap("  cache post");
     }
 
+    public void show() {
+        ((View) message.getParent().getParent()).setVisibility(View.VISIBLE);
+    }
 
-    private CharSequence formatDisplayId(int displayId) {
+    public void hide() {
+        ((View) message.getParent().getParent()).setVisibility(View.GONE);
+    }
+
+    private static CharSequence formatDisplayId(int displayId) {
         return String.format("№%d", displayId);
     }
 
-    private CharSequence formatDate(LocalDateTime localDateTime) {
+    private static CharSequence formatDate(LocalDateTime localDateTime) {
         return DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(localDateTime);
     }
-
 }

@@ -187,7 +187,7 @@ public class Bober extends AppCompatActivity {
                         i.withBadge(String.format("[%s]", diff.get(boardKey)));
                     }
                 }
-                boardsDrawer.getAdapter().notifyDataSetChanged();
+//                boardsDrawer.getAdapter().notifyDataSetChanged();
             }
         });
     }
