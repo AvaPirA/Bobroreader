@@ -55,11 +55,14 @@ import java.util.concurrent.CountDownLatch;
  */
 public class BasicsSupplier {
 
+    public static final String TAG = "Network";
+
     public static final String BASIC_DOMAIN = "http://dobrochan.ru";
 
     public static final String diff      = BASIC_DOMAIN + "/api/chan/stats/diff.json";
     public static final String user      = BASIC_DOMAIN + "/api/user.json";
     public static final String boardPage = BASIC_DOMAIN + "/%s/%d.json";
+    public static final String threadAll = BASIC_DOMAIN + "/api/thread/%s/all.json?thread";
 
     public static class PostSupplier {
         private static final String DISPLAY_ID           = "/api/post/%s.json";
@@ -70,12 +73,10 @@ public class BasicsSupplier {
 
     }
 
-    private final Context        context;
     private final RequestQueue   volleyQueue;
     private       CountDownLatch requestDiff;
 
     public BasicsSupplier(Context context) {
-        this.context = context;
         volleyQueue = Volley.newRequestQueue(context);
     }
 
@@ -87,32 +88,30 @@ public class BasicsSupplier {
                 HanabiraUser user = gson.fromJson(response, HanabiraUser.class);
                 consumer.accept(user);
             }
-        }, errList);
+        }, errorListener);
         volleyQueue.add(reqJson);
     }
 
 
     public void getBoardsIds(final Consumer<Iterator<String>> consumer) {
+        Log.i(TAG, diff);
         JsonObjectRequest reqJson = new JsonObjectRequest(diff, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
                 consumer.accept(response.keys());
             }
-        }, errList);
+        }, errorListener);
         volleyQueue.add(reqJson);
     }
 
     public void getDiff(boolean wait, final Consumer<Map<String, Integer>> consumer) {
-        Log.w("GO", "DIFF " + wait);
         if (wait) {
             requestDiff = new CountDownLatch(1);
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        Log.d("GO", "start wait " + System.nanoTime());
                         requestDiff.await();
-                        Log.d("GO", "endof wait " + System.nanoTime());
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -126,14 +125,14 @@ public class BasicsSupplier {
     }
 
     private void getDiffInternal(final Consumer<Map<String, Integer>> consumer) {
+        Log.i(TAG, diff);
         JsonObjectRequest reqJson = new JsonObjectRequest(diff, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
                 Map<String, Integer> diff = collectDiff(response);
                 consumer.accept(diff);
             }
-        }, errList);
-        Log.w("GO", "DIFF");
+        }, errorListener);
         volleyQueue.add(reqJson);
     }
 
@@ -152,24 +151,31 @@ public class BasicsSupplier {
         return diff;
     }
 
-    private final Response.ErrorListener errList = new Response.ErrorListener() {
+    private final Response.ErrorListener errorListener = new Response.ErrorListener() {
         public void onErrorResponse(VolleyError e) {
             e.printStackTrace();
         }
     };
 
-    public void getBoardPage(String boardkey, int pageNum, final Response.Listener<String> consumer) {
-        Log.w("GO", "BOARD");
+    public void getBoardPage(String boardkey, int pageNum, final Response.Listener<String> listener) {
         String formattedUrl = String.format(boardPage, boardkey, pageNum);
+        Log.i(TAG, formattedUrl);
         StringRequest boardPageRequest = new StringRequest(formattedUrl, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                Log.w("GO", "COUNTDOWN");
-                requestDiff.countDown();
-                consumer.onResponse(response);
+                if(requestDiff!=null)requestDiff.countDown();
+                listener.onResponse(response);
             }
-        }, errList);
+        }, errorListener);
         volleyQueue.add(boardPageRequest);
 
     }
+
+    public void getThread(int threadId, final Response.Listener<String> listener) {
+        String formattedUrl = String.format(threadAll, threadId);
+        Log.i(TAG, formattedUrl);
+        StringRequest threadRequest = new StringRequest(formattedUrl, listener, errorListener);
+        volleyQueue.add(threadRequest);
+    }
+
 }

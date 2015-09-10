@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -15,6 +14,10 @@ import android.widget.ProgressBar;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
+import com.avapira.bobroreader.util.Consumer;
+import org.joda.time.LocalDateTime;
+
+import java.util.TreeMap;
 
 
 public class ThreadFragment extends Fragment {
@@ -88,19 +91,22 @@ public class ThreadFragment extends Fragment {
     }
 
     private void loadThread() {
-        ActionBar toolbar = ((AppCompatActivity) getActivity()).getSupportActionBar();
         supervisor.retitleOnLoading();
-        progressBar.setVisibility(View.VISIBLE);
         recycler.setVisibility(View.INVISIBLE);
+        progressBar.setVisibility(View.VISIBLE);
 
-        Hanabira.getFlower().updateThread(threadId);
-        HanabiraThread thread = null;
-        //TODO LOAD
+        HanabiraThread thread = Hanabira.getCache().findThreadById(threadId);
+        Hanabira.getFlower().updateThread(threadId, new Consumer<TreeMap<LocalDateTime, Integer>>() {
+            @Override
+            public void accept(TreeMap<LocalDateTime, Integer> posts) {
+                for (Integer i : posts.values()) {
+                    System.out.println(Hanabira.getCache().findPostByDisplayId(i).getMessage());
+                }
+            }
+        });
 
-        recycler.setAdapter(new ThreadAdapter());
         progressBar.setVisibility(View.GONE);
         recycler.setVisibility(View.VISIBLE);
-        //TODO MOVE ALL TOOLBAR INTERACTIONS TO ACTIVITY (FROM ALL FRAGMENTS)
         supervisor.retitleOnThreadLoad(thread);
     }
 

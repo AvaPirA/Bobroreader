@@ -10,17 +10,25 @@
             android:background="@color/dobro_light"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-        <TextView android:id="@+id/user_text"
+        <TextView android:id="@+id/loading_log"
+                  android:paddingTop="200dp"
+                  android:textColor="@color/dobro_secondary_text"
+                  android:shadowDx="1"
+                  android:shadowDy="1"
+                  android:shadowRadius="1"
+                  android:shadowColor="@color/dobro_primary_text"
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
-                  android:layout_gravity="center"/>
+                  android:layout_gravity="center"
+                android:gravity="center"/>
 
     </FrameLayout>
     <FrameLayout
             android:id="@+id/frame_toolbar_container"
             android:background="@color/dobro_light"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:visibility="gone">
         <View android:layout_height="@dimen/tool_bar_top_padding"
               android:layout_width="match_parent"
               android:background="@color/dobro_status_bar"/>

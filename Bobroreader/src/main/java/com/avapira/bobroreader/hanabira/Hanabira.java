@@ -7,17 +7,22 @@ import com.avapira.bobroreader.Bober;
 import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.cache.ActiveCache;
 import com.avapira.bobroreader.hanabira.cache.HanabiraCache;
+import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
+import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.networking.BasicsSupplier;
 import com.avapira.bobroreader.networking.PersistentCookieStore;
 import com.avapira.bobroreader.util.Consumer;
+import org.joda.time.LocalDateTime;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  *
@@ -57,16 +62,32 @@ public class Hanabira {
         return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("pref_mocked_network", false);
     }
 
-    public void updateBoardPage(String boardKey, int pageNum, Response.Listener<String> andThen) {
+    public void getBoardPage(String boardKey, final int pageNum, final Consumer<List<HanabiraThread>> callback) {
         if (useMockedNetwork()) {
-            andThen.onResponse(Bober.rawJsonToString(context.getResources(), R.raw.u_0));
+            callback.accept(HanabiraBoard.fromJson(Bober.rawJsonToString(context.getResources(), R.raw.u_0),
+                    HanabiraBoard.class).getPageThreads(pageNum));
         } else {
-            network.getBoardPage(boardKey, pageNum, andThen);
+            network.getBoardPage(boardKey, pageNum, new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    callback.accept(HanabiraBoard.fromJson(response, HanabiraBoard.class).getPageThreads(pageNum));
+                }
+            });
         }
     }
 
-    public void updateThread(int threadId){
-        //TODO
+    public void updateThread(int threadId, final Consumer<TreeMap<LocalDateTime, Integer>> callback) {
+        if (useMockedNetwork()) {
+            // TODO MOCK THREAD REQUEST
+        } else {
+            network.getThread(threadId, new Response.Listener<String>(){
+                @Override
+                public void onResponse(String response) {
+                    System.out.println(response);
+                    callback.accept(HanabiraThread.fromJson(response, HanabiraThread.class).getPosts());
+                }
+            });
+        }
     }
 
     public void getUser(Consumer<HanabiraUser> consumer) {

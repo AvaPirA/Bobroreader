@@ -50,11 +50,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.*;
 import android.widget.*;
-import com.android.volley.Response;
 import com.avapira.bobroreader.hanabira.Hanabira;
-import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
+import com.avapira.bobroreader.util.Consumer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,11 +119,10 @@ public class BoardFragment extends Fragment {
         progressBar.setVisibility(View.VISIBLE);
         recycler.setVisibility(View.INVISIBLE);
         page = newPage;
-        Hanabira.getFlower().updateBoardPage(boardKey, page, new Response.Listener<String>() {
+        Hanabira.getFlower().getBoardPage(boardKey, page, new Consumer<List<HanabiraThread>>() {
             @Override
-            public void onResponse(String response) {
-                final HanabiraBoard hanabiraBoard = HanabiraBoard.fromJson(response, HanabiraBoard.class);
-                final BoardAdapter boardAdapter = new BoardAdapter(hanabiraBoard.getPageThreads(page));
+            public void accept(List<HanabiraThread> hanabiraThreads) {
+                final BoardAdapter boardAdapter = new BoardAdapter(hanabiraThreads);
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -136,7 +134,6 @@ public class BoardFragment extends Fragment {
                     }
                 });
             }
-
         });
     }
 

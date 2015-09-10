@@ -50,11 +50,9 @@ import android.util.Log;
 import android.view.*;
 import android.widget.ImageView;
 import android.widget.SearchView;
-import android.widget.TextView;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
-import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.util.Consumer;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
@@ -74,7 +72,8 @@ public class Bober extends AppCompatActivity implements Castor {
     private static double DEBUG_INIT_START = DEBUG_time();
     private boolean loadDiff;
     Toolbar toolbar;
-
+    private Drawer boardsDrawer;
+    private Drawer featuresDrawer;
 
     private static double DEBUG_time() {
         return System.nanoTime();
@@ -114,19 +113,10 @@ public class Bober extends AppCompatActivity implements Castor {
                             .commit();
     }
 
-    static {
-        Log.d("Init", DEBUG_initRelativeTime() + " Start. Joda Time initialization...");
-        // Build the local caches inside Joda Time immediately instead of lazily
-        new LocalDateTime();
-        Log.d("Init", DEBUG_initRelativeTime() + " Joda Time init");
-    }
-
     private static final class DrawerIdentifier {
         private static final int SETTINGS = 239;
     }
 
-    private Drawer boardsDrawer   = null;
-    private Drawer featuresDrawer = null;
 
     private static class ShortSectionDivider extends SectionDrawerItem {
         @Override
@@ -153,37 +143,46 @@ public class Bober extends AppCompatActivity implements Castor {
 
     }
 
+    private void loadingLog(String newState) {
+        Log.d("Init", new StringBuilder().append(DEBUG_initRelativeTime()).append(' ').append(newState).toString());
+    }
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
-        Log.d("Init", DEBUG_initRelativeTime() + " onCreate() start");
-        super.onCreate(savedInstanceState);
-        Log.d("Init", DEBUG_initRelativeTime() + " supermethod invocation");
+        loadingLog("Freezing time...");
+        // Build the local caches inside Joda Time
+        new LocalDateTime();
+        loadingLog("Coalescing core...");
         Hanabira.bind(this);
-        Log.d("Init", DEBUG_initRelativeTime() + " core coalesce");
+        loadingLog("Manuscripts contemplation...");
         HanabiraBoard.Info.loadBoardsInfo(rawJsonToString(getResources(), R.raw.boards));
-        Log.d("Init", DEBUG_initRelativeTime() + " boards info loaded");
+
+        loadingLog("Acquiring superposition...");
+        super.onCreate(savedInstanceState);
+        loadingLog("Dressing...");
         setContentView(R.layout.activity_bober);
-        Log.d("Init", DEBUG_initRelativeTime() + " content view applied");
+        loadingLog("Pulling out a hat...");
         toolbar = (Toolbar) findViewById(R.id.toolbar);
+        loadingLog("Dubbing a hat...");
         setSupportActionBar(toolbar);
-        Log.d("Init", DEBUG_initRelativeTime() + " toolbar prepared");
-        Log.d("Init", DEBUG_initRelativeTime() + " drawer generation...");
+        loadingLog("Equipping primary weapon...");
         boardsDrawer = generateBoardsDrawerBuilder(savedInstanceState, toolbar).build();
-        Log.d("Init", DEBUG_initRelativeTime() + " drawer generated. onCreate() finish");
+        loadingLog("Equipping secondary weapon...");
         featuresDrawer = generateFeaturesDrawerBuilder(savedInstanceState).append(boardsDrawer);
-        boardsDrawer.openDrawer();
+        Log.d("Init", DEBUG_initRelativeTime() + " features drawer generated");
+        loadingLog("Starting a new journey");
+        findViewById(R.id.frame_toolbar_container).setVisibility(View.VISIBLE);
+        setTheme(R.style.Bobroreader_Theme_Default);
+        // TODO create big enough splash logo
     }
 
     @Override
     protected void onStart() {
-        Log.d("Init", DEBUG_initRelativeTime() + " onStart() start");
         super.onStart();
         // todo show pretty /news/ index page
         loadDiff = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                                     .getBoolean("pref_load_diff", false);
         updateDrawerDiff(false);
-//        showUserInfo();
-        Log.d("Init", DEBUG_initRelativeTime() + " onStart() start");
     }
 
 
@@ -217,16 +216,6 @@ public class Bober extends AppCompatActivity implements Castor {
                 }
             });
         }
-    }
-
-    private void showUserInfo() {
-        Hanabira.getFlower().getUser(new Consumer<HanabiraUser>() {
-            @Override
-            public void accept(HanabiraUser user) {
-                TextView tv = (TextView) findViewById(R.id.user_text);
-                tv.setText(user.toString());
-            }
-        });
     }
 
     private DrawerBuilder generateBoardsDrawerBuilder(Bundle savedInstanceState, Toolbar toolbar) {
