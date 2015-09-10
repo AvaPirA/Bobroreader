@@ -41,8 +41,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
 import android.support.v4.view.animation.FastOutSlowInInterpolator;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -77,14 +75,7 @@ public class BoardFragment extends Fragment {
     private int    page;
     Animation animRotateForward;
     Animation animRotateBackward;
-    private OnThreadOpenedListener threadOpenCallback;
-
-    /**
-     *
-     */
-    public interface OnThreadOpenedListener {
-        void onThreadSelected(int threadId);
-    }
+    private Castor supervisor;
 
     /**
      * Use this factory method to create a new instance of
@@ -124,11 +115,8 @@ public class BoardFragment extends Fragment {
         }
     }
 
-    private void switchPage(int newPage) {
-        final ActionBar toolbar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-        if (toolbar != null) {
-            toolbar.setTitle("Page loading...");
-        }
+    private void switchPage(final int newPage) {
+        supervisor.retitleOnLoading();
         progressBar.setVisibility(View.VISIBLE);
         recycler.setVisibility(View.INVISIBLE);
         page = newPage;
@@ -144,12 +132,7 @@ public class BoardFragment extends Fragment {
                         progressBar.setVisibility(View.GONE);
                         recycler.setVisibility(View.VISIBLE);
 
-                        String title = String.format("/%s/ - %s " + "[%s]", hanabiraBoard.getKey(),
-                                hanabiraBoard.getInfo().title, page);
-
-                        if (toolbar != null) {
-                            toolbar.setTitle(title);
-                        }
+                        supervisor.retitleOnBoardLoad(boardKey, newPage);
                     }
                 });
             }
@@ -164,7 +147,7 @@ public class BoardFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         try {
-            threadOpenCallback = (OnThreadOpenedListener) activity;
+            supervisor = (Castor) activity;
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement OnFragmentInteractionListener");
         }
@@ -173,7 +156,7 @@ public class BoardFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-        threadOpenCallback = null;
+        supervisor = null;
     }
 
     @Override
@@ -421,7 +404,7 @@ public class BoardFragment extends Fragment {
                     openBtn.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            threadOpenCallback.onThreadSelected(threads.get(getAdapterPosition() - 1).getThreadId());
+                            supervisor.onThreadSelected(threads.get(getAdapterPosition() - 1).getThreadId());
                         }
                     });
                 }

@@ -2,7 +2,6 @@ package com.avapira.bobroreader;
 
 import android.app.Activity;
 import android.app.Fragment;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -24,9 +23,9 @@ public class ThreadFragment extends Fragment {
 
     private int threadId;
 
-    private OnFragmentInteractionListener mListener;
-    private HidingScrollListener          scrollListener;
-    private ProgressBar                   progressBar;
+    private Castor               supervisor;
+    private HidingScrollListener scrollListener;
+    private ProgressBar          progressBar;
 
     private class ThreadAdapter extends RecyclerView.Adapter {
         //TODO
@@ -90,7 +89,7 @@ public class ThreadFragment extends Fragment {
 
     private void loadThread() {
         ActionBar toolbar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-        updateToolbarTitle(toolbar, "Page loading...");
+        supervisor.retitleOnLoading();
         progressBar.setVisibility(View.VISIBLE);
         recycler.setVisibility(View.INVISIBLE);
 
@@ -102,7 +101,7 @@ public class ThreadFragment extends Fragment {
         progressBar.setVisibility(View.GONE);
         recycler.setVisibility(View.VISIBLE);
         //TODO MOVE ALL TOOLBAR INTERACTIONS TO ACTIVITY (FROM ALL FRAGMENTS)
-        updateToolbarWithThreadTitle(toolbar, thread);
+        supervisor.retitleOnThreadLoad(thread);
     }
 
     private static void updateToolbarTitle(ActionBar toolbar, String title) {
@@ -142,7 +141,7 @@ public class ThreadFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         try {
-            mListener = (OnFragmentInteractionListener) activity;
+            supervisor = (Castor) activity;
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement OnFragmentInteractionListener");
         }
@@ -151,11 +150,7 @@ public class ThreadFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
-    }
-
-    public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(Uri uri);
+        supervisor = null;
     }
 
 }
