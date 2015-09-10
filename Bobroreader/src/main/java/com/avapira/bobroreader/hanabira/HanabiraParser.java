@@ -191,7 +191,7 @@ public class HanabiraParser {
                 default:
                     throw new InternalError(
                             String.format("Found level value equals %s instead \'1\' or \'2\' after constructor check",
-                                          level));
+                                    level));
 
             }
         }
@@ -285,13 +285,38 @@ public class HanabiraParser {
 
         embedRefs();
         formatStrikethrough();
-        formatWordsReversion();
+        formatWordsHiding();
         return builder;
 
     }
 
-    private void formatWordsReversion() {
-        ///xxx powel etot imbicil prosto na 4ai
+    private void formatWordsHiding() {
+        int removedCharactersDelta = 0;
+        Pattern pattern = Pattern.compile("(\\^W)+");
+        Matcher matcher = pattern.matcher(builder);
+        while (matcher.find()) {
+            final int start = matcher.start() - removedCharactersDelta;
+            final int end = matcher.end() - removedCharactersDelta;
+            CodeBlockSpan[] spans = builder.getSpans(start, start, CodeBlockSpan.class);
+            if (spans != null && spans.length != 0) { continue; }
+
+            int wordsAmount = matcher.group().length() / 2;
+            char[] chars = new char[builder.length()];
+            builder.getChars(0, builder.length(), chars, 0);
+            int runner = start;
+            try {
+                while (wordsAmount > 0) {
+                    if (Character.isSpaceChar(chars[--runner])) {
+                        wordsAmount--;
+                    }
+                }
+            } catch (ArrayIndexOutOfBoundsException e) {
+                runner = 0;
+            }
+            builder.setSpan(new StrikethroughSpan(), runner, start, 0);
+            builder.delete(start, end);
+            removedCharactersDelta = end - start;
+        }
     }
 
     private void formatStrikethrough() {
@@ -432,11 +457,10 @@ public class HanabiraParser {
 
             int lengthPrefix = matcher.group(1).length();
             builder.replace(matcher.start(1) - removedFormatCharsDelta, matcher.end(1) - removedFormatCharsDelta,
-                            beginRestore);
+                    beginRestore);
 
             builder.replace(matcher.start(3) - lengthPrefix - removedFormatCharsDelta + beginRestore.length(),
-                            matcher.end(3) - lengthPrefix - removedFormatCharsDelta + beginRestore.length(),
-                            endRestore);
+                    matcher.end(3) - lengthPrefix - removedFormatCharsDelta + beginRestore.length(), endRestore);
 
             SpannableString rep = new SpannableString(matcher.group(2));
             rep.setSpan(factory.getSpan(), 0, rep.length(), 0);
@@ -445,7 +469,7 @@ public class HanabiraParser {
                 // fixme twice used Linkify? try remove and just setSpan to builder
             }
             builder.replace(matcher.start() - removedFormatCharsDelta + beginRestore.length(),
-                            matcher.start() + rep.length() - removedFormatCharsDelta + endRestore.length(), rep);
+                    matcher.start() + rep.length() - removedFormatCharsDelta + endRestore.length(), rep);
 
             // store deletions
             removedFormatCharsDelta += matcher.group(1).length() - beginRestore.length();
