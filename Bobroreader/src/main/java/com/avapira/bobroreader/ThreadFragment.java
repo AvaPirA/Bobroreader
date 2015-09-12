@@ -3,7 +3,6 @@ package com.avapira.bobroreader;
 import android.app.Activity;
 import android.app.Fragment;
 import android.os.Bundle;
-import android.support.v7.app.ActionBar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -12,11 +11,12 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import com.avapira.bobroreader.hanabira.Hanabira;
-import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.util.Consumer;
 import org.joda.time.LocalDateTime;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
 
@@ -29,26 +29,6 @@ public class ThreadFragment extends Fragment {
     private Castor               supervisor;
     private HidingScrollListener scrollListener;
     private ProgressBar          progressBar;
-
-    private class ThreadAdapter extends RecyclerView.Adapter {
-        //TODO
-        @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            //TODO
-            return null;
-        }
-
-        @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            //TODO
-        }
-
-        @Override
-        public int getItemCount() {
-            //TODO
-            return 0;
-        }
-    }
 
     public static ThreadFragment newInstance(int threadId) {
         ThreadFragment fragment = new ThreadFragment();
@@ -84,7 +64,7 @@ public class ThreadFragment extends Fragment {
         recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
         scrollListener = new HidingScrollListener(
-                (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container),getContext());
+                (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container), getContext());
         recycler.addOnScrollListener(scrollListener);
         loadThread();
     }
@@ -94,36 +74,21 @@ public class ThreadFragment extends Fragment {
         recycler.setVisibility(View.INVISIBLE);
         progressBar.setVisibility(View.VISIBLE);
 
-        HanabiraThread thread = Hanabira.getCache().findThreadById(threadId);
+        final HanabiraThread thread = Hanabira.getCache().findThreadById(threadId);
         Hanabira.getFlower().updateThread(threadId, new Consumer<TreeMap<LocalDateTime, Integer>>() {
             @Override
             public void accept(TreeMap<LocalDateTime, Integer> posts) {
-                for (Integer i : posts.values()) {
-                    Hanabira.getCache().findPostByDisplayId(i);
-                }
+                final ThreadAdapter adapter = new ThreadAdapter(posts);
+                getActivity().runOnUiThread(new Runnable() {
+                    public void run() {
+                        recycler.setAdapter(adapter);
+                        progressBar.setVisibility(View.GONE);
+                        recycler.setVisibility(View.VISIBLE);
+                        supervisor.retitleOnThreadLoad(thread);
+                    }
+                });
             }
         });
-
-        progressBar.setVisibility(View.GONE);
-        recycler.setVisibility(View.VISIBLE);
-        supervisor.retitleOnThreadLoad(thread);
-    }
-
-    private static void updateToolbarTitle(ActionBar toolbar, String title) {
-        if (toolbar != null) {
-            toolbar.setTitle(title);
-        }
-    }
-
-    private static void updateToolbarWithThreadTitle(ActionBar toolbar, HanabiraThread thread) {
-        String threadTitle = thread.getTitle();
-        if (threadTitle == null || "".equals(threadTitle)) {
-            threadTitle = "Unnamed";
-        }
-        String title = String.format("%s/ %s " + "[%s]", HanabiraBoard.Info.getKeyForId(thread.getBoardId()),
-                threadTitle, thread.getPostsCount());
-
-        updateToolbarTitle(toolbar, title);
     }
 
     @Override
@@ -156,6 +121,47 @@ public class ThreadFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         supervisor = null;
+    }
+
+    private class ThreadAdapter extends RecyclerView.Adapter<PostViewHolder> {
+
+        TreeMap<LocalDateTime, Integer> posts;
+        private List<Integer> listedPosts;
+
+        public ThreadAdapter(TreeMap<LocalDateTime, Integer> pp) {
+            this.posts = pp;
+            listedPosts = new ArrayList<>(pp.size());
+            for (Integer i : pp.values()) {
+                listedPosts.add(i);
+            }
+            Hanabira.getCache().asyncParse(pp.values());
+        }
+
+        @Override
+        public PostViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            LayoutInflater.from(getContext()).inflate(R.layout.layout_post, parent);
+            return null;
+        }
+
+        @Override
+        public void onBindViewHolder(PostViewHolder holder, int position) {
+            holder.postHolder.fillWithData(listedPosts.get(position));
+        }
+
+        @Override
+        public int getItemCount() {
+            return listedPosts.size();
+        }
+    }
+
+    static class PostViewHolder extends RecyclerView.ViewHolder {
+
+        PostHolder postHolder;
+
+        public PostViewHolder(View itemView) {
+            super(itemView);
+            postHolder = new PostHolder(itemView);
+        }
     }
 
 }

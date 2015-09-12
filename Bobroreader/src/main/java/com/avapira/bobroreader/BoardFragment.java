@@ -207,7 +207,6 @@ public class BoardFragment extends Fragment {
 
         List<Integer> threadIds;
         private List<Boolean> requestFillRecents;
-        KeepOneHolderOpen keeper = new KeepOneHolderOpen();
 
         public BoardAdapter(List<Integer> tt) {
             threadIds = tt;
@@ -240,7 +239,7 @@ public class BoardFragment extends Fragment {
                 postcard.findViewById(R.id.board_header_text).setVisibility(View.GONE);
             }
             if (viewType == VIEW_TYPE_NEXT_PAGE &&
-                    page == Hanabira.getCache().findBoardByKey(boardKey).getPagesCount()-1) {
+                    page == Hanabira.getCache().findBoardByKey(boardKey).getPagesCount() - 1) {
                 postcard.findViewById(R.id.frame_footer_container).setVisibility(View.GONE);
             }
             ThreadWithPreviewViewHolder tpvh = new ThreadWithPreviewViewHolder(postcard);
@@ -280,16 +279,18 @@ public class BoardFragment extends Fragment {
             HanabiraThread thread = Hanabira.getCache().findThreadByDisplayId(threadDisplayId);
             HanabiraPost op = Hanabira.getCache().findPostByDisplayId(threadDisplayId);
 //            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
-            holder.setThreadTextViews(thread, op);
+            holder.threadTitle.setText(thread.getTitle());
+            holder.postHolder.fillWithData(op);
+            holder.postHolder.message.setMaxLines(ELLIPSIZE_MAX_LINES);// reset the
+            holder.expandBtn.setRotation(0f);                          // expanding
 
             if (op.getFiles() == null || op.getFiles().size() == 0) {
                 holder.filesScroller.setVisibility(View.GONE);
             }
             holder.recentBtn.setEnabled(thread.getPostsCount() > 1);
-            holder.expandBtn.setRotation(0f);
             requestFillRecents.set(threadIndex, true);
 
-            keeper.prepare(holder, position);
+            prepare(holder, position);
 
 //            filesScroller.setLayoutManager(
 //                    new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
@@ -319,279 +320,6 @@ public class BoardFragment extends Fragment {
             }
         }
 
-        public class ThreadWithPreviewViewHolder extends RecyclerView.ViewHolder implements Expandable {
-
-            public final TextView             threadTitle;
-            public final PostHolder           postHolder;
-            public final HorizontalScrollView filesScroller;
-            public final LinearLayout         previewList;
-            public final TextView             replies;
-            public final Button               optionsBtn;
-            public final ImageButton          expandBtn;
-            public final Button               recentBtn;
-            public final Button               openBtn;
-
-
-            public PostHolder[] recents;
-
-            public ThreadWithPreviewViewHolder(final View itemView) {
-                super(itemView);
-                threadTitle = (TextView) itemView.findViewById(R.id.text_thread_title);
-
-                postHolder = new PostHolder(itemView);
-                replies = (TextView) itemView.findViewById(R.id.text_post_content_replies);
-                filesScroller = (HorizontalScrollView) itemView.findViewById(R.id.post_files_scroller);
-                previewList = (LinearLayout) itemView.findViewById(R.id.layout_thread_expandable_posts_preview);
-                optionsBtn = (Button) itemView.findViewById(R.id.thread_controls_options);
-                expandBtn = (ImageButton) itemView.findViewById(R.id.thread_controls_expand);
-                recentBtn = (Button) itemView.findViewById(R.id.thread_controls_recent);
-                openBtn = (Button) itemView.findViewById(R.id.thread_controls_open);
-
-                if (optionsBtn != null) {
-                    optionsBtn.setOnClickListener(null);
-                    // hope either not null
-                    expandBtn.setOnClickListener(new View.OnClickListener() {
-
-                        @Override
-                        public void onClick(View imageButton) {
-                            final int now = postHolder.message.getMaxLines();
-                            final int will = now == Integer.MAX_VALUE ? ELLIPSIZE_MAX_LINES : Integer.MAX_VALUE;
-                            final boolean growth = will > now;
-                            if (postHolder.message.getLineCount() <= ELLIPSIZE_MAX_LINES) {
-                                expandBtn.animate()
-                                         .rotation(360f)
-                                         .setDuration(500)
-                                         .setInterpolator(new BounceInterpolator())
-                                         .withEndAction(new Runnable() {
-                                             @Override
-                                             public void run() {
-                                                 expandBtn.setRotation(0);
-                                             }
-                                         })
-                                         .start();
-                                return;
-                            }
-                            scrollListener.expandTriggered();
-                            postHolder.message.setMaxLines(will); // set to measure
-                            final View v = postHolder.message, parent = (View) v.getParent();
-
-                            int start = v.getMeasuredHeight();
-                            v.measure(View.MeasureSpec.makeMeasureSpec(parent.getMeasuredWidth(),
-                                                                       View.MeasureSpec.AT_MOST),
-                                      View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-                            int end = v.getMeasuredHeight();
-
-                            final ValueAnimator animator = ValueAnimator.ofInt(start, end);
-                            animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-
-                                @Override
-                                public void onAnimationUpdate(ValueAnimator animation) {
-                                    final ViewGroup.LayoutParams lp = v.getLayoutParams();
-                                    lp.height = (int) animation.getAnimatedValue();
-                                    v.setLayoutParams(lp);
-                                }
-
-                            });
-                            animator.addListener(new AnimatorListenerAdapter() {
-                                @Override
-                                public void onAnimationEnd(Animator animation) {
-                                    final ViewGroup.LayoutParams params = v.getLayoutParams();
-                                    params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                                    params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                                    v.setLayoutParams(params);
-                                    postHolder.message.setMaxLines(will);
-                                }
-
-                                @Override
-                                public void onAnimationStart(Animator animation) {
-                                    expandBtn.animate().rotation(growth ? 180f : 360f).withEndAction(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            expandBtn.setRotation(growth ? 180f : 0f);
-                                        }
-                                    }).setInterpolator(new AccelerateDecelerateInterpolator()).start();
-                                    postHolder.message.setMaxLines(Integer.MAX_VALUE);
-                                }
-                            });
-                            animator.setInterpolator(new FastOutSlowInInterpolator());
-                            animator.addListener(new NotRecycleAdapter());
-
-                            animator.addListener(new AnimatorListenerAdapter() {
-                                @Override
-                                public void onAnimationEnd(Animator animation) {
-
-                                }
-
-                            });
-                            animator.start();
-                        }
-                    });
-                    recentBtn.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            keeper.toggle(ThreadWithPreviewViewHolder.this);
-                        }
-                    });
-                    openBtn.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            supervisor.onThreadSelected(threadIds.get(getAdapterPosition() - 1));
-                        }
-                    });
-
-                    if (previewList.getChildCount() == 0 && recentListSize != 0) {
-                        recents = new PostHolder[recentListSize];
-                        for (int i = 0; i < recentListSize; i++) {
-                            LayoutInflater.from(getContext()).inflate(R.layout.layout_post, previewList);
-                            recents[i] = new PostHolder(previewList.getChildAt(i));
-                        }
-                    }
-                }
-
-            }
-
-            public void setThreadTextViews(HanabiraThread thread, HanabiraPost op) {
-                threadTitle.setText(thread.getTitle());
-                postHolder.fillWithData(op);
-                postHolder.message.setMaxLines(ELLIPSIZE_MAX_LINES);
-            }
-
-            @Override
-            public View getExpandView() {
-                return previewList;
-            }
-
-
-            public void openHolder(final boolean animate) {
-                final View expandView = getExpandView();
-
-                int threadIndex = getLayoutPosition() - 1;
-                if (requestFillRecents.get(threadIndex)) {
-                    requestFillRecents.set(threadIndex, false);
-                    List<Integer> recentsList = Hanabira.getCache()
-                                                        .findThreadByDisplayId(threadIds.get(getLayoutPosition() - 1))
-                                                        .getLastN(recentListSize);
-                    int i = 0;
-                    for (; i < recentsList.size(); i++) {
-                        recents[i].fillWithData(recentsList.get(i));
-                    }
-                }
-
-                if (animate) {
-                    expandView.setVisibility(View.VISIBLE);
-                    final Animator animator = animateItemViewHeight();
-                    animator.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-                            final ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(expandView, View.ALPHA, 1);
-                            alphaAnimator.addListener(new NotRecycleAdapter());
-                            alphaAnimator.setInterpolator(new DecelerateInterpolator());
-                            alphaAnimator.start();
-                        }
-                    });
-                    animator.start();
-                } else {
-                    expandView.setVisibility(View.VISIBLE);
-                    expandView.setAlpha(1);
-                }
-            }
-
-            public void closeHolder(final boolean animate) {
-                final View expandView = getExpandView();
-                if (animate) {
-                    expandView.setVisibility(View.GONE);
-                    final Animator animator = animateItemViewHeight();
-                    expandView.setVisibility(View.VISIBLE);
-                    animator.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-                            final ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(expandView, View.ALPHA, 0);
-                            alphaAnimator.addListener(new NotRecycleAdapter());
-                            alphaAnimator.setInterpolator(new DecelerateInterpolator());
-                            alphaAnimator.start();
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            expandView.setVisibility(View.GONE);
-                            expandView.setAlpha(0);
-                        }
-
-                        @Override
-                        public void onAnimationCancel(Animator animation) {
-                            expandView.setVisibility(View.GONE);
-                            expandView.setAlpha(0);
-                        }
-                    });
-                    animator.start();
-                } else {
-                    expandView.setVisibility(View.GONE);
-                    expandView.setAlpha(0);
-                }
-            }
-
-            public Animator animateItemViewHeight() {
-                View parent = (View) itemView.getParent();
-                if (parent == null) {
-                    throw new IllegalStateException("Cannot animate the layout of a view that has no parent");
-                }
-
-                int start = itemView.getMeasuredHeight();
-                itemView.measure(View.MeasureSpec.makeMeasureSpec(parent.getMeasuredWidth(), View.MeasureSpec.AT_MOST),
-                                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-                int end = itemView.getMeasuredHeight();
-
-                return animateItemViewHeightInternal(start, end);
-
-            }
-
-            private Animator animateItemViewHeightInternal(int start, int end) {
-                final ValueAnimator animator = ValueAnimator.ofInt(start, end);
-                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-
-                    @Override
-                    public void onAnimationUpdate(ValueAnimator animation) {
-                        final ViewGroup.LayoutParams lp = itemView.getLayoutParams();
-                        lp.height = (int) animation.getAnimatedValue();
-                        itemView.setLayoutParams(lp);
-                    }
-
-                });
-
-                animator.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        final ViewGroup.LayoutParams params = itemView.getLayoutParams();
-                        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                        itemView.setLayoutParams(params);
-                    }
-                });
-
-                animator.setInterpolator(new FastOutSlowInInterpolator());
-                animator.addListener(new NotRecycleAdapter());
-
-                return animator;
-            }
-
-            public class NotRecycleAdapter extends AnimatorListenerAdapter {
-
-                @Override
-                public void onAnimationStart(Animator animation) { setIsRecyclable(false); }
-
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    setIsRecyclable(true);
-                }
-
-                @Override
-                public void onAnimationCancel(Animator animation) { setIsRecyclable(true); }
-            }
-        }
-
-    }
-
-    public class KeepOneHolderOpen {
         private int whereIsRecentsShownPosition = -239;
 
         public void prepare(BoardAdapter.ThreadWithPreviewViewHolder holder, int position) {
@@ -620,32 +348,245 @@ public class BoardFragment extends Fragment {
                 return true;
             }
         }
-    }
 
-    private class FilesAdapter extends RecyclerView.Adapter {
-        @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            return null;
-        }
+        public class ThreadWithPreviewViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
-        @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            public final TextView             threadTitle;
+            public final PostHolder           postHolder;
+            public final HorizontalScrollView filesScroller;
+            public final LinearLayout         previewList;
+            public final TextView             replies;
+            public final Button               optionsBtn;
+            public final ImageButton          expandBtn;
+            public final Button               recentBtn;
+            public final Button               openBtn;
 
-        }
 
-        @Override
-        public int getItemCount() {
-            return 0;
-        }
+            public PostHolder[] recents;
 
-        protected class FileViewHolder extends RecyclerView.ViewHolder {
+            public void onClick(View v) {
+                switch (v.getId()) {
+                    case R.id.thread_controls_options:
+                        return;
+                    case R.id.thread_controls_expand:
+                        onExpandClick();
+                        break;
+                    case R.id.thread_controls_open:
+                        onOpenClick();
+                        break;
+                    case R.id.thread_controls_recent:
+                        onRecentClick();
+                        break;
+                }
+            }
 
-            View view;
+            private void onRecentClick() {
+                toggle(ThreadWithPreviewViewHolder.this);
+            }
 
-            public FileViewHolder(View view) {
-                super(view);
-                this.view = view;
+            private void onOpenClick() {
+                supervisor.onThreadSelected(threadIds.get(getAdapterPosition() - 1));
+            }
+
+            public void onExpandClick() {
+                final int now = postHolder.message.getMaxLines();
+                final int will = now == Integer.MAX_VALUE ? ELLIPSIZE_MAX_LINES : Integer.MAX_VALUE;
+                final boolean growth = will > now;
+                if (postHolder.message.getLineCount() <= ELLIPSIZE_MAX_LINES) {
+                    expandBtn.animate()
+                             .rotation(360f)
+                             .setDuration(500)
+                             .setInterpolator(new BounceInterpolator())
+                             .withEndAction(new Runnable() {
+                                 @Override
+                                 public void run() {
+                                     expandBtn.setRotation(0);
+                                 }
+                             })
+                             .start();
+                    return;
+                }
+                scrollListener.expandTriggered();
+                postHolder.message.setMaxLines(will); // set to measure
+                final Animator animator = animateViewHeight(postHolder.message);
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (postHolder.message.getLineCount() != will) {
+                            postHolder.message.setMaxLines(will);
+                        }
+                        postHolder.message.measure(View.MeasureSpec.makeMeasureSpec(500, View.MeasureSpec.AT_MOST),
+                                                   View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                        System.out.println(postHolder.message.getMeasuredHeight());
+                    }
+
+                    @Override
+                    public void onAnimationStart(Animator animation) {
+                        expandBtn.animate().rotation(growth ? 180f : 360f).withEndAction(new Runnable() {
+                            @Override
+                            public void run() {
+                                expandBtn.setRotation(growth ? 180f : 0f);
+                            }
+                        }).setInterpolator(new FastOutSlowInInterpolator()).start();
+                        postHolder.message.setMaxLines(Integer.MAX_VALUE);
+                    }
+                });
+                animator.start();
+            }
+
+            public ThreadWithPreviewViewHolder(final View itemView) {
+                super(itemView);
+                threadTitle = (TextView) itemView.findViewById(R.id.text_thread_title);
+
+                postHolder = new PostHolder(itemView);
+                replies = (TextView) itemView.findViewById(R.id.text_post_content_replies);
+                filesScroller = (HorizontalScrollView) itemView.findViewById(R.id.post_files_scroller);
+                previewList = (LinearLayout) itemView.findViewById(R.id.layout_thread_expandable_posts_preview);
+                optionsBtn = (Button) itemView.findViewById(R.id.thread_controls_options);
+                expandBtn = (ImageButton) itemView.findViewById(R.id.thread_controls_expand);
+                recentBtn = (Button) itemView.findViewById(R.id.thread_controls_recent);
+                openBtn = (Button) itemView.findViewById(R.id.thread_controls_open);
+
+                if (previewList != null) {
+                    for (int i = 0; i < recentListSize; i++) {
+                        LayoutInflater.from(getContext()).inflate(R.layout.layout_post, previewList);
+                    }
+                    recents = new PostHolder[previewList.getChildCount()];
+                    for (int i = 0; i < recents.length; i++) {
+                        recents[i] = new PostHolder(previewList.getChildAt(i));
+                    }
+                }
+
+                if (optionsBtn != null) {
+                    optionsBtn.setOnClickListener(this);
+                    // hope either not null
+                    expandBtn.setOnClickListener(this);
+                    recentBtn.setOnClickListener(this);
+                    openBtn.setOnClickListener(this);
+                }
+            }
+
+
+            public void openHolder(final boolean animate) {
+                int threadIndex = getLayoutPosition() - 1;
+                if (requestFillRecents.get(threadIndex)) {
+                    requestFillRecents.set(threadIndex, false);
+                    List<Integer> recentsList = Hanabira.getCache()
+                                                        .findThreadByDisplayId(threadIds.get(getLayoutPosition() - 1))
+                                                        .getLastN(recentListSize);
+                    int i = 0;
+                    for (; i < recentsList.size(); i++) {
+                        recents[i].fillWithData(recentsList.get(i));
+                    }
+                }
+
+                if (animate) {
+                    previewList.setVisibility(View.VISIBLE);
+                    final Animator animator = animateViewHeight(itemView);
+                    animator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            final ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(previewList, View.ALPHA, 1);
+                            alphaAnimator.addListener(new NotRecycleAdapter());
+                            alphaAnimator.setInterpolator(new DecelerateInterpolator());
+                            alphaAnimator.start();
+                        }
+                    });
+                    animator.start();
+                } else {
+                    previewList.setVisibility(View.VISIBLE);
+                    previewList.setAlpha(1);
+                }
+            }
+
+            public void closeHolder(final boolean animate) {
+                if (animate) {
+                    previewList.setVisibility(View.GONE);
+                    final Animator animator = animateViewHeight(itemView);
+                    previewList.setVisibility(View.VISIBLE);
+                    animator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            final ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(previewList, View.ALPHA, 0);
+                            alphaAnimator.addListener(new NotRecycleAdapter());
+                            alphaAnimator.setInterpolator(new DecelerateInterpolator());
+                            alphaAnimator.start();
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            previewList.setVisibility(View.GONE);
+                            previewList.setAlpha(0);
+                        }
+
+                        @Override
+                        public void onAnimationCancel(Animator animation) {
+                            previewList.setVisibility(View.GONE);
+                            previewList.setAlpha(0);
+                        }
+                    });
+                    animator.start();
+                } else {
+                    previewList.setVisibility(View.GONE);
+                    previewList.setAlpha(0);
+                }
+            }
+
+            public Animator animateViewHeight(final View v) {
+                View parent = (View) v.getParent();
+                if (parent == null) {
+                    throw new IllegalStateException("Cannot animate the layout of a view that has no parent");
+                }
+
+                int start = v.getMeasuredHeight();
+                System.out.println("Start: " + start);
+                v.measure(View.MeasureSpec.makeMeasureSpec(parent.getMeasuredWidth(), View.MeasureSpec.AT_MOST),
+                          View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                int end = v.getMeasuredHeight();
+                System.out.println("End: " + end);
+                final ValueAnimator animator = ValueAnimator.ofInt(start, end);
+                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animation) {
+                        final ViewGroup.LayoutParams lp = v.getLayoutParams();
+                        lp.height = (int) animation.getAnimatedValue();
+                        v.setLayoutParams(lp);
+                    }
+
+                });
+
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        final ViewGroup.LayoutParams params = v.getLayoutParams();
+                        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                        v.setLayoutParams(params);
+                    }
+                });
+
+                animator.setInterpolator(new FastOutSlowInInterpolator());
+                animator.addListener(new NotRecycleAdapter());
+
+                return animator;
+            }
+
+            public class NotRecycleAdapter extends AnimatorListenerAdapter {
+
+                @Override
+                public void onAnimationStart(Animator animation) { setIsRecyclable(false); }
+
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    setIsRecyclable(true);
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animation) { setIsRecyclable(true); }
             }
         }
+
     }
+
 }

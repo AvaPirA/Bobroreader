@@ -8,7 +8,6 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,33 +22,52 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
         this.context = context;
     }
 
-    public void asyncParse(List<Integer> threads, int recentDepth) {
+    public void asyncParse(Iterable<Integer> threads, int recentDepth) {
         new Thread(new AsyncHanabiraParser(threads, recentDepth)).start();
+    }
+
+    public void asyncParse(Iterable<Integer> threads) {
+        new Thread(new AsyncHanabiraParser(threads)).start();
     }
 
     private class AsyncHanabiraParser implements Runnable {
 
-        private final List<Integer> threadsToParse;
-        private final int                  previewsToParse;
+        private final Iterable<Integer> postsToParse;
+        private final Iterable<Integer> threadsToParse;
+        private final int               previewsToParse;
 
-        private AsyncHanabiraParser(List<Integer> threadsToParse, int previewsToParse) {
+        private AsyncHanabiraParser(Iterable<Integer> threadsToParse, int previewsToParse) {
+            this.postsToParse = null;
             this.threadsToParse = threadsToParse;
             this.previewsToParse = previewsToParse;
+        }
+
+        private AsyncHanabiraParser(Iterable<Integer> postsToParse) {
+            this.postsToParse = postsToParse;
+            threadsToParse = null;
+            previewsToParse = -1;
         }
 
         public void run() {
             Log.w(TAG, Thread.currentThread().toString() + " started parsing");
             double start = System.nanoTime();
-            for (int tdi : threadsToParse) {
-                cachePost(tdi);     // first priority
+            if (postsToParse != null) {
+                for (int pdi : postsToParse) {
+                    cachePost(pdi);
+                }
             }
-            for (int tdi : threadsToParse) {
-                for (Integer pdi : findThreadByDisplayId(tdi).getLastN(previewsToParse)) {
-                    cachePost(pdi);             // second priority
+            if (threadsToParse != null) {
+                for (int tdi : threadsToParse) {
+                    cachePost(tdi);     // first priority
+                }
+                for (int tdi : threadsToParse) {
+                    for (Integer pdi : findThreadByDisplayId(tdi).getLastN(previewsToParse)) {
+                        cachePost(pdi);             // second priority
+                    }
                 }
             }
             Log.w(TAG, Thread.currentThread().toString() + " completed parsing for " +
-                    ((System.nanoTime() - start) / 10e5)+"ms");
+                    ((System.nanoTime() - start) / 10e5) + "ms");
         }
 
         private void cachePost(int postDisplayId) {
