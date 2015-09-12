@@ -38,7 +38,9 @@ import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.LayoutRes;
 import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -66,6 +68,7 @@ public class BoardFragment extends Fragment {
     private static final String ARG_KEY             = "arg_board_key";
     private static final String ARG_PAGE            = "arg_board_page";
     private static final String ARG_RECYCLER_LAYOUT = "arg_board_recycler_layout";
+    private              int    recentListSize      = 3;
     ProgressBar          progressBar;
     RecyclerView         recycler;
     HidingScrollListener scrollListener;
@@ -143,8 +146,11 @@ public class BoardFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         try {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activity);
+            recentListSize = Integer.parseInt(prefs.getString("pref_board_recent_list_size", "3"));
             supervisor = (Castor) activity;
         } catch (ClassCastException e) {
+            e.printStackTrace();
             throw new ClassCastException(activity.toString() + " must implement OnFragmentInteractionListener");
         }
     }
@@ -197,7 +203,6 @@ public class BoardFragment extends Fragment {
         public static final int VIEW_TYPE_THREAD    = 2;
         public static final int VIEW_TYPE_NEXT_PAGE = 3;
         private final       int ELLIPSIZE_MAX_LINES = 15;
-        private final       int recentListSize      = 3;
 
         List<Integer> threadIds;
         private List<Boolean> requestFillRecents;
@@ -411,7 +416,7 @@ public class BoardFragment extends Fragment {
                         }
                     });
 
-                    if (previewList.getChildCount() < recentListSize) {
+                    if (previewList.getChildCount() == 0 && recentListSize != 0) {
                         recents = new PostHolder[recentListSize];
                         for (int i = 0; i < recentListSize; i++) {
                             LayoutInflater.from(getContext()).inflate(R.layout.layout_post, previewList);
@@ -442,7 +447,7 @@ public class BoardFragment extends Fragment {
                     requestFillRecents.set(threadIndex, false);
                     List<Integer> recentsList = Hanabira.getCache()
                                                         .findThreadByDisplayId(threadIds.get(getLayoutPosition() - 1))
-                                                        .getLastN(3);
+                                                        .getLastN(recentListSize);
                     int i = 0;
                     for (; i < recentsList.size(); i++) {
                         recents[i].fillWithData(recentsList.get(i));

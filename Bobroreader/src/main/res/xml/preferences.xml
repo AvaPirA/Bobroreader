@@ -33,7 +33,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory
             android:title="Navigation drawer"
-            android:key="pref_cat_drawer_setting">
+            android:key="pref_cat_drawer">
         <SwitchPreference
                 android:key="pref_drawer_show_banners"
                 android:title="Show board banner"
@@ -49,6 +49,14 @@
             android:title="Load diff in drawer"
             android:defaultValue="false"
             />
+    </PreferenceCategory>
+    <PreferenceCategory
+            android:title="Board page"
+            android:key="pref_cat_board">
+        <EditTextPreference
+                android:key="pref_board_recent_list_size"
+                android:title="Amount of preview posts"
+                android:defaultValue="3"/>
     </PreferenceCategory>
     <SwitchPreference
         android:key="pref_developer"
