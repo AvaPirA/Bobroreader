@@ -235,8 +235,12 @@ public class BoardFragment extends Fragment {
         public ThreadWithPreviewViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             double start = System.nanoTime();
             View postcard = LayoutInflater.from(getContext()).inflate(getLayoutIdForViewType(viewType), parent, false);
-            if (page == 0 && viewType == VIEW_TYPE_PREV_PAGE) {
+            if (viewType == VIEW_TYPE_PREV_PAGE && page == 0) {
                 postcard.findViewById(R.id.frame_header_container).setVisibility(View.GONE);
+            }
+            if (viewType == VIEW_TYPE_NEXT_PAGE &&
+                    page == Hanabira.getCache().findBoardByKey(boardKey).getPagesCount()-1) {
+                postcard.findViewById(R.id.frame_footer_container).setVisibility(View.GONE);
             }
             ThreadWithPreviewViewHolder tpvh = new ThreadWithPreviewViewHolder(postcard);
             Log.i("onCreateViewHolder", "Time: " + Double.toString(((double) System.nanoTime() - start) / 10e5));
@@ -246,11 +250,29 @@ public class BoardFragment extends Fragment {
         @Override
         public void onBindViewHolder(final ThreadWithPreviewViewHolder holder, int position) {
             long start = System.nanoTime();
+            boolean borderItem = true;
             switch (getItemViewType(position)) {
                 case VIEW_TYPE_NEXT_PAGE:
+                    holder.itemView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            switchPage(page + 1);
+                        }
+                    });
+                    break;
                 case VIEW_TYPE_PREV_PAGE:
-                    return;
+                    holder.itemView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            switchPage(page - 1);
+                        }
+                    });
+                    break;
+                default:
+                    borderItem = false;
             }
+            if (borderItem) { return; }
+
             int threadIndex = position - 1;
             int threadDisplayId = threadIds.get(threadIndex);
 

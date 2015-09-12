@@ -3,15 +3,20 @@
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:elevation="2dp">
-
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-              android:text="@string/next_page"
-              android:textSize="14sp"
-              android:gravity="center"
-              android:paddingTop="7dp"
-              android:paddingBottom="7dp"
-              android:background="@color/dobro_dark"
-              android:textColor="@color/dobro_light"/>
-    <View android:layout_width="match_parent" android:layout_height="48dp"/>
+              android:elevation="2dp"
+        android:layout_marginBottom="42dp">
+    <FrameLayout
+            android:id="@+id/frame_footer_container"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:text="@string/next_page"
+                  android:textSize="14sp"
+                  android:gravity="center"
+                  android:paddingTop="7dp"
+                  android:paddingBottom="7dp"
+                  android:background="@color/dobro_dark"
+                  android:textColor="@color/dobro_light"/>
+        <View android:layout_width="match_parent" android:layout_height="48dp"/>
+    </FrameLayout>
 </LinearLayout>

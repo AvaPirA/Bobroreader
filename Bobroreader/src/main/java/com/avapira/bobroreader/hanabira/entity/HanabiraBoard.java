@@ -121,8 +121,13 @@ public class HanabiraBoard extends HanabiraEntity{
 
     private String boardKey;
     private Map<Integer, List<Integer>> pages;
-    private int                                pagesCount;
-    private Object                             capabilities;
+
+    public int getPagesCount() {
+        return pagesCount;
+    }
+
+    private int    pagesCount;
+    private Object capabilities;
 
     public void update(int pagesCount, Object capabilities) {
         this.pagesCount = pagesCount;
@@ -150,7 +155,7 @@ public class HanabiraBoard extends HanabiraEntity{
 
     public List<HanabiraThread> getPageThreads(int num) {
         List<HanabiraThread> threads = new ArrayList<>();
-        List<Integer> page =  getPage(num);
+        List<Integer> page = getPage(num);
         if (page == null) {
             return Collections.emptyList();
         }
