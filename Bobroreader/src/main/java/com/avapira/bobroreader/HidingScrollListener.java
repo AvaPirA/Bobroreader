@@ -3,21 +3,25 @@ package com.avapira.bobroreader;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.os.Build;
 import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v7.widget.RecyclerView;
 import android.widget.FrameLayout;
 
 public class HidingScrollListener extends RecyclerView.OnScrollListener {
-    private       FrameLayout toolbarContainer;
-    private final float       TOOLBAR_ELEVATION;
+    private final FrameLayout toolbarContainer;
+    private final float       TOOLBAR_ELEVATION_RISE;
+    private final float       TOOLBAR_ELEVATION_DOWN;
     int     verticalOffset;
     boolean scrollingUp;
-    boolean expandTriggered = false;
+    boolean expandTriggered;
 
-    public HidingScrollListener(FrameLayout toolbarContainer, int elevation) {
+    public HidingScrollListener(FrameLayout toolbarContainer, Context context) {
         this.toolbarContainer = toolbarContainer;
-        TOOLBAR_ELEVATION = elevation;
+        TOOLBAR_ELEVATION_RISE = context.getResources().getDimension(R.dimen.tiny);
+        TOOLBAR_ELEVATION_DOWN = context.getResources().getDimension(R.dimen.micro);
+        reset();
     }
 
     @Override
@@ -54,26 +58,14 @@ public class HidingScrollListener extends RecyclerView.OnScrollListener {
         final int height = toolbarContainer.getHeight();
         if (scrollingUp) {
             if (toolbarYOffset < height) {
-                if (verticalOffset > height) {
-                    toolbarSetElevation(TOOLBAR_ELEVATION);
-                }
+                toolbarSetElevation(verticalOffset == 0 ? TOOLBAR_ELEVATION_DOWN : TOOLBAR_ELEVATION_RISE);
                 toolbarContainer.setTranslationY(-toolbarYOffset);
             } else {
-                toolbarSetElevation(1);
-                toolbarContainer.setTranslationY(-height);
+                toolbarSetElevation(0); //no shadowing from top
+                toolbarContainer.setTranslationY(-height); // no rising more than own height
             }
         } else {
-            if (toolbarYOffset < 0) {
-                if (verticalOffset <= 0) {
-                    toolbarSetElevation(0);
-                }
-                toolbarContainer.setTranslationY(0);
-            } else {
-                if (verticalOffset > height) {
-                    toolbarSetElevation(TOOLBAR_ELEVATION);
-                }
-                toolbarContainer.setTranslationY(-toolbarYOffset);
-            }
+            toolbarContainer.setTranslationY(-toolbarYOffset);
         }
     }
 
@@ -89,7 +81,8 @@ public class HidingScrollListener extends RecyclerView.OnScrollListener {
                         .setListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationStart(Animator animation) {
-                                toolbarSetElevation(verticalOffset == 0 ? 0 : TOOLBAR_ELEVATION);
+                                toolbarSetElevation(
+                                        verticalOffset == 0 ? TOOLBAR_ELEVATION_DOWN : TOOLBAR_ELEVATION_RISE);
                             }
                         });
     }
@@ -97,16 +90,18 @@ public class HidingScrollListener extends RecyclerView.OnScrollListener {
     private void toolbarAnimateHide() {
         toolbarContainer.animate()
                         .translationY(-toolbarContainer.getHeight())
-                        .setInterpolator(new FastOutSlowInInterpolator())
-                        .setListener(new AnimatorListenerAdapter() {
-                            @Override
-                            public void onAnimationEnd(Animator animation) {
-                                toolbarSetElevation(0);
-                            }
-                        });
+                        .setInterpolator(new FastOutSlowInInterpolator());
     }
 
     public void expandTriggered() {
         expandTriggered = true;
+    }
+
+    public void reset() {
+        toolbarSetElevation(TOOLBAR_ELEVATION_DOWN);
+        toolbarContainer.setTranslationY(0);
+        verticalOffset = 0;
+        scrollingUp = false;
+        expandTriggered = false;
     }
 }

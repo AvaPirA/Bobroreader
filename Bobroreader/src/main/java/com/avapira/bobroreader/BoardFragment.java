@@ -88,6 +88,7 @@ public class BoardFragment extends Fragment {
         BoardFragment fragment = new BoardFragment();
         Bundle b = new Bundle();
         b.putString(ARG_KEY, boardKey);
+        b.putInt(ARG_PAGE, 1);
         fragment.setArguments(b);
         fragment.setRetainInstance(true);
         return fragment;
@@ -120,6 +121,7 @@ public class BoardFragment extends Fragment {
         supervisor.retitleOnLoading();
         progressBar.setVisibility(View.VISIBLE);
         recycler.setVisibility(View.INVISIBLE);
+        scrollListener.reset();
         page = newPage;
         Hanabira.getFlower().getBoardPage(boardKey, page, new Consumer<List<Integer>>() {
             @Override
@@ -191,8 +193,7 @@ public class BoardFragment extends Fragment {
         recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
         scrollListener = new HidingScrollListener(
-                (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container),
-                (int) getResources().getDimension(R.dimen.tiny));
+                (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container), getContext());
         recycler.addOnScrollListener(scrollListener);
         switchPage(page);
     }
@@ -236,7 +237,7 @@ public class BoardFragment extends Fragment {
             double start = System.nanoTime();
             View postcard = LayoutInflater.from(getContext()).inflate(getLayoutIdForViewType(viewType), parent, false);
             if (viewType == VIEW_TYPE_PREV_PAGE && page == 0) {
-                postcard.findViewById(R.id.frame_header_container).setVisibility(View.GONE);
+                postcard.findViewById(R.id.board_header_text).setVisibility(View.GONE);
             }
             if (viewType == VIEW_TYPE_NEXT_PAGE &&
                     page == Hanabira.getCache().findBoardByKey(boardKey).getPagesCount()-1) {

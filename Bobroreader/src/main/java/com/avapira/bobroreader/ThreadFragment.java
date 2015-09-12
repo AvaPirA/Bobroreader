@@ -84,8 +84,7 @@ public class ThreadFragment extends Fragment {
         recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
         scrollListener = new HidingScrollListener(
-                (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container),
-                (int) getResources().getDimension(R.dimen.tiny));
+                (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container),getContext());
         recycler.addOnScrollListener(scrollListener);
         loadThread();
     }
