@@ -16,7 +16,8 @@
             android:layout_height="wrap_content"
             android:textStyle="bold"
             android:text="Options"
-            style="?android:attr/buttonBarButtonStyle"/>
+            style="?android:attr/buttonBarButtonStyle"
+            android:minHeight="36dp"/>
     <Button android:id="@+id/thread_controls_recent"
             android:textSize="12sp"
             android:fontFamily="sans-serif-condensed"
@@ -27,7 +28,8 @@
             android:layout_height="wrap_content"
             android:textStyle="bold"
             android:text="Recents"
-            style="?android:attr/buttonBarButtonStyle"/>
+            style="?android:attr/buttonBarButtonStyle"
+            android:minHeight="36dp"/>
     <Button android:id="@+id/thread_controls_open"
             android:textSize="12sp"
             android:fontFamily="sans-serif-condensed"
@@ -38,5 +40,6 @@
             android:layout_height="wrap_content"
             android:textStyle="bold"
             android:text="Open"
-            style="?android:attr/buttonBarButtonStyle"/>
+            style="?android:attr/buttonBarButtonStyle"
+            android:minHeight="36dp"/>
 </LinearLayout>

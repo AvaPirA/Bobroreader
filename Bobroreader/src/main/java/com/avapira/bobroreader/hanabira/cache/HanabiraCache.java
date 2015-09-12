@@ -10,7 +10,7 @@ import java.util.List;
  *
  */
 public interface HanabiraCache {
-    void asyncParse(List<HanabiraThread> threads, int recentDepth);
+    void asyncParse(List<Integer> threads, int recentDepth);
     HanabiraBoard findBoardByKey(String boardKey);
     HanabiraThread findThreadById(int threadId);
     HanabiraPost findPostById(int postId);

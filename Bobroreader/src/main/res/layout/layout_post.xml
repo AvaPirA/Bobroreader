@@ -4,14 +4,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical" tools:showIn="@layout/card_post"
-        android:animateLayoutChanges="true">
-    <include layout="@layout/post_header"/>
-
-    <View android:layout_height="1dp"
-          android:layout_width="match_parent"
-          android:background="#10000000"
-          android:layout_marginBottom="2dp"
-          android:layout_marginTop="2dp"/>
+        android:paddingBottom="@dimen/small"
+        >
+        <include layout="@layout/post_header"/>
+        <View android:layout_height="1dp"
+              android:layout_width="match_parent"
+              android:background="#10000000"
+              android:layout_marginBottom="2dp"
+              android:layout_marginTop="2dp"/>
         <HorizontalScrollView android:id="@+id/post_files_scroller"
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
@@ -28,7 +28,6 @@
                 android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="@dimen/small"
                 android:paddingStart="@dimen/small"
                 android:paddingEnd="@dimen/small"
                 android:animateLayoutChanges="true"

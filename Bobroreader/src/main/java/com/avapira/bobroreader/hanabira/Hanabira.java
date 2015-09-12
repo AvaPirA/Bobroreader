@@ -62,15 +62,15 @@ public class Hanabira {
         return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("pref_mocked_network", false);
     }
 
-    public void getBoardPage(String boardKey, final int pageNum, final Consumer<List<HanabiraThread>> callback) {
+    public void getBoardPage(String boardKey, final int pageNum, final Consumer<List<Integer>> callback) {
         if (useMockedNetwork()) {
             callback.accept(HanabiraBoard.fromJson(Bober.rawJsonToString(context.getResources(), R.raw.u_0),
-                    HanabiraBoard.class).getPageThreads(pageNum));
+                    HanabiraBoard.class).getPage(pageNum));
         } else {
             network.getBoardPage(boardKey, pageNum, new Response.Listener<String>() {
                 @Override
                 public void onResponse(String response) {
-                    callback.accept(HanabiraBoard.fromJson(response, HanabiraBoard.class).getPageThreads(pageNum));
+                    callback.accept(HanabiraBoard.fromJson(response, HanabiraBoard.class).getPage(pageNum));
                 }
             });
         }
@@ -80,10 +80,9 @@ public class Hanabira {
         if (useMockedNetwork()) {
             // TODO MOCK THREAD REQUEST
         } else {
-            network.getThread(threadId, new Response.Listener<String>(){
+            network.getThread(threadId, new Response.Listener<String>() {
                 @Override
                 public void onResponse(String response) {
-                    System.out.println(response);
                     callback.accept(HanabiraThread.fromJson(response, HanabiraThread.class).getPosts());
                 }
             });

@@ -44,7 +44,6 @@ import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -119,9 +118,9 @@ public class BoardFragment extends Fragment {
         progressBar.setVisibility(View.VISIBLE);
         recycler.setVisibility(View.INVISIBLE);
         page = newPage;
-        Hanabira.getFlower().getBoardPage(boardKey, page, new Consumer<List<HanabiraThread>>() {
+        Hanabira.getFlower().getBoardPage(boardKey, page, new Consumer<List<Integer>>() {
             @Override
-            public void accept(List<HanabiraThread> hanabiraThreads) {
+            public void accept(List<Integer> hanabiraThreads) {
                 final BoardAdapter boardAdapter = new BoardAdapter(hanabiraThreads);
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
@@ -185,12 +184,12 @@ public class BoardFragment extends Fragment {
         progressBar = (ProgressBar) view.findViewById(R.id.pb);
         recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
-        scrollListener = new HidingScrollListener((FrameLayout) getActivity().findViewById(R.id
-                .frame_toolbar_container), (int) getResources().getDimension(R.dimen.tiny));
+        scrollListener = new HidingScrollListener(
+                (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container),
+                (int) getResources().getDimension(R.dimen.tiny));
         recycler.addOnScrollListener(scrollListener);
         switchPage(page);
     }
-
 
 
     private class BoardAdapter extends RecyclerView.Adapter<BoardAdapter.ThreadWithPreviewViewHolder> {
@@ -199,13 +198,18 @@ public class BoardFragment extends Fragment {
         public static final int VIEW_TYPE_NEXT_PAGE = 3;
         private final       int ELLIPSIZE_MAX_LINES = 15;
         private final       int recentListSize      = 3;
-        List<HanabiraThread> threads = new ArrayList<>();
 
+        List<Integer> threadIds;
+        private List<Boolean> requestFillRecents;
         KeepOneHolderOpen keeper = new KeepOneHolderOpen();
 
-        public BoardAdapter(List<HanabiraThread> tt) {
-            threads = tt;
-            Hanabira.getCache().asyncParse(threads, recentListSize);
+        public BoardAdapter(List<Integer> tt) {
+            threadIds = tt;
+            requestFillRecents = new ArrayList<>(tt.size());
+            for (int i = 0; i < tt.size(); i++) {
+                requestFillRecents.add(true);
+            }
+            Hanabira.getCache().asyncParse(threadIds, recentListSize);
         }
 
         @LayoutRes
@@ -243,17 +247,19 @@ public class BoardFragment extends Fragment {
                     return;
             }
             int threadIndex = position - 1;
+            int threadDisplayId = threadIds.get(threadIndex);
 
-            HanabiraThread thread = threads.get(threadIndex);
-            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getDispayId());
+            HanabiraThread thread = Hanabira.getCache().findThreadByDisplayId(threadDisplayId);
+            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(threadDisplayId);
 //            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
-            holder.setStaticText(thread, op);
+            holder.setThreadTextViews(thread, op);
 
             if (op.getFiles() == null || op.getFiles().size() == 0) {
                 holder.filesScroller.setVisibility(View.GONE);
             }
             holder.recentBtn.setEnabled(thread.getPostsCount() > 1);
             holder.expandBtn.setRotation(0f);
+            requestFillRecents.set(threadIndex, true);
 
             keeper.prepare(holder, position);
 
@@ -269,13 +275,13 @@ public class BoardFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            return threads.size() + 2; // prevPage+[threads]+nextPage
+            return threadIds.size() + 2; // prevPage+[threadIds]+nextPage
         }
 
         @Override
         public int getItemViewType(int position) {
             if (position > 0) {
-                if (position < threads.size() + 1) {
+                if (position < threadIds.size() + 1) {
                     return VIEW_TYPE_THREAD;
                 } else {
                     return VIEW_TYPE_NEXT_PAGE;
@@ -298,7 +304,7 @@ public class BoardFragment extends Fragment {
             public final Button               openBtn;
 
 
-            public final PostHolder[] recents;
+            public PostHolder[] recents;
 
             public ThreadWithPreviewViewHolder(final View itemView) {
                 super(itemView);
@@ -320,7 +326,6 @@ public class BoardFragment extends Fragment {
 
                         @Override
                         public void onClick(View imageButton) {
-                            System.out.println(imageButton.getRotation());
                             final int now = postHolder.message.getMaxLines();
                             final int will = now == Integer.MAX_VALUE ? ELLIPSIZE_MAX_LINES : Integer.MAX_VALUE;
                             final boolean growth = will > now;
@@ -338,13 +343,14 @@ public class BoardFragment extends Fragment {
                                          .start();
                                 return;
                             }
+                            scrollListener.expandTriggered();
                             postHolder.message.setMaxLines(will); // set to measure
                             final View v = postHolder.message, parent = (View) v.getParent();
 
                             int start = v.getMeasuredHeight();
                             v.measure(View.MeasureSpec.makeMeasureSpec(parent.getMeasuredWidth(),
-                                            View.MeasureSpec.AT_MOST),
-                                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                                                                       View.MeasureSpec.AT_MOST),
+                                      View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
                             int end = v.getMeasuredHeight();
 
                             final ValueAnimator animator = ValueAnimator.ofInt(start, end);
@@ -401,47 +407,25 @@ public class BoardFragment extends Fragment {
                     openBtn.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            supervisor.onThreadSelected(threads.get(getAdapterPosition() - 1).getThreadId());
+                            supervisor.onThreadSelected(threadIds.get(getAdapterPosition() - 1));
                         }
                     });
-                }
 
-                recents = new PostHolder[recentListSize];
-                if (previewList != null) {
-                    previewList.removeAllViews();
-                    int oneDp = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1,
-                            getResources().getDisplayMetrics());
-                    for (int i = 0; i < recentListSize; i++) {
-                        previewList.addView(createDivider(getContext(), oneDp));
-                        LayoutInflater.from(getContext()).inflate(R.layout.layout_post, previewList);
-                        View v = previewList.getChildAt(2 * i + 1);
-                        recents[i] = new PostHolder(v);
+                    if (previewList.getChildCount() < recentListSize) {
+                        recents = new PostHolder[recentListSize];
+                        for (int i = 0; i < recentListSize; i++) {
+                            LayoutInflater.from(getContext()).inflate(R.layout.layout_post, previewList);
+                            recents[i] = new PostHolder(previewList.getChildAt(i));
+                        }
                     }
                 }
 
             }
 
-            public void setStaticText(HanabiraThread thread, HanabiraPost op) {
+            public void setThreadTextViews(HanabiraThread thread, HanabiraPost op) {
                 threadTitle.setText(thread.getTitle());
                 postHolder.fillWithData(op);
                 postHolder.message.setMaxLines(ELLIPSIZE_MAX_LINES);
-                List<Integer> recentsList = thread.getLastN(3);
-                int i = 0;
-                for (; i < recentsList.size(); i++) {
-                    recents[i].fillWithData(recentsList.get(i));
-                }
-                for (; i < recents.length; i++) {
-                    recents[i].hide();
-                }
-            }
-
-            private View createDivider(Context context, int oneDp) {
-                View divider = new View(context);
-                ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, oneDp);
-                ViewGroup.MarginLayoutParams mlp = new ViewGroup.MarginLayoutParams(lp);
-                mlp.setMargins(0, 2 * oneDp, 0, 2 * oneDp);
-                divider.setLayoutParams(mlp);
-                return divider;
             }
 
             @Override
@@ -449,8 +433,22 @@ public class BoardFragment extends Fragment {
                 return previewList;
             }
 
+
             public void openHolder(final boolean animate) {
                 final View expandView = getExpandView();
+
+                int threadIndex = getLayoutPosition() - 1;
+                if (requestFillRecents.get(threadIndex)) {
+                    requestFillRecents.set(threadIndex, false);
+                    List<Integer> recentsList = Hanabira.getCache()
+                                                        .findThreadByDisplayId(threadIds.get(getLayoutPosition() - 1))
+                                                        .getLastN(3);
+                    int i = 0;
+                    for (; i < recentsList.size(); i++) {
+                        recents[i].fillWithData(recentsList.get(i));
+                    }
+                }
+
                 if (animate) {
                     expandView.setVisibility(View.VISIBLE);
                     final Animator animator = animateItemViewHeight();
@@ -512,7 +510,7 @@ public class BoardFragment extends Fragment {
 
                 int start = itemView.getMeasuredHeight();
                 itemView.measure(View.MeasureSpec.makeMeasureSpec(parent.getMeasuredWidth(), View.MeasureSpec.AT_MOST),
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
                 int end = itemView.getMeasuredHeight();
 
                 return animateItemViewHeightInternal(start, end);
@@ -576,11 +574,12 @@ public class BoardFragment extends Fragment {
             }
         }
 
-        public void toggle(BoardAdapter.ThreadWithPreviewViewHolder holder) {
+        public boolean toggle(BoardAdapter.ThreadWithPreviewViewHolder holder) {
             scrollListener.expandTriggered();
             if (whereIsRecentsShownPosition == holder.getLayoutPosition()) {
                 whereIsRecentsShownPosition = -239;
                 holder.closeHolder(true);
+                return false;
             } else {
                 int previous = whereIsRecentsShownPosition;
                 whereIsRecentsShownPosition = holder.getLayoutPosition();
@@ -590,6 +589,7 @@ public class BoardFragment extends Fragment {
                         ((RecyclerView) holder.itemView
                         .getParent()).findViewHolderForLayoutPosition(previous);
                 if (oldHolder != null) { oldHolder.closeHolder(true); }
+                return true;
             }
         }
     }

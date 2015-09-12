@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
         xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="match_parent"
-        android:layout_height="36dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:paddingTop="@dimen/tiny"
         android:paddingStart="@dimen/small"
-        android:paddingEnd="@dimen/small" tools:showIn="@layout/card_post">
+        android:paddingEnd="@dimen/small"
+        tools:showIn="@layout/card_post">
     <TextView android:id="@+id/text_post_header_datetime"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:textColor="@color/dobro_primary_text"
             android:textSize="@dimen/font_text"
             android:text="15 August 2015 (Sat)\n10:10:10"
@@ -17,8 +18,8 @@
             android:lines="2"/>
 
     <TextView android:id="@+id/text_post_header_display_id"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:textSize="@dimen/font_text"
             android:text="№1231231123"
@@ -26,9 +27,10 @@
             android:lines="1"/>
 
     <TextView android:id="@+id/text_post_header_author_name"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:textSize="@dimen/font_text"
+              android:layout_alignBottom="@id/text_post_header_datetime"
               android:gravity="bottom"
             android:textColor="@color/dobro_name"
             android:textStyle="bold"

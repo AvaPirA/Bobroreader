@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class PersistentCache implements HanabiraCache {
     @Override
-    public void asyncParse(List<HanabiraThread> threads, int recentDepth) {
+    public void asyncParse(List<Integer> threads, int recentDepth) {
         //do nothing
     }
 

@@ -100,7 +100,7 @@ public class ThreadFragment extends Fragment {
             @Override
             public void accept(TreeMap<LocalDateTime, Integer> posts) {
                 for (Integer i : posts.values()) {
-                    System.out.println(Hanabira.getCache().findPostByDisplayId(i).getMessage());
+                    Hanabira.getCache().findPostByDisplayId(i);
                 }
             }
         });

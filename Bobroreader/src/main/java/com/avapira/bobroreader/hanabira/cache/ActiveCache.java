@@ -23,16 +23,16 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
         this.context = context;
     }
 
-    public void asyncParse(List<HanabiraThread> threads, int recentDepth) {
+    public void asyncParse(List<Integer> threads, int recentDepth) {
         new Thread(new AsyncHanabiraParser(threads, recentDepth)).start();
     }
 
     private class AsyncHanabiraParser implements Runnable {
 
-        private final List<HanabiraThread> threadsToParse;
+        private final List<Integer> threadsToParse;
         private final int                  previewsToParse;
 
-        private AsyncHanabiraParser(List<HanabiraThread> threadsToParse, int previewsToParse) {
+        private AsyncHanabiraParser(List<Integer> threadsToParse, int previewsToParse) {
             this.threadsToParse = threadsToParse;
             this.previewsToParse = previewsToParse;
         }
@@ -40,11 +40,11 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
         public void run() {
             Log.w(TAG, Thread.currentThread().toString() + " started parsing");
             double start = System.nanoTime();
-            for (HanabiraThread t : threadsToParse) {
-                cachePost(t.getDispayId());     // first priority
+            for (int tdi : threadsToParse) {
+                cachePost(tdi);     // first priority
             }
-            for (HanabiraThread t : threadsToParse) {
-                for (Integer pdi : t.getLastN(previewsToParse)) {
+            for (int tdi : threadsToParse) {
+                for (Integer pdi : findThreadByDisplayId(tdi).getLastN(previewsToParse)) {
                     cachePost(pdi);             // second priority
                 }
             }

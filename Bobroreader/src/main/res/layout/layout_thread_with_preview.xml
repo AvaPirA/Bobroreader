@@ -38,7 +38,6 @@
                 android:orientation="vertical">
 
             <include layout="@layout/layout_post"/>
-            <include layout="@layout/divider"/>
             <ImageButton
                     android:id="@+id/thread_controls_expand"
                     android:src="@drawable/ic_expand_more_black_24dp"
@@ -46,7 +45,6 @@
                     android:layout_gravity="center"
                     android:layout_width="match_parent" android:layout_height="24dp"
                     />
-
             <include layout="@layout/divider"/>
             <include layout="@layout/thread_controls"/>
             <LinearLayout android:id="@+id/layout_thread_expandable_posts_preview"
@@ -54,7 +52,6 @@
                           android:layout_height="wrap_content"
                           android:layout_marginStart="16dp"
                           android:layout_marginEnd="16dp"
-                          android:descendantFocusability="afterDescendants"
                           android:orientation="vertical"
                           android:visibility="gone"
                     />
