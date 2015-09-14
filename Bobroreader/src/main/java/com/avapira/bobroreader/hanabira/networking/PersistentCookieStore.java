@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.avapira.bobroreader.networking;
+package com.avapira.bobroreader.hanabira.networking;
 
 import android.content.Context;
 import android.content.SharedPreferences;

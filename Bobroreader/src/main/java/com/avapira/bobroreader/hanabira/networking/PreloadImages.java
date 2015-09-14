@@ -29,7 +29,7 @@
  *
  */
 
-package com.avapira.bobroreader.networking;
+package com.avapira.bobroreader.hanabira.networking;
 
 import java.io.File;
 import java.io.IOException;

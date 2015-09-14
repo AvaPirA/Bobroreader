@@ -8,10 +8,9 @@ import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.cache.ActiveCache;
 import com.avapira.bobroreader.hanabira.cache.HanabiraCache;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
-import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
-import com.avapira.bobroreader.networking.BasicsSupplier;
-import com.avapira.bobroreader.networking.PersistentCookieStore;
+import com.avapira.bobroreader.hanabira.networking.HanabiraRequestBuilder;
+import com.avapira.bobroreader.hanabira.networking.PersistentCookieStore;
 import com.avapira.bobroreader.util.Consumer;
 import org.joda.time.LocalDateTime;
 import org.json.JSONException;
@@ -20,9 +19,8 @@ import org.json.JSONObject;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 /**
  *
@@ -31,16 +29,18 @@ public class Hanabira {
 
     private static Hanabira flower = new Hanabira();
 
-    private Context        context;
-    private HanabiraCache  cacheImpl;
-    private BasicsSupplier network;
+    private Context                context;
+    private HanabiraCache          cacheImpl;
+    private HanabiraRequestBuilder hanabiraSupplier;
+
+    private CountDownLatch diffRequestWaiter;
 
     private Hanabira() {}
 
     public static void bind(Context ctx) {
         flower.context = ctx;
         flower.cacheImpl = new ActiveCache(flower.context);
-        flower.network = new BasicsSupplier(flower.context);
+        flower.hanabiraSupplier = HanabiraRequestBuilder.init(flower.context);
         flower.bindCookies();
     }
 
@@ -67,47 +67,103 @@ public class Hanabira {
             callback.accept(HanabiraBoard.fromJson(Bober.rawJsonToString(context.getResources(), R.raw.u_0),
                     HanabiraBoard.class).getPage(pageNum));
         } else {
-            network.getBoardPage(boardKey, pageNum, new Response.Listener<String>() {
+            Response.Listener<String> boardPageCollector = new Response.Listener<String>() {
                 @Override
                 public void onResponse(String response) {
+                    if (diffRequestWaiter != null) {diffRequestWaiter.countDown();}
                     callback.accept(HanabiraBoard.fromJson(response, HanabiraBoard.class).getPage(pageNum));
                 }
-            });
+            };
+            hanabiraSupplier.board().forKey(boardKey).atPage(pageNum).build().doRequest(boardPageCollector);
         }
     }
 
     public void updateThread(int threadId, final Consumer<TreeMap<LocalDateTime, Integer>> callback) {
         if (useMockedNetwork()) {
-            // TODO MOCK THREAD REQUEST
+            throw new UnsupportedOperationException();
         } else {
-            network.getThread(threadId, new Response.Listener<String>() {
-                @Override
-                public void onResponse(String response) {
-                    callback.accept(HanabiraThread.fromJson(response, HanabiraThread.class).getPosts());
-                }
-            });
+//            hanabiraSupplier.thread().forId(threadId)
         }
     }
 
-    public void getUser(Consumer<HanabiraUser> consumer) {
+    public void getUser(final Consumer<HanabiraUser> consumer) {
         if (useMockedNetwork()) {
             String raw = Bober.rawJsonToString(context.getResources(), R.raw.user);
             consumer.accept(HanabiraUser.fromJson(raw, HanabiraUser.class));
         } else {
-            network.getUser(consumer);
+            Response.Listener<String> userCollector = new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    consumer.accept(HanabiraUser.fromJson(response, HanabiraUser.class));
+                }
+            };
+            hanabiraSupplier.specials().user(false).build().doRequest(userCollector);
         }
     }
 
-    public void getDiff(boolean wait, Consumer<Map<String, Integer>> consumer) {
+    public void getBoardIds(final Consumer<Iterator<String>> consumer) {
         if (useMockedNetwork()) {
-            String raw = Bober.rawJsonToString(context.getResources(), R.raw.diff);
-            try {
-                consumer.accept(BasicsSupplier.collectDiff(new JSONObject(raw)));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+            throw new UnsupportedOperationException();
         } else {
-            network.getDiff(wait, consumer);
+            Response.Listener<String> boardIdsCollector = new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    try {
+                        consumer.accept(new JSONObject(response).keys());
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            hanabiraSupplier.specials().diff().build().doRequest(boardIdsCollector);
+        }
+    }
+
+    public void getDiff(boolean wait, final Consumer<Map<String, Integer>> consumer) {
+        if (useMockedNetwork()) {
+            throw new UnsupportedOperationException();
+        } else {
+            final Response.Listener<String> diffCollector = new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    try {
+                        JSONObject json = new JSONObject(response);
+
+                        Map<String, Integer> diff = new HashMap<>();
+                        Iterator<String> keys = json.keys();
+                        while (keys.hasNext()) {
+                            String k = keys.next();
+                            try {
+                                diff.put(k, json.getInt(k));
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        consumer.accept(diff);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+
+            final HanabiraRequestBuilder.HanabiraRequest request = hanabiraSupplier.specials().diff().build();
+
+            if (wait) {
+                diffRequestWaiter = new CountDownLatch(1);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            diffRequestWaiter.await();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        request.doRequest(diffCollector);
+                    }
+                }).start();
+            } else {
+                request.doRequest(diffCollector);
+            }
         }
     }
 }
