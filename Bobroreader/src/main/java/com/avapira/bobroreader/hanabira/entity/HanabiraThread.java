@@ -31,6 +31,7 @@ public class HanabiraThread extends HanabiraEntity {
         this.autosage = autosage;
         this.lastHit = lastHit;
         posts = new TreeMap<>();
+        completelyLoaded = false;
     }
 
     @SerializedName("display_id")
@@ -53,8 +54,8 @@ public class HanabiraThread extends HanabiraEntity {
     @SerializedName("last_hit")
     private       LocalDateTime lastHit;
 
+    private boolean                               completelyLoaded;
     private final TreeMap<LocalDateTime, Integer> posts;
-
 
     public boolean isUpToDate(LocalDateTime modifiedDate) {
         return modifiedDate.isEqual(modifiedDate);
@@ -149,5 +150,9 @@ public class HanabiraThread extends HanabiraEntity {
             returnList.add(read.next().getValue());
         }
         return returnList;
+    }
+
+    public boolean isCompletelyLoaded() {
+        return completelyLoaded;
     }
 }

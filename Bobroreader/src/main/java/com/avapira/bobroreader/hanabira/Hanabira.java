@@ -8,6 +8,7 @@ import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.cache.ActiveCache;
 import com.avapira.bobroreader.hanabira.cache.HanabiraCache;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
+import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
 import com.avapira.bobroreader.hanabira.networking.HanabiraRequestBuilder;
 import com.avapira.bobroreader.hanabira.networking.PersistentCookieStore;
@@ -82,7 +83,28 @@ public class Hanabira {
         if (useMockedNetwork()) {
             throw new UnsupportedOperationException();
         } else {
-//            hanabiraSupplier.thread().forId(threadId)
+            Response.Listener<String> threadCollector = new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    callback.accept(HanabiraThread.fromJson(response, HanabiraThread.class).getPosts());
+                }
+            };
+            HanabiraThread ht = getCache().findThreadById(threadId);
+            if (ht != null && ht.isCompletelyLoaded()) {
+//                int lastKnownPost = ht.getPosts().lastEntry().getValue();
+//                hanabiraSupplier.thread()
+//                                .get(HanabiraRequestBuilder.ThreadRequestType.LAST)
+//                                .forId(threadId)
+//                                .noMoreThan(Integer.MAX_VALUE)
+//                                .build()
+//                                .doRequest(threadCollector);
+            } else {
+                hanabiraSupplier.thread()
+                                .get(HanabiraRequestBuilder.ThreadRequestType.ALL)
+                                .forId(threadId)
+                                .build()
+                                .doRequest(threadCollector);
+            }
         }
     }
 

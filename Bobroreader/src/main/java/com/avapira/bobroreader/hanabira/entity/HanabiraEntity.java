@@ -175,6 +175,17 @@ abstract class HanabiraEntity {
 
     }
 
+    private static class HanabiraThreadDeserializer implements JsonDeserializer<HanabiraThread> {
+
+        @Override
+        public HanabiraThread deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+
+
+            return null;
+        }
+    }
+
     static {
         gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer())
                                 .registerTypeAdapter(HanabiraBoard.class, new HanabiraBoardDeserializer()).create();

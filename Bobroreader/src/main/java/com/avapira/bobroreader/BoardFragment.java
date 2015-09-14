@@ -385,7 +385,8 @@ public class BoardFragment extends Fragment {
             }
 
             private void onOpenClick() {
-                supervisor.onThreadSelected(threadIds.get(getAdapterPosition() - 1));
+                supervisor.onThreadSelected(Hanabira.getCache().findPostByDisplayId(threadIds.get(getAdapterPosition
+                        () - 1)).getThreadId());
             }
 
             public void onExpandClick() {

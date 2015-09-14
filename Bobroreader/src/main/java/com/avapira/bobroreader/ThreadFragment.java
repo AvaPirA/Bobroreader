@@ -78,6 +78,9 @@ public class ThreadFragment extends Fragment {
         Hanabira.getFlower().updateThread(threadId, new Consumer<TreeMap<LocalDateTime, Integer>>() {
             @Override
             public void accept(TreeMap<LocalDateTime, Integer> posts) {
+                if (posts == null) {
+                    posts = Hanabira.getCache().findThreadById(threadId).getPosts();
+                }
                 final ThreadAdapter adapter = new ThreadAdapter(posts);
                 getActivity().runOnUiThread(new Runnable() {
                     public void run() {
@@ -139,18 +142,27 @@ public class ThreadFragment extends Fragment {
 
         @Override
         public PostViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            LayoutInflater.from(getContext()).inflate(R.layout.layout_post, parent);
-            return null;
+            View view = LayoutInflater.from(getContext())
+                                      .inflate(viewType == 0 ? R.layout.layout_post : R.layout.layout_post_divider,
+                                              parent, false);
+            return new PostViewHolder(view);
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return position % 2;
         }
 
         @Override
         public void onBindViewHolder(PostViewHolder holder, int position) {
-            holder.postHolder.fillWithData(listedPosts.get(position));
+            if (getItemViewType(position) == 0) {
+                holder.postHolder.fillWithData(listedPosts.get(position/2));
+            }
         }
 
         @Override
         public int getItemCount() {
-            return listedPosts.size();
+            return 2 * listedPosts.size() - 1;
         }
     }
 
