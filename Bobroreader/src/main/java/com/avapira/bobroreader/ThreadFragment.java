@@ -3,6 +3,7 @@ package com.avapira.bobroreader;
 import android.app.Activity;
 import android.app.Fragment;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -13,16 +14,16 @@ import android.widget.ProgressBar;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.util.Consumer;
-import org.joda.time.LocalDateTime;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeMap;
 
 
 public class ThreadFragment extends Fragment {
+
     private static final String ARG_THREAD_ID       = "arg_thread_id";
     private static final String ARG_RECYCLER_LAYOUT = "arg_thread_recycler_layout";
+
 
     private int threadId;
 
@@ -74,24 +75,72 @@ public class ThreadFragment extends Fragment {
         recycler.setVisibility(View.INVISIBLE);
         progressBar.setVisibility(View.VISIBLE);
 
-        final HanabiraThread thread = Hanabira.getCache().findThreadById(threadId);
-        Hanabira.getFlower().updateThread(threadId, new Consumer<TreeMap<LocalDateTime, Integer>>() {
-            @Override
-            public void accept(TreeMap<LocalDateTime, Integer> posts) {
-                if (posts == null) {
-                    posts = Hanabira.getCache().findThreadById(threadId).getPosts();
-                }
-                final ThreadAdapter adapter = new ThreadAdapter(posts);
-                getActivity().runOnUiThread(new Runnable() {
-                    public void run() {
-                        recycler.setAdapter(adapter);
-                        progressBar.setVisibility(View.GONE);
-                        recycler.setVisibility(View.VISIBLE);
-                        supervisor.retitleOnThreadLoad(thread);
+        final HanabiraThread thread = Hanabira.getStem().findThreadById(threadId);
+        if (thread == null || thread.getPostsCount() != thread.getPosts().size()) {
+            // full load required
+            Hanabira.getFlower().getFullThread(threadId, new Consumer<HanabiraThread>() {
+                @Override
+                public void accept(HanabiraThread thread) {
+                    if (thread != null) {
+                        getActivity().runOnUiThread(new SuccessLoadingRunnable(thread));
+                    } else {
+                        throw new RuntimeException("No such thread");
                     }
-                });
+                }
+            });
+        } else {
+            // only check for new posts is required
+            // 1)run network (check+load if needed)
+            // 2)swap adapter if
+            // 3)check for deleted
+            Hanabira.getFlower().getThreadWithUpdate(threadId, new Consumer<HanabiraThread>() {
+                @Override
+                public void accept(HanabiraThread thread) {
+                    getActivity().runOnUiThread(new SuccessLoadingRunnable(thread));
+                    Hanabira.getFlower().checkForDeletedPosts(threadId, new Consumer<Boolean>() {
+                        @Override
+                        public void accept(Boolean deleted) {
+                            if (deleted) {
+                                // show snackbar with reload action
+                                getActivity().runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Snackbar.make(getActivity().findViewById(R.id.snackbarPosition),
+                                                "Some posts deleted", Snackbar.LENGTH_LONG)
+                                                .setAction("Reload", new View.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(View v) {
+                                                        loadThread();
+                                                    }
+                                                });
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    private final class SuccessLoadingRunnable implements Runnable {
+        final HanabiraThread thread;
+
+        public SuccessLoadingRunnable(HanabiraThread thread) {
+            this.thread = thread;
+        }
+
+        public void run() {
+            ThreadAdapter adapter = new ThreadAdapter(thread);
+            if (recycler.getAdapter() != null) {
+                recycler.swapAdapter(adapter, false);
+            } else {
+                recycler.setAdapter(adapter);
             }
-        });
+            progressBar.setVisibility(View.GONE);
+            recycler.setVisibility(View.VISIBLE);
+            supervisor.retitleOnThreadLoad(thread);
+        }
     }
 
     @Override
@@ -128,41 +177,73 @@ public class ThreadFragment extends Fragment {
 
     private class ThreadAdapter extends RecyclerView.Adapter<PostViewHolder> {
 
-        TreeMap<LocalDateTime, Integer> posts;
-        private List<Integer> listedPosts;
+        public static final int VT_FOOTER  = -2;
+        public static final int VT_HEADER  = -1;
+        public static final int VT_DIVIDER = 0;
+        public static final int VT_POST    = 1;
 
-        public ThreadAdapter(TreeMap<LocalDateTime, Integer> pp) {
-            this.posts = pp;
-            listedPosts = new ArrayList<>(pp.size());
-            for (Integer i : pp.values()) {
-                listedPosts.add(i);
+        public List<Integer> getReflectedPosts() {
+            return reflectedPosts;
+        }
+
+        private List<Integer> reflectedPosts;
+
+        public ThreadAdapter(HanabiraThread thread) {
+            updateDataSet(thread);
+        }
+
+        private void updateDataSet(HanabiraThread thread) {
+            reflectedPosts = new ArrayList<>(thread.getPosts().size());
+            for (Integer i : thread.getPosts().values()) {
+                reflectedPosts.add(i);
             }
-            Hanabira.getCache().asyncParse(pp.values());
+            Hanabira.getStem().asyncParse(thread.getPosts().values());
         }
 
         @Override
         public PostViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(getContext())
-                                      .inflate(viewType == 0 ? R.layout.layout_post : R.layout.layout_post_divider,
-                                              parent, false);
+            int layoutId = 0;
+            switch (viewType) {
+                case VT_FOOTER:
+                    layoutId = R.layout.thread_footer_view;
+                    break;
+                case VT_HEADER:
+                    layoutId = R.layout.thread_header_view;
+                    break;
+                case VT_DIVIDER:
+                    layoutId = R.layout.layout_post_divider;
+                    break;
+                case VT_POST:
+                    layoutId = R.layout.layout_post;
+                    break;
+                default:
+                    throw new InternalError();
+            }
+            View view = LayoutInflater.from(getContext()).inflate(layoutId, parent, false);
             return new PostViewHolder(view);
         }
 
         @Override
         public int getItemViewType(int position) {
-            return position % 2;
+            if (position == 0) {
+                return VT_HEADER; //header
+            } else if (position == getItemCount() - 1) {
+                return VT_FOOTER; //footer
+            } else {
+                return position % 2;
+            }
         }
 
         @Override
         public void onBindViewHolder(PostViewHolder holder, int position) {
-            if (getItemViewType(position) == 0) {
-                holder.postHolder.fillWithData(listedPosts.get(position/2));
+            if (getItemViewType(position) == VT_POST) {
+                holder.postHolder.fillWithData(reflectedPosts.get(position / 2));
             }
         }
 
         @Override
         public int getItemCount() {
-            return 2 * listedPosts.size() - 1;
+            return 2 * reflectedPosts.size() + 1;
         }
     }
 

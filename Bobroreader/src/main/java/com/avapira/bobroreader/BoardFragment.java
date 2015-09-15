@@ -214,7 +214,7 @@ public class BoardFragment extends Fragment {
             for (int i = 0; i < tt.size(); i++) {
                 requestFillRecents.add(true);
             }
-            Hanabira.getCache().asyncParse(threadIds, recentListSize);
+            Hanabira.getStem().asyncParse(threadIds, recentListSize);
         }
 
         @LayoutRes
@@ -239,7 +239,7 @@ public class BoardFragment extends Fragment {
                 postcard.findViewById(R.id.board_header_text).setVisibility(View.GONE);
             }
             if (viewType == VIEW_TYPE_NEXT_PAGE &&
-                    page == Hanabira.getCache().findBoardByKey(boardKey).getPagesCount() - 1) {
+                    page == Hanabira.getStem().findBoardByKey(boardKey).getPagesCount() - 1) {
                 postcard.findViewById(R.id.frame_footer_container).setVisibility(View.GONE);
             }
             ThreadWithPreviewViewHolder tpvh = new ThreadWithPreviewViewHolder(postcard);
@@ -276,9 +276,9 @@ public class BoardFragment extends Fragment {
             int threadIndex = position - 1;
             int threadDisplayId = threadIds.get(threadIndex);
 
-            HanabiraThread thread = Hanabira.getCache().findThreadByDisplayId(threadDisplayId);
-            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(threadDisplayId);
-//            HanabiraPost op = Hanabira.getCache().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
+            HanabiraThread thread = Hanabira.getStem().findThreadByDisplayId(threadDisplayId);
+            HanabiraPost op = Hanabira.getStem().findPostByDisplayId(threadDisplayId);
+//            HanabiraPost op = Hanabira.getStem().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
             holder.threadTitle.setText(thread.getTitle());
             holder.postHolder.fillWithData(op);
             holder.postHolder.message.setMaxLines(ELLIPSIZE_MAX_LINES);// reset the
@@ -385,7 +385,7 @@ public class BoardFragment extends Fragment {
             }
 
             private void onOpenClick() {
-                supervisor.onThreadSelected(Hanabira.getCache().findPostByDisplayId(threadIds.get(getAdapterPosition
+                supervisor.onThreadSelected(Hanabira.getStem().findPostByDisplayId(threadIds.get(getAdapterPosition
                         () - 1)).getThreadId());
             }
 
@@ -472,7 +472,7 @@ public class BoardFragment extends Fragment {
                 int threadIndex = getLayoutPosition() - 1;
                 if (requestFillRecents.get(threadIndex)) {
                     requestFillRecents.set(threadIndex, false);
-                    List<Integer> recentsList = Hanabira.getCache()
+                    List<Integer> recentsList = Hanabira.getStem()
                                                         .findThreadByDisplayId(threadIds.get(getLayoutPosition() - 1))
                                                         .getLastN(recentListSize);
                     int i = 0;

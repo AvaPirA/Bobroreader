@@ -54,7 +54,7 @@ public class HanabiraThread extends HanabiraEntity {
     @SerializedName("last_hit")
     private       LocalDateTime lastHit;
 
-    private boolean                               completelyLoaded;
+    private       boolean                         completelyLoaded;
     private final TreeMap<LocalDateTime, Integer> posts;
 
     public boolean isUpToDate(LocalDateTime modifiedDate) {

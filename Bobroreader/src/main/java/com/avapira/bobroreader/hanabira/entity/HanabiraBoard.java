@@ -13,63 +13,63 @@ import java.util.regex.Pattern;
 /**
  *
  */
-public class HanabiraBoard extends HanabiraEntity{
+public class HanabiraBoard extends HanabiraEntity {
 
     public static class Info {
 
         @SerializedName("allow_names")
-        public boolean                 allowNames;
+        public         boolean                 allowNames;
         @SerializedName("require_thread_file")
-        public boolean                 reqThreadFile;
+        public         boolean                 reqThreadFile;
         @SerializedName("description")
-        public String                  description;
+        public         String                  description;
         @SerializedName("require_captcha")
-        public boolean                 reqCaptcha;
+        public         boolean                 reqCaptcha;
         @SerializedName("restrict_read")
-        public boolean                 restrictRead;
+        public         boolean                 restrictRead;
         @SerializedName("allow_files")
-        public boolean                 allowFiles;
+        public         boolean                 allowFiles;
         @SerializedName("require_post_file")
-        public boolean                 reqPostFile;
+        public         boolean                 reqPostFile;
         @SerializedName("allowed_filetypes")
-        public List<HanabiraMediaType> allowedFiletypes;
+        public         List<HanabiraMediaType> allowedFiletypes;
         @SerializedName("remember_name")
-        public boolean                 rememberName;
+        public         boolean                 rememberName;
         @SerializedName("require_new_file")
-        public boolean                 reqNewFile;
+        public         boolean                 reqNewFile;
         @SerializedName("allow_OP_moderation")
-        public boolean                 allowOpModeration;
+        public         boolean                 allowOpModeration;
         @SerializedName("allow_custom_restricts")
-        public boolean                 allowCustomRestricts;
+        public         boolean                 allowCustomRestricts;
         @SerializedName("id")
-        public int                     id;
+        public         int                     id;
         @SerializedName("files_max_qty")
-        public int                     filesMaxQty;
+        public         int                     filesMaxQty;
         @SerializedName("restrict_trip")
-        public boolean                 restrictTrip;
+        public         boolean                 restrictTrip;
         @SerializedName("delete_thread_post_limit")
-        public int                     deleteThreadPostLimit;
+        public         int                     deleteThreadPostLimit;
         @SerializedName("title")
-        public String                  title;
+        public         String                  title;
         @SerializedName("file_max_res")
-        public int                     fileMaxRes;
+        public         int                     fileMaxRes;
         @SerializedName("archive")
-        public boolean                 archive;
+        public         boolean                 archive;
         @SerializedName("restrict_new_reply")
-        public boolean                 restrictNewReply;
+        public         boolean                 restrictNewReply;
         @SerializedName("allow_delete_threads")
-        public boolean                 allowDeleteThreads;
+        public         boolean                 allowDeleteThreads;
         @SerializedName("file_max_size")
-        public int                     fileMaxSize;
+        public         int                     fileMaxSize;
         @SerializedName("restrict_new_thread")
-        public boolean                 restrictNewThread;
+        public         boolean                 restrictNewThread;
         @SerializedName("bump_limit")
-        public int                     bumpLimit;
+        public         int                     bumpLimit;
         @SerializedName("keep_filenames")
-        public boolean                 keepFilenames;
+        public         boolean                 keepFilenames;
         @SerializedName("board")
-        public String                  boardKey;
-        private static List<Info> boardsInfoStorage;
+        public         String                  boardKey;
+        private static List<Info>              boardsInfoStorage;
         private static final Map<String, Info>  boardToInfo = new HashMap<>();
         private static final Map<Integer, Info> idToInfo    = new HashMap<>();
 
@@ -118,16 +118,15 @@ public class HanabiraBoard extends HanabiraEntity{
         }
     }
 
-
-    private String boardKey;
+    private String                      boardKey;
     private Map<Integer, List<Integer>> pages;
+    private int                         pagesCount;
+    private Object                      capabilities;
 
     public int getPagesCount() {
         return pagesCount;
     }
 
-    private int    pagesCount;
-    private Object capabilities;
 
     public void update(int pagesCount, Object capabilities) {
         this.pagesCount = pagesCount;
@@ -160,7 +159,7 @@ public class HanabiraBoard extends HanabiraEntity{
             return Collections.emptyList();
         }
         for (Integer threadDisplayId : page) {
-            threads.add(Hanabira.getCache().findThreadByDisplayId(threadDisplayId));
+            threads.add(Hanabira.getStem().findThreadByDisplayId(threadDisplayId));
         }
         return threads;
     }

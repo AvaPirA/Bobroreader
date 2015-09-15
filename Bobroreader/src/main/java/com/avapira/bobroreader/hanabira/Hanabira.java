@@ -1,6 +1,8 @@
 package com.avapira.bobroreader.hanabira;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.preference.PreferenceManager;
 import com.android.volley.Response;
 import com.avapira.bobroreader.Bober;
@@ -28,45 +30,49 @@ import java.util.concurrent.CountDownLatch;
  */
 public class Hanabira {
 
-    private static Hanabira flower = new Hanabira();
+    private static Hanabira flower;
 
-    private Context                context;
-    private HanabiraCache          cacheImpl;
-    private HanabiraRequestBuilder hanabiraSupplier;
+    private final HanabiraCache          cacheImpl;          // cache
+    private final HanabiraRequestBuilder hanabiraSupplier;   // network
+
+    private final SharedPreferences prefs;
+    private final Resources         mockerRes;
 
     private CountDownLatch diffRequestWaiter;
 
-    private Hanabira() {}
-
-    public static void bind(Context ctx) {
-        flower.context = ctx;
-        flower.cacheImpl = new ActiveCache(flower.context);
-        flower.hanabiraSupplier = HanabiraRequestBuilder.init(flower.context);
-        flower.bindCookies();
+    private Hanabira(Context ctx) {
+        prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+        mockerRes = ctx.getResources();
+        cacheImpl = new ActiveCache(ctx);
+        hanabiraSupplier = HanabiraRequestBuilder.init(ctx);
+        CookieHandler.setDefault(
+                new CookieManager(new PersistentCookieStore(ctx), CookiePolicy.ACCEPT_ORIGINAL_SERVER));
     }
 
-    private void bindCookies() {
-        CookieManager cookieManager = new CookieManager(new PersistentCookieStore(context),
-                CookiePolicy.ACCEPT_ORIGINAL_SERVER);
-        CookieHandler.setDefault(cookieManager);
+    public static void bind(Context ctx) {
+        if (flower == null) {
+            flower = new Hanabira(ctx);
+        } else {
+            throw new IllegalStateException("Switching hanabira context is impossible");
+        }
     }
 
     public static Hanabira getFlower() {
-        return flower.context == null ? null : flower;
+        return flower;
     }
 
-    public static HanabiraCache getCache() {
-        return getFlower().cacheImpl;
+    public static HanabiraCache getStem() {
+        return flower.cacheImpl;
     }
 
     private boolean useMockedNetwork() {
-        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("pref_mocked_network", false);
+        return prefs.getBoolean("pref_mocked_network", false);
     }
 
     public void getBoardPage(String boardKey, final int pageNum, final Consumer<List<Integer>> callback) {
         if (useMockedNetwork()) {
-            callback.accept(HanabiraBoard.fromJson(Bober.rawJsonToString(context.getResources(), R.raw.u_0),
-                    HanabiraBoard.class).getPage(pageNum));
+            callback.accept(HanabiraBoard.fromJson(Bober.rawJsonToString(mockerRes, R.raw.u_0), HanabiraBoard.class)
+                                         .getPage(pageNum));
         } else {
             Response.Listener<String> boardPageCollector = new Response.Listener<String>() {
                 @Override
@@ -79,38 +85,9 @@ public class Hanabira {
         }
     }
 
-    public void updateThread(int threadId, final Consumer<TreeMap<LocalDateTime, Integer>> callback) {
-        if (useMockedNetwork()) {
-            throw new UnsupportedOperationException();
-        } else {
-            Response.Listener<String> threadCollector = new Response.Listener<String>() {
-                @Override
-                public void onResponse(String response) {
-                    callback.accept(HanabiraThread.fromJson(response, HanabiraThread.class).getPosts());
-                }
-            };
-            HanabiraThread ht = getCache().findThreadById(threadId);
-            if (ht != null && ht.isCompletelyLoaded()) {
-//                int lastKnownPost = ht.getPosts().lastEntry().getValue();
-//                hanabiraSupplier.thread()
-//                                .get(HanabiraRequestBuilder.ThreadRequestType.LAST)
-//                                .forId(threadId)
-//                                .noMoreThan(Integer.MAX_VALUE)
-//                                .build()
-//                                .doRequest(threadCollector);
-            } else {
-                hanabiraSupplier.thread()
-                                .get(HanabiraRequestBuilder.ThreadRequestType.ALL)
-                                .forId(threadId)
-                                .build()
-                                .doRequest(threadCollector);
-            }
-        }
-    }
-
     public void getUser(final Consumer<HanabiraUser> consumer) {
         if (useMockedNetwork()) {
-            String raw = Bober.rawJsonToString(context.getResources(), R.raw.user);
+            String raw = Bober.rawJsonToString(mockerRes, R.raw.user);
             consumer.accept(HanabiraUser.fromJson(raw, HanabiraUser.class));
         } else {
             Response.Listener<String> userCollector = new Response.Listener<String>() {
@@ -186,6 +163,101 @@ public class Hanabira {
             } else {
                 request.doRequest(diffCollector);
             }
+        }
+    }
+
+    public void getFullThread(int threadId, final Consumer<HanabiraThread> consumer) {
+        if (useMockedNetwork()) {
+            consumer.accept(
+                    HanabiraThread.fromJson(Bober.rawJsonToString(mockerRes, R.raw.x112992_all), HanabiraThread.class));
+        } else {
+            hanabiraSupplier.thread()
+                            .get(HanabiraRequestBuilder.ThreadRequestType.ALL)
+                            .forId(threadId)
+                            .build()
+                            .doRequest(new ThreadCollector(consumer));
+        }
+    }
+
+    public void getThreadWithUpdate(final int threadId, final Consumer<HanabiraThread> consumer) {
+        if (useMockedNetwork()) {
+
+        } else {
+            hanabiraSupplier.thread()
+                            .get(HanabiraRequestBuilder.ThreadRequestType.INFO)
+                            .forId(threadId)
+                            .build()
+                            .doRequest(new Response.Listener<String>() {
+                                @Override
+                                public void onResponse(String response) {
+                                    try {
+                                        JSONObject threadInfoJson = new JSONObject(response);
+                                        HanabiraThread cachedThread = Hanabira.getStem().findThreadById(threadId);
+                                        if (!cachedThread.getLastHit()
+                                                         .equals(LocalDateTime.parse(
+                                                                 threadInfoJson.getString("last_hit")))) {
+                                            // new post after last one cached exists
+                                            int diff = threadInfoJson.getInt("posts_count") -
+                                                    cachedThread.getPostsCount(); // how much?
+                                            HanabiraRequestBuilder.HanabiraRequest request;
+                                            if (diff > 0) {
+                                                request = hanabiraSupplier.thread()
+                                                                          .get(HanabiraRequestBuilder
+                                                                                  .ThreadRequestType.LAST)
+                                                                          .forId(threadId)
+                                                                          .noMoreThan(diff)
+                                                                          .build();
+                                            } else {
+                                                // last_hit later than cached, but cached have more posts?
+                                                // that's likely because some posts were deleted
+                                                // hence do full reload (don't cry, my GPRS princess)
+                                                request = hanabiraSupplier.thread()
+                                                                          .get(HanabiraRequestBuilder
+                                                                                  .ThreadRequestType.ALL)
+                                                                          .forId(threadId)
+                                                                          .build();
+                                            }
+                                            request.doRequest(new ThreadCollector(consumer));
+                                        }
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            });
+        }
+    }
+
+    private static class ThreadCollector implements Response.Listener<String> {
+        private final Consumer<HanabiraThread> consumer;
+
+        private ThreadCollector(Consumer<HanabiraThread> consumer) {this.consumer = consumer;}
+
+        @Override
+        public void onResponse(String response) {
+            consumer.accept(HanabiraThread.fromJson(response, HanabiraThread.class));
+        }
+    }
+
+    public void checkForDeletedPosts(final int threadId, final Consumer<Boolean> consumer) {
+        //just make getThreadInfo and compare with cache.thread.post_count
+        if (useMockedNetwork()) {
+
+        } else {
+            hanabiraSupplier.thread()
+                            .get(HanabiraRequestBuilder.ThreadRequestType.INFO)
+                            .forId(threadId)
+                            .build()
+                            .doRequest(new Response.Listener<String>() {
+                                @Override
+                                public void onResponse(String response) {
+                                    try {
+                                        consumer.accept(Hanabira.getStem().findThreadById(threadId).getPostsCount() !=
+                                                new JSONObject(response).getInt("posts_count"));
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            });
         }
     }
 }

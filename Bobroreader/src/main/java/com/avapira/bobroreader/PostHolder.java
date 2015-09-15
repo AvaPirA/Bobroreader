@@ -39,13 +39,13 @@ public class PostHolder {
         displayId.setText(formatDisplayId(post.getDisplayId()));
         date.setText(formatDate(post.getCreatedDate()));
         name.setText(post.getName());
-        message.setText(Hanabira.getCache().getParsedPost(post.getDisplayId()));
+        message.setText(Hanabira.getStem().getParsedPost(post.getDisplayId()));
 //        message.setMovementMethod(LinkMovementMethod.getInstance());
         message.setOnTouchListener(new LinkMovementMethodOverride());
     }
 
     public void fillWithData(int postDisplayId) {
-        fillWithData(Hanabira.getCache().findPostByDisplayId(postDisplayId));
+        fillWithData(Hanabira.getStem().findPostByDisplayId(postDisplayId));
         show();
     }
 

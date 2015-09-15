@@ -187,7 +187,7 @@ public class HanabiraRequestBuilder {
 
         private void tryCheckBoardPage(int page) {
             if (key != null) {
-                HanabiraBoard board = Hanabira.getCache().findBoardByKey(key);
+                HanabiraBoard board = Hanabira.getStem().findBoardByKey(key);
                 if (board != null) {
                     int actualPagesCount = board.getPagesCount();
                     if (actualPagesCount >= page) {
@@ -247,7 +247,7 @@ public class HanabiraRequestBuilder {
         }
 
         public ThreadRequestBuilder onBoard(String boardKey) {
-            if (Hanabira.getCache().findBoardByKey(boardKey) != null) {
+            if (Hanabira.getStem().findBoardByKey(boardKey) != null) {
                 this.boardKey = boardKey;
             } else {
                 throw new HanabiraException("Unknown board key: " + boardKey);
@@ -275,6 +275,7 @@ public class HanabiraRequestBuilder {
         public HanabiraRequest build() {
             StringBuilder params = basicParams();
             switch (type) {
+                case INFO:
                 case ALL:
                     // no additional params
                     break;
@@ -305,13 +306,26 @@ public class HanabiraRequestBuilder {
                     break;
             }
             return new HanabiraRequest(
-                    flower.append(checkAndGetThreadDefinition()).append(params.toString()).toString());
+                    flower.append(checkAndGetThreadDefinition()).append(requestTypeString()).append(params.toString()).toString());
+        }
+
+        private String requestTypeString() {
+            switch (type) {
+                case ALL:
+                    return "/all.json";
+                case LAST:
+                    return "/last.json";
+                case NEW:
+                    return "/new.json";
+                default:
+                    return ".json";
+            }
         }
 
         private String checkAndGetThreadDefinition() {
             if ((boardKey != null) == (displayId)) {
-                return displayId ? String.format("/api/thread/%s/%d.json", boardKey, threadId) : String.format(
-                        "/api/thread/%d.json", threadId);
+                return displayId ? String.format("/api/thread/%s/%d", boardKey, threadId) : String.format(
+                        "/api/thread/%d", threadId);
             } else {
                 throw new HanabiraException(
                         String.format("Wrong arguments: \"board\"=%s while using " + "%sdisplay id of thread", boardKey,
@@ -346,7 +360,7 @@ public class HanabiraRequestBuilder {
         }
 
         public PostRequestBuilder onBoard(@NonNull String boardKey) {
-            if (Hanabira.getCache().findBoardByKey(boardKey) != null) {
+            if (Hanabira.getStem().findBoardByKey(boardKey) != null) {
                 this.boardKey = boardKey;
             } else {
                 throw new HanabiraException("Unknown board key: " + boardKey);
@@ -438,7 +452,7 @@ public class HanabiraRequestBuilder {
     }
 
     public enum ThreadRequestType {
-        ALL, NEW, LAST
+        ALL, NEW, LAST, INFO
     }
 
     public enum SpecialRequestType {
