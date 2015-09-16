@@ -43,7 +43,7 @@ import android.widget.Toast;
  */
 public class SettingsActivity extends AppCompatActivity {
 
-    private static class SettingsFragment extends PreferenceFragment {
+    public static class SettingsFragment extends PreferenceFragment {
 
         @Override
         public void onCreate(Bundle savedInstanceState) {

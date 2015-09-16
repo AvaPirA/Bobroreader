@@ -49,8 +49,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.view.animation.BounceInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.*;
@@ -74,8 +72,6 @@ public class BoardFragment extends Fragment {
     private ProgressBar          progressBar;
     private RecyclerView         recycler;
     private HidingScrollListener scrollListener;
-    private Animation            animRotateForward;
-    private Animation            animRotateBackward;
     private int recentListSize = 3;
     private String boardKey;
     private int    page;
@@ -501,8 +497,6 @@ public class BoardFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        animRotateForward = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_around_center_point_fwd);
-        animRotateBackward = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_around_center_point_bwd);
         if (getArguments() != null) {
             boardKey = boardKey == null ? getArguments().getString(ARG_KEY) : boardKey;
         }
