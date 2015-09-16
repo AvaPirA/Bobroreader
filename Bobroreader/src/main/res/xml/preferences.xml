@@ -45,10 +45,10 @@
                 android:defaultValue="true"
                 android:dependency="pref_drawer_show_banners"/>
         <SwitchPreference
-            android:key="pref_load_diff"
-            android:title="Load diff in drawer"
-            android:defaultValue="false"
-            />
+                android:key="pref_load_diff"
+                android:title="Load diff in drawer"
+                android:defaultValue="false"
+                />
     </PreferenceCategory>
     <PreferenceCategory
             android:title="Board page"
@@ -59,10 +59,10 @@
                 android:defaultValue="3"/>
     </PreferenceCategory>
     <SwitchPreference
-        android:key="pref_developer"
-        android:title="Developer"
-        android:summary="iddqd"
-        android:defaultValue="false"/>
+            android:key="pref_developer"
+            android:title="Developer"
+            android:summary="iddqd"
+            android:defaultValue="false"/>
     <PreferenceCategory
             android:title="Developer options"
             android:key="pref_cat_dev"
@@ -73,10 +73,10 @@
                 android:summary="Feature for testing app on non-live data not to load data from web server"
                 android:defaultValue="false"/>
         <CheckBoxPreference
-            android:key="pref_zzz"
-            android:title="Zzz"
-            android:summary="I want to sleep"
-            android:defaultValue="true"/>
+                android:key="pref_zzz"
+                android:title="Zzz"
+                android:summary="I want to sleep"
+                android:defaultValue="true"/>
     </PreferenceCategory>
 
 </PreferenceScreen>

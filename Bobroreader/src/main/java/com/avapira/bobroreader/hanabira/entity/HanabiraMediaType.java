@@ -30,4 +30,4 @@ public enum HanabiraMediaType {
                 throw new IllegalArgumentException("Unsupported Hanabira media type");
         }
     }
-    }
+}

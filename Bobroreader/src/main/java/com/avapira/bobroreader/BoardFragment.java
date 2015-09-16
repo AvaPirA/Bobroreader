@@ -49,7 +49,10 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.*;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.BounceInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.*;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
@@ -68,15 +71,407 @@ public class BoardFragment extends Fragment {
     private static final String ARG_KEY             = "arg_board_key";
     private static final String ARG_PAGE            = "arg_board_page";
     private static final String ARG_RECYCLER_LAYOUT = "arg_board_recycler_layout";
-    private              int    recentListSize      = 3;
-    ProgressBar          progressBar;
-    RecyclerView         recycler;
-    HidingScrollListener scrollListener;
+    private ProgressBar          progressBar;
+    private RecyclerView         recycler;
+    private HidingScrollListener scrollListener;
+    private Animation            animRotateForward;
+    private Animation            animRotateBackward;
+    private int recentListSize = 3;
     private String boardKey;
     private int    page;
-    Animation animRotateForward;
-    Animation animRotateBackward;
     private Castor supervisor;
+
+    public BoardFragment() {
+        // Required empty public constructor
+    }
+
+    private class BoardAdapter extends RecyclerView.Adapter<BoardAdapter.ThreadWithPreviewViewHolder> {
+
+        public static final int VIEW_TYPE_PREV_PAGE = 1;
+        public static final int VIEW_TYPE_THREAD    = 2;
+        public static final int VIEW_TYPE_NEXT_PAGE = 3;
+        final         List<Integer> threadIds;
+        private final       int ELLIPSIZE_MAX_LINES = 15;
+        private final List<Boolean> requestFillRecentPosts;
+        private int whereIsRecentPostsShownPosition = -239;
+
+        public BoardAdapter(List<Integer> tt) {
+            threadIds = tt;
+            requestFillRecentPosts = new ArrayList<>(tt.size());
+            for (int i = 0; i < tt.size(); i++) {
+                requestFillRecentPosts.add(true);
+            }
+            Hanabira.getStem().asyncParse(threadIds, recentListSize);
+        }
+
+        public class ThreadWithPreviewViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+
+            final TextView             threadTitle;
+            final PostHolder           postHolder;
+            final HorizontalScrollView filesScroller;
+            final LinearLayout         previewList;
+            final TextView             replies;
+            final Button               optionsBtn;
+            final ImageButton          expandBtn;
+            final Button               recentBtn;
+            final Button               openBtn;
+
+
+            public PostHolder[] recents;
+
+            public ThreadWithPreviewViewHolder(final View itemView) {
+                super(itemView);
+                threadTitle = (TextView) itemView.findViewById(R.id.text_thread_title);
+
+                postHolder = new PostHolder(itemView);
+                replies = (TextView) itemView.findViewById(R.id.text_post_content_replies);
+                filesScroller = (HorizontalScrollView) itemView.findViewById(R.id.post_files_scroller);
+                previewList = (LinearLayout) itemView.findViewById(R.id.layout_thread_expandable_posts_preview);
+                optionsBtn = (Button) itemView.findViewById(R.id.thread_controls_options);
+                expandBtn = (ImageButton) itemView.findViewById(R.id.thread_controls_expand);
+                recentBtn = (Button) itemView.findViewById(R.id.thread_controls_recent);
+                openBtn = (Button) itemView.findViewById(R.id.thread_controls_open);
+
+                if (previewList != null) {
+                    for (int i = 0; i < recentListSize; i++) {
+                        LayoutInflater.from(getContext()).inflate(R.layout.layout_post, previewList);
+                    }
+                    recents = new PostHolder[previewList.getChildCount()];
+                    for (int i = 0; i < recents.length; i++) {
+                        recents[i] = new PostHolder(previewList.getChildAt(i));
+                    }
+                }
+
+                if (optionsBtn != null) {
+                    optionsBtn.setOnClickListener(this);
+                    // hope either not null
+                    expandBtn.setOnClickListener(this);
+                    recentBtn.setOnClickListener(this);
+                    openBtn.setOnClickListener(this);
+                }
+            }
+
+            public class NotRecycleAdapter extends AnimatorListenerAdapter {
+
+                @Override
+                public void onAnimationStart(Animator animation) { setIsRecyclable(false); }
+
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    setIsRecyclable(true);
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animation) { setIsRecyclable(true); }
+            }
+
+            public void onClick(View v) {
+                switch (v.getId()) {
+                    case R.id.thread_controls_options:
+                        return;
+                    case R.id.thread_controls_expand:
+                        onExpandClick();
+                        break;
+                    case R.id.thread_controls_open:
+                        onOpenClick();
+                        break;
+                    case R.id.thread_controls_recent:
+                        onRecentClick();
+                        break;
+                }
+            }
+
+            private void onRecentClick() {
+                toggle(ThreadWithPreviewViewHolder.this);
+            }
+
+            private void onOpenClick() {
+                supervisor.onThreadSelected(
+                        Hanabira.getStem().findPostByDisplayId(threadIds.get(getAdapterPosition() - 1)).getThreadId());
+            }
+
+            public void onExpandClick() {
+                final int now = postHolder.message.getMaxLines();
+                final int will = now == Integer.MAX_VALUE ? ELLIPSIZE_MAX_LINES : Integer.MAX_VALUE;
+                final boolean growth = will > now;
+                if (postHolder.message.getLineCount() <= ELLIPSIZE_MAX_LINES) {
+                    expandBtn.animate()
+                             .rotation(360f)
+                             .setDuration(500)
+                             .setInterpolator(new BounceInterpolator())
+                             .withEndAction(new Runnable() {
+                                 @Override
+                                 public void run() {
+                                     expandBtn.setRotation(0);
+                                 }
+                             })
+                             .start();
+                    return;
+                }
+                scrollListener.expandTriggered();
+                postHolder.message.setMaxLines(will); // set to measure
+                final Animator animator = animateViewHeight(postHolder.message);
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (postHolder.message.getLineCount() != will) {
+                            postHolder.message.setMaxLines(will);
+                        }
+                        postHolder.message.measure(View.MeasureSpec.makeMeasureSpec(500, View.MeasureSpec.AT_MOST),
+                                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                        System.out.println(postHolder.message.getMeasuredHeight());
+                    }
+
+                    @Override
+                    public void onAnimationStart(Animator animation) {
+                        expandBtn.animate().rotation(growth ? 180f : 360f).withEndAction(new Runnable() {
+                            @Override
+                            public void run() {
+                                expandBtn.setRotation(growth ? 180f : 0f);
+                            }
+                        }).setInterpolator(new FastOutSlowInInterpolator()).start();
+                        postHolder.message.setMaxLines(Integer.MAX_VALUE);
+                    }
+                });
+                animator.start();
+            }
+
+            public void openHolder(final boolean animate) {
+                int threadIndex = getLayoutPosition() - 1;
+                if (requestFillRecentPosts.get(threadIndex)) {
+                    requestFillRecentPosts.set(threadIndex, false);
+                    List<Integer> recentsList = Hanabira.getStem()
+                                                        .findThreadByDisplayId(threadIds.get(getLayoutPosition() - 1))
+                                                        .getLastN(recentListSize);
+                    int i = 0;
+                    for (; i < recentsList.size(); i++) {
+                        recents[i].fillWithData(recentsList.get(i));
+                    }
+                }
+
+                if (animate) {
+                    previewList.setVisibility(View.VISIBLE);
+                    final Animator animator = animateViewHeight(itemView);
+                    animator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            final ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(previewList, View.ALPHA, 1);
+                            alphaAnimator.addListener(new NotRecycleAdapter());
+                            alphaAnimator.setInterpolator(new DecelerateInterpolator());
+                            alphaAnimator.start();
+                        }
+                    });
+                    animator.start();
+                } else {
+                    previewList.setVisibility(View.VISIBLE);
+                    previewList.setAlpha(1);
+                }
+            }
+
+            public void closeHolder(final boolean animate) {
+                if (animate) {
+                    previewList.setVisibility(View.GONE);
+                    final Animator animator = animateViewHeight(itemView);
+                    previewList.setVisibility(View.VISIBLE);
+                    animator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            final ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(previewList, View.ALPHA, 0);
+                            alphaAnimator.addListener(new NotRecycleAdapter());
+                            alphaAnimator.setInterpolator(new DecelerateInterpolator());
+                            alphaAnimator.start();
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            previewList.setVisibility(View.GONE);
+                            previewList.setAlpha(0);
+                        }
+
+                        @Override
+                        public void onAnimationCancel(Animator animation) {
+                            previewList.setVisibility(View.GONE);
+                            previewList.setAlpha(0);
+                        }
+                    });
+                    animator.start();
+                } else {
+                    previewList.setVisibility(View.GONE);
+                    previewList.setAlpha(0);
+                }
+            }
+
+            public Animator animateViewHeight(final View v) {
+                View parent = (View) v.getParent();
+                if (parent == null) {
+                    throw new IllegalStateException("Cannot animate the layout of a view that has no parent");
+                }
+
+                int start = v.getMeasuredHeight();
+                System.out.println("Start: " + start);
+                v.measure(View.MeasureSpec.makeMeasureSpec(parent.getMeasuredWidth(), View.MeasureSpec.AT_MOST),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                int end = v.getMeasuredHeight();
+                System.out.println("End: " + end);
+                final ValueAnimator animator = ValueAnimator.ofInt(start, end);
+                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animation) {
+                        final ViewGroup.LayoutParams lp = v.getLayoutParams();
+                        lp.height = (int) animation.getAnimatedValue();
+                        v.setLayoutParams(lp);
+                    }
+
+                });
+
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        final ViewGroup.LayoutParams params = v.getLayoutParams();
+                        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                        v.setLayoutParams(params);
+                    }
+                });
+
+                animator.setInterpolator(new FastOutSlowInInterpolator());
+                animator.addListener(new NotRecycleAdapter());
+
+                return animator;
+            }
+        }
+
+        @LayoutRes
+        public int getLayoutIdForViewType(int viewType) {
+            switch (viewType) {
+                case VIEW_TYPE_PREV_PAGE:
+                    return R.layout.board_header_view;
+                case VIEW_TYPE_THREAD:
+                    return R.layout.layout_thread_with_preview;
+                case VIEW_TYPE_NEXT_PAGE:
+                    return R.layout.board_footer_view;
+                default:
+                    throw new IllegalArgumentException("Wrong view type received");
+            }
+        }
+
+        @Override
+        public ThreadWithPreviewViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            double start = System.nanoTime();
+            View postcard = LayoutInflater.from(getContext()).inflate(getLayoutIdForViewType(viewType), parent, false);
+            if (viewType == VIEW_TYPE_PREV_PAGE && page == 0) {
+                postcard.findViewById(R.id.board_header_text).setVisibility(View.GONE);
+            }
+            if (viewType == VIEW_TYPE_NEXT_PAGE &&
+                    page == Hanabira.getStem().findBoardByKey(boardKey).getPagesCount() - 1) {
+                postcard.findViewById(R.id.frame_footer_container).setVisibility(View.GONE);
+            }
+            ThreadWithPreviewViewHolder tpvh = new ThreadWithPreviewViewHolder(postcard);
+            Log.i("onCreateViewHolder", "Time: " + Double.toString(((double) System.nanoTime() - start) / 10e5));
+            return tpvh;
+        }
+
+        @Override
+        public void onBindViewHolder(final ThreadWithPreviewViewHolder holder, int position) {
+            long start = System.nanoTime();
+            boolean borderItem = true;
+            switch (getItemViewType(position)) {
+                case VIEW_TYPE_NEXT_PAGE:
+                    holder.itemView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            switchPage(page + 1);
+                        }
+                    });
+                    break;
+                case VIEW_TYPE_PREV_PAGE:
+                    holder.itemView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            switchPage(page - 1);
+                        }
+                    });
+                    break;
+                default:
+                    borderItem = false;
+            }
+            if (borderItem) { return; }
+
+            int threadIndex = position - 1;
+            int threadDisplayId = threadIds.get(threadIndex);
+
+            HanabiraThread thread = Hanabira.getStem().findThreadByDisplayId(threadDisplayId);
+            HanabiraPost op = Hanabira.getStem().findPostByDisplayId(threadDisplayId);
+//            HanabiraPost op = Hanabira.getStem().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
+            holder.threadTitle.setText(thread.getTitle());
+            holder.postHolder.fillWithData(op);
+            holder.postHolder.message.setMaxLines(ELLIPSIZE_MAX_LINES);// reset the
+            holder.expandBtn.setRotation(0f);                          // expanding
+
+            if (op.getFiles() == null || op.getFiles().size() == 0) {
+                holder.filesScroller.setVisibility(View.GONE);
+            }
+            holder.recentBtn.setEnabled(thread.getPostsCount() > 1);
+            requestFillRecentPosts.set(threadIndex, true);
+
+            prepare(holder, position);
+
+//            filesScroller.setLayoutManager(
+//                    new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+//            filesScroller.setAdapter(new FilesAdapter(/*todo*/));
+            double ms = ((double) (System.nanoTime() - start)) / 10e5;
+            if (ms > 16) {
+                Log.w("onBindViewHolder", "Time: " + ms);
+            } else { Log.i("onBindViewHolder", "Time: " + ms); }
+        }
+
+        @Override
+        public int getItemCount() {
+            return threadIds.size() + 2; // prevPage+[threadIds]+nextPage
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            if (position > 0) {
+                if (position < threadIds.size() + 1) {
+                    return VIEW_TYPE_THREAD;
+                } else {
+                    return VIEW_TYPE_NEXT_PAGE;
+                }
+            } else {
+                return VIEW_TYPE_PREV_PAGE;
+            }
+        }
+
+        public void prepare(BoardAdapter.ThreadWithPreviewViewHolder holder, int position) {
+            if (position == whereIsRecentPostsShownPosition) {
+                holder.openHolder(false);
+            } else {
+                holder.closeHolder(false);
+            }
+        }
+
+        public boolean toggle(BoardAdapter.ThreadWithPreviewViewHolder holder) {
+            scrollListener.expandTriggered();
+            if (whereIsRecentPostsShownPosition == holder.getLayoutPosition()) {
+                whereIsRecentPostsShownPosition = -239;
+                holder.closeHolder(true);
+                return false;
+            } else {
+                int previous = whereIsRecentPostsShownPosition;
+                whereIsRecentPostsShownPosition = holder.getLayoutPosition();
+                holder.openHolder(true);
+
+                final BoardAdapter.ThreadWithPreviewViewHolder oldHolder = (BoardAdapter.ThreadWithPreviewViewHolder)
+                        ((RecyclerView) holder.itemView
+                        .getParent()).findViewHolderForLayoutPosition(previous);
+                if (oldHolder != null) { oldHolder.closeHolder(true); }
+                return true;
+            }
+        }
+
+    }
 
     /**
      * Use this factory method to create a new instance of
@@ -92,10 +487,6 @@ public class BoardFragment extends Fragment {
         fragment.setArguments(b);
         fragment.setRetainInstance(true);
         return fragment;
-    }
-
-    public BoardFragment() {
-        // Required empty public constructor
     }
 
     @Override
@@ -196,398 +587,6 @@ public class BoardFragment extends Fragment {
                 (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container), getContext());
         recycler.addOnScrollListener(scrollListener);
         switchPage(page);
-    }
-
-
-    private class BoardAdapter extends RecyclerView.Adapter<BoardAdapter.ThreadWithPreviewViewHolder> {
-        public static final int VIEW_TYPE_PREV_PAGE = 1;
-        public static final int VIEW_TYPE_THREAD    = 2;
-        public static final int VIEW_TYPE_NEXT_PAGE = 3;
-        private final       int ELLIPSIZE_MAX_LINES = 15;
-
-        List<Integer> threadIds;
-        private List<Boolean> requestFillRecents;
-
-        public BoardAdapter(List<Integer> tt) {
-            threadIds = tt;
-            requestFillRecents = new ArrayList<>(tt.size());
-            for (int i = 0; i < tt.size(); i++) {
-                requestFillRecents.add(true);
-            }
-            Hanabira.getStem().asyncParse(threadIds, recentListSize);
-        }
-
-        @LayoutRes
-        public int getLayoutIdForViewType(int viewType) {
-            switch (viewType) {
-                case VIEW_TYPE_PREV_PAGE:
-                    return R.layout.board_header_view;
-                case VIEW_TYPE_THREAD:
-                    return R.layout.layout_thread_with_preview;
-                case VIEW_TYPE_NEXT_PAGE:
-                    return R.layout.board_footer_view;
-                default:
-                    throw new IllegalArgumentException("Wrong view type received");
-            }
-        }
-
-        @Override
-        public ThreadWithPreviewViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            double start = System.nanoTime();
-            View postcard = LayoutInflater.from(getContext()).inflate(getLayoutIdForViewType(viewType), parent, false);
-            if (viewType == VIEW_TYPE_PREV_PAGE && page == 0) {
-                postcard.findViewById(R.id.board_header_text).setVisibility(View.GONE);
-            }
-            if (viewType == VIEW_TYPE_NEXT_PAGE &&
-                    page == Hanabira.getStem().findBoardByKey(boardKey).getPagesCount() - 1) {
-                postcard.findViewById(R.id.frame_footer_container).setVisibility(View.GONE);
-            }
-            ThreadWithPreviewViewHolder tpvh = new ThreadWithPreviewViewHolder(postcard);
-            Log.i("onCreateViewHolder", "Time: " + Double.toString(((double) System.nanoTime() - start) / 10e5));
-            return tpvh;
-        }
-
-        @Override
-        public void onBindViewHolder(final ThreadWithPreviewViewHolder holder, int position) {
-            long start = System.nanoTime();
-            boolean borderItem = true;
-            switch (getItemViewType(position)) {
-                case VIEW_TYPE_NEXT_PAGE:
-                    holder.itemView.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            switchPage(page + 1);
-                        }
-                    });
-                    break;
-                case VIEW_TYPE_PREV_PAGE:
-                    holder.itemView.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            switchPage(page - 1);
-                        }
-                    });
-                    break;
-                default:
-                    borderItem = false;
-            }
-            if (borderItem) { return; }
-
-            int threadIndex = position - 1;
-            int threadDisplayId = threadIds.get(threadIndex);
-
-            HanabiraThread thread = Hanabira.getStem().findThreadByDisplayId(threadDisplayId);
-            HanabiraPost op = Hanabira.getStem().findPostByDisplayId(threadDisplayId);
-//            HanabiraPost op = Hanabira.getStem().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
-            holder.threadTitle.setText(thread.getTitle());
-            holder.postHolder.fillWithData(op);
-            holder.postHolder.message.setMaxLines(ELLIPSIZE_MAX_LINES);// reset the
-            holder.expandBtn.setRotation(0f);                          // expanding
-
-            if (op.getFiles() == null || op.getFiles().size() == 0) {
-                holder.filesScroller.setVisibility(View.GONE);
-            }
-            holder.recentBtn.setEnabled(thread.getPostsCount() > 1);
-            requestFillRecents.set(threadIndex, true);
-
-            prepare(holder, position);
-
-//            filesScroller.setLayoutManager(
-//                    new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-//            filesScroller.setAdapter(new FilesAdapter(/*todo*/));
-            double ms = ((double) (System.nanoTime() - start)) / 10e5;
-            if (ms > 16) {
-                Log.w("onBindViewHolder", "Time: " + ms);
-            } else { Log.i("onBindViewHolder", "Time: " + ms); }
-        }
-
-
-        @Override
-        public int getItemCount() {
-            return threadIds.size() + 2; // prevPage+[threadIds]+nextPage
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            if (position > 0) {
-                if (position < threadIds.size() + 1) {
-                    return VIEW_TYPE_THREAD;
-                } else {
-                    return VIEW_TYPE_NEXT_PAGE;
-                }
-            } else {
-                return VIEW_TYPE_PREV_PAGE;
-            }
-        }
-
-        private int whereIsRecentsShownPosition = -239;
-
-        public void prepare(BoardAdapter.ThreadWithPreviewViewHolder holder, int position) {
-            if (position == whereIsRecentsShownPosition) {
-                holder.openHolder(false);
-            } else {
-                holder.closeHolder(false);
-            }
-        }
-
-        public boolean toggle(BoardAdapter.ThreadWithPreviewViewHolder holder) {
-            scrollListener.expandTriggered();
-            if (whereIsRecentsShownPosition == holder.getLayoutPosition()) {
-                whereIsRecentsShownPosition = -239;
-                holder.closeHolder(true);
-                return false;
-            } else {
-                int previous = whereIsRecentsShownPosition;
-                whereIsRecentsShownPosition = holder.getLayoutPosition();
-                holder.openHolder(true);
-
-                final BoardAdapter.ThreadWithPreviewViewHolder oldHolder = (BoardAdapter.ThreadWithPreviewViewHolder)
-                        ((RecyclerView) holder.itemView
-                        .getParent()).findViewHolderForLayoutPosition(previous);
-                if (oldHolder != null) { oldHolder.closeHolder(true); }
-                return true;
-            }
-        }
-
-        public class ThreadWithPreviewViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-
-            public final TextView             threadTitle;
-            public final PostHolder           postHolder;
-            public final HorizontalScrollView filesScroller;
-            public final LinearLayout         previewList;
-            public final TextView             replies;
-            public final Button               optionsBtn;
-            public final ImageButton          expandBtn;
-            public final Button               recentBtn;
-            public final Button               openBtn;
-
-
-            public PostHolder[] recents;
-
-            public void onClick(View v) {
-                switch (v.getId()) {
-                    case R.id.thread_controls_options:
-                        return;
-                    case R.id.thread_controls_expand:
-                        onExpandClick();
-                        break;
-                    case R.id.thread_controls_open:
-                        onOpenClick();
-                        break;
-                    case R.id.thread_controls_recent:
-                        onRecentClick();
-                        break;
-                }
-            }
-
-            private void onRecentClick() {
-                toggle(ThreadWithPreviewViewHolder.this);
-            }
-
-            private void onOpenClick() {
-                supervisor.onThreadSelected(Hanabira.getStem().findPostByDisplayId(threadIds.get(getAdapterPosition
-                        () - 1)).getThreadId());
-            }
-
-            public void onExpandClick() {
-                final int now = postHolder.message.getMaxLines();
-                final int will = now == Integer.MAX_VALUE ? ELLIPSIZE_MAX_LINES : Integer.MAX_VALUE;
-                final boolean growth = will > now;
-                if (postHolder.message.getLineCount() <= ELLIPSIZE_MAX_LINES) {
-                    expandBtn.animate()
-                             .rotation(360f)
-                             .setDuration(500)
-                             .setInterpolator(new BounceInterpolator())
-                             .withEndAction(new Runnable() {
-                                 @Override
-                                 public void run() {
-                                     expandBtn.setRotation(0);
-                                 }
-                             })
-                             .start();
-                    return;
-                }
-                scrollListener.expandTriggered();
-                postHolder.message.setMaxLines(will); // set to measure
-                final Animator animator = animateViewHeight(postHolder.message);
-                animator.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        if (postHolder.message.getLineCount() != will) {
-                            postHolder.message.setMaxLines(will);
-                        }
-                        postHolder.message.measure(View.MeasureSpec.makeMeasureSpec(500, View.MeasureSpec.AT_MOST),
-                                                   View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-                        System.out.println(postHolder.message.getMeasuredHeight());
-                    }
-
-                    @Override
-                    public void onAnimationStart(Animator animation) {
-                        expandBtn.animate().rotation(growth ? 180f : 360f).withEndAction(new Runnable() {
-                            @Override
-                            public void run() {
-                                expandBtn.setRotation(growth ? 180f : 0f);
-                            }
-                        }).setInterpolator(new FastOutSlowInInterpolator()).start();
-                        postHolder.message.setMaxLines(Integer.MAX_VALUE);
-                    }
-                });
-                animator.start();
-            }
-
-            public ThreadWithPreviewViewHolder(final View itemView) {
-                super(itemView);
-                threadTitle = (TextView) itemView.findViewById(R.id.text_thread_title);
-
-                postHolder = new PostHolder(itemView);
-                replies = (TextView) itemView.findViewById(R.id.text_post_content_replies);
-                filesScroller = (HorizontalScrollView) itemView.findViewById(R.id.post_files_scroller);
-                previewList = (LinearLayout) itemView.findViewById(R.id.layout_thread_expandable_posts_preview);
-                optionsBtn = (Button) itemView.findViewById(R.id.thread_controls_options);
-                expandBtn = (ImageButton) itemView.findViewById(R.id.thread_controls_expand);
-                recentBtn = (Button) itemView.findViewById(R.id.thread_controls_recent);
-                openBtn = (Button) itemView.findViewById(R.id.thread_controls_open);
-
-                if (previewList != null) {
-                    for (int i = 0; i < recentListSize; i++) {
-                        LayoutInflater.from(getContext()).inflate(R.layout.layout_post, previewList);
-                    }
-                    recents = new PostHolder[previewList.getChildCount()];
-                    for (int i = 0; i < recents.length; i++) {
-                        recents[i] = new PostHolder(previewList.getChildAt(i));
-                    }
-                }
-
-                if (optionsBtn != null) {
-                    optionsBtn.setOnClickListener(this);
-                    // hope either not null
-                    expandBtn.setOnClickListener(this);
-                    recentBtn.setOnClickListener(this);
-                    openBtn.setOnClickListener(this);
-                }
-            }
-
-
-            public void openHolder(final boolean animate) {
-                int threadIndex = getLayoutPosition() - 1;
-                if (requestFillRecents.get(threadIndex)) {
-                    requestFillRecents.set(threadIndex, false);
-                    List<Integer> recentsList = Hanabira.getStem()
-                                                        .findThreadByDisplayId(threadIds.get(getLayoutPosition() - 1))
-                                                        .getLastN(recentListSize);
-                    int i = 0;
-                    for (; i < recentsList.size(); i++) {
-                        recents[i].fillWithData(recentsList.get(i));
-                    }
-                }
-
-                if (animate) {
-                    previewList.setVisibility(View.VISIBLE);
-                    final Animator animator = animateViewHeight(itemView);
-                    animator.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-                            final ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(previewList, View.ALPHA, 1);
-                            alphaAnimator.addListener(new NotRecycleAdapter());
-                            alphaAnimator.setInterpolator(new DecelerateInterpolator());
-                            alphaAnimator.start();
-                        }
-                    });
-                    animator.start();
-                } else {
-                    previewList.setVisibility(View.VISIBLE);
-                    previewList.setAlpha(1);
-                }
-            }
-
-            public void closeHolder(final boolean animate) {
-                if (animate) {
-                    previewList.setVisibility(View.GONE);
-                    final Animator animator = animateViewHeight(itemView);
-                    previewList.setVisibility(View.VISIBLE);
-                    animator.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-                            final ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(previewList, View.ALPHA, 0);
-                            alphaAnimator.addListener(new NotRecycleAdapter());
-                            alphaAnimator.setInterpolator(new DecelerateInterpolator());
-                            alphaAnimator.start();
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            previewList.setVisibility(View.GONE);
-                            previewList.setAlpha(0);
-                        }
-
-                        @Override
-                        public void onAnimationCancel(Animator animation) {
-                            previewList.setVisibility(View.GONE);
-                            previewList.setAlpha(0);
-                        }
-                    });
-                    animator.start();
-                } else {
-                    previewList.setVisibility(View.GONE);
-                    previewList.setAlpha(0);
-                }
-            }
-
-            public Animator animateViewHeight(final View v) {
-                View parent = (View) v.getParent();
-                if (parent == null) {
-                    throw new IllegalStateException("Cannot animate the layout of a view that has no parent");
-                }
-
-                int start = v.getMeasuredHeight();
-                System.out.println("Start: " + start);
-                v.measure(View.MeasureSpec.makeMeasureSpec(parent.getMeasuredWidth(), View.MeasureSpec.AT_MOST),
-                          View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-                int end = v.getMeasuredHeight();
-                System.out.println("End: " + end);
-                final ValueAnimator animator = ValueAnimator.ofInt(start, end);
-                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-
-                    @Override
-                    public void onAnimationUpdate(ValueAnimator animation) {
-                        final ViewGroup.LayoutParams lp = v.getLayoutParams();
-                        lp.height = (int) animation.getAnimatedValue();
-                        v.setLayoutParams(lp);
-                    }
-
-                });
-
-                animator.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        final ViewGroup.LayoutParams params = v.getLayoutParams();
-                        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                        v.setLayoutParams(params);
-                    }
-                });
-
-                animator.setInterpolator(new FastOutSlowInInterpolator());
-                animator.addListener(new NotRecycleAdapter());
-
-                return animator;
-            }
-
-            public class NotRecycleAdapter extends AnimatorListenerAdapter {
-
-                @Override
-                public void onAnimationStart(Animator animation) { setIsRecyclable(false); }
-
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    setIsRecyclable(true);
-                }
-
-                @Override
-                public void onAnimationCancel(Animator animation) { setIsRecyclable(true); }
-            }
-        }
-
     }
 
 }

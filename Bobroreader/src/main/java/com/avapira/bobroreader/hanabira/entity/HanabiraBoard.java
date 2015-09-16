@@ -15,8 +15,24 @@ import java.util.regex.Pattern;
  */
 public class HanabiraBoard extends HanabiraEntity {
 
+    private final String                      boardKey;
+    private final Map<Integer, List<Integer>> pages;
+    private       int                         pagesCount;
+    private       Object                      capabilities;
+
+    public HanabiraBoard(String boardKey, int pagesCount, Object capabilities) {
+        this.capabilities = capabilities;
+        this.pagesCount = pagesCount;
+        this.boardKey = boardKey;
+        this.pages = new HashMap<>();
+    }
+
     public static class Info {
 
+        private static final Map<String, Info>  boardToInfo   = new HashMap<>();
+        private static final Map<Integer, Info> idToInfo      = new HashMap<>();
+        private static final Pattern            removeSlashes = Pattern.compile("^/([a-z]{1,4})/$");
+        private static List<Info>              boardsInfoStorage;
         @SerializedName("allow_names")
         public         boolean                 allowNames;
         @SerializedName("require_thread_file")
@@ -69,9 +85,6 @@ public class HanabiraBoard extends HanabiraEntity {
         public         boolean                 keepFilenames;
         @SerializedName("board")
         public         String                  boardKey;
-        private static List<Info>              boardsInfoStorage;
-        private static final Map<String, Info>  boardToInfo = new HashMap<>();
-        private static final Map<Integer, Info> idToInfo    = new HashMap<>();
 
         public static void loadBoardsInfo(String json) {
             if (isLoaded()) { return; }
@@ -108,8 +121,6 @@ public class HanabiraBoard extends HanabiraEntity {
             return getForId(id).boardKey;
         }
 
-        private static final Pattern removeSlashes = Pattern.compile("^/([a-z]{1,4})/$");
-
         public static String cutSlashes(@NonNull String slashed) {
             Matcher m = removeSlashes.matcher(slashed);
             if (m.find()) {
@@ -118,15 +129,9 @@ public class HanabiraBoard extends HanabiraEntity {
         }
     }
 
-    private String                      boardKey;
-    private Map<Integer, List<Integer>> pages;
-    private int                         pagesCount;
-    private Object                      capabilities;
-
     public int getPagesCount() {
         return pagesCount;
     }
-
 
     public void update(int pagesCount, Object capabilities) {
         this.pagesCount = pagesCount;
@@ -135,13 +140,6 @@ public class HanabiraBoard extends HanabiraEntity {
 
     public Info getInfo() {
         return Info.getForKey(boardKey);
-    }
-
-    public HanabiraBoard(String boardKey, int pagesCount, Object capabilities) {
-        this.capabilities = capabilities;
-        this.pagesCount = pagesCount;
-        this.boardKey = boardKey;
-        this.pages = new HashMap<>();
     }
 
     Map<Integer, List<Integer>> getPages() {

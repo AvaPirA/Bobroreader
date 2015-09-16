@@ -39,7 +39,7 @@ import java.net.URL;
 public class PreloadImages {
 
     //@formatter:off
-    public static final String[] urls = {
+    private static final String[] urls = {
             "/images/banners/ve/125699339172544.png",
             "/images/banners/ve/125698553182650.png",
             "/images/banners/ve/125698880498448.png",
@@ -134,28 +134,28 @@ public class PreloadImages {
             "/images/banners/azu/azu.png"};
 //    @formatter:on
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        final String OCURRENCER = "/images";
-        System.out.println(urls[0].substring(urls[0].indexOf(OCURRENCER) + OCURRENCER.length() + 1)
-                                  .toLowerCase()
-                                  .replace('/', '_'));
-    }
+        public static void main(String[] args) throws IOException, InterruptedException {
+                final String OCURRENCER = "/images";
+                System.out.println(urls[0].substring(urls[0].indexOf(OCURRENCER) + OCURRENCER.length() + 1)
+                                          .toLowerCase()
+                                          .replace('/', '_'));
+        }
 
-    private static void foo() throws MalformedURLException, InterruptedException {
-        for (String imgUrl : urls) {
-            URL url = new URL("http://dobrochan.ru".concat(imgUrl));
+        private static void foo() throws MalformedURLException, InterruptedException {
+                for (String imgUrl : urls) {
+                        URL url = new URL("http://dobrochan.ru".concat(imgUrl));
 //            BufferedImage img = ImageIO.read(url);
-            File outputFile = new File(imgUrlToProvidedImgNames(imgUrl));
+                        File outputFile = new File(imgUrlToProvidedImgNames(imgUrl));
 //            String fmt = imgFileFullName.substring(1 + imgFileFullName.indexOf('.'));
 //            ImageIO.write(img, fmt, outputFile);
-            System.out.println("loaded " + outputFile);
-            Thread.sleep(333);
+                        System.out.println("loaded " + outputFile);
+                        Thread.sleep(333);
 //            System.out.println(outputFile.getAbsolutePath());
+                }
         }
-    }
 
-    private static String imgUrlToProvidedImgNames(String imgUrl) {
-        return "res/drawable/banners_" + imgUrl.indexOf("/images/");
-    }
+        private static String imgUrlToProvidedImgNames(String imgUrl) {
+                return "res/drawable/banners_" + imgUrl.indexOf("/images/");
+        }
 
 }

@@ -9,13 +9,14 @@ import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v7.widget.RecyclerView;
 import android.widget.FrameLayout;
 
-public class HidingScrollListener extends RecyclerView.OnScrollListener {
+class HidingScrollListener extends RecyclerView.OnScrollListener {
+
     private final FrameLayout toolbarContainer;
     private final float       TOOLBAR_ELEVATION_RISE;
     private final float       TOOLBAR_ELEVATION_DOWN;
-    int     verticalOffset;
-    boolean scrollingUp;
-    boolean expandTriggered;
+    private int     verticalOffset;
+    private boolean scrollingUp;
+    private boolean expandTriggered;
 
     public HidingScrollListener(FrameLayout toolbarContainer, Context context) {
         this.toolbarContainer = toolbarContainer;

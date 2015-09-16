@@ -60,8 +60,40 @@ import java.util.regex.Pattern;
  */
 public class HanabiraParser {
 
+    private static boolean contextInitCompleted = false;
+    private static int                    bulletMarginPerLevel;
+    private static int                    quoteColor;
+    private static int                    spoilerHiddenColor;
+    private static int                    spoilerShownColor;
+    private static int                    refLinkColor;
+    private static boolean                showSpoilers;
+    private final  Context                context;
+    private final  SpannableStringBuilder builder;
+    private final  HanabiraPost           post;
+    Pattern refPost = Pattern.compile(">>(/?[a-z]{1,4}/)?([0-9]+)");
+    Pattern bold    = Pattern.compile("(\\*\\*|__)(.*?)\\1");
+    Pattern italic  = Pattern.compile("(\\*|_)(.*?)\\1");
+    Pattern ulList  = Pattern.compile("\\n\\*(.*)");
+    Pattern olList  = Pattern.compile("\\n[0-9]+\\.(.*)");
+    Pattern code    = Pattern.compile("`(.*?)`");
+
+    public HanabiraParser(HanabiraPost post, Context context) {
+        if (!contextInitCompleted) {
+            bulletMarginPerLevel = Utils.convertDpToPx(context, 12);
+            spoilerHiddenColor = context.getColor(R.color.dobro_dark);
+            spoilerShownColor = context.getColor(R.color.dobro_primary_text);
+            refLinkColor = context.getColor(R.color.dobro_ref_text);
+            quoteColor = context.getColor(R.color.dobro_quote);
+            showSpoilers = PreferenceManager.getDefaultSharedPreferences(context).getBoolean("show_spoilers", false);
+            contextInitCompleted = true;
+        }
+        this.context = context;
+        this.post = post;
+        builder = new SpannableStringBuilder(replaceInternalLinkWithReference(post.getMessage()));
+        Linkify.addLinks(builder, Linkify.WEB_URLS);
+    }
+
     private static abstract class SpanObjectFactory {
-        abstract Object getSpan();
 
         public static final SpanObjectFactory ITALIC      = new SpanObjectFactory() {
             @Override
@@ -93,9 +125,12 @@ public class HanabiraParser {
                 return new CodeBlockSpan();
             }
         };
+
+        abstract Object getSpan();
     }
 
     private static class QuoteSpan extends CharacterStyle implements UpdateAppearance {
+
         @Override
         public void updateDrawState(TextPaint tp) {
             tp.setColor(quoteColor);
@@ -137,17 +172,6 @@ public class HanabiraParser {
             super("monospaced");
         }
 
-        @Override
-        public void updateDrawState(@NonNull TextPaint tp) {
-            tp.setColor(spoilerHiddenColor);
-            applyCustomTypeFace(tp);
-        }
-
-        @Override
-        public void updateMeasureState(@NonNull TextPaint paint) {
-            applyCustomTypeFace(paint);
-        }
-
         private static void applyCustomTypeFace(Paint paint) {
             int oldStyle;
             Typeface old = paint.getTypeface();
@@ -167,6 +191,17 @@ public class HanabiraParser {
             }
 
             paint.setTypeface(Typeface.MONOSPACE);
+        }
+
+        @Override
+        public void updateDrawState(@NonNull TextPaint tp) {
+            tp.setColor(spoilerHiddenColor);
+            applyCustomTypeFace(tp);
+        }
+
+        @Override
+        public void updateMeasureState(@NonNull TextPaint paint) {
+            applyCustomTypeFace(paint);
         }
     }
 
@@ -214,6 +249,7 @@ public class HanabiraParser {
     }
 
     private class HanabiraLinkSpan extends ClickableSpan implements UpdateAppearance {
+
         private final String board;
         private final String post;
 
@@ -236,40 +272,14 @@ public class HanabiraParser {
         }
     }
 
-    public static boolean contextInitCompleted = false;
-    private static int     bulletMarginPerLevel;
-    private static int     quoteColor;
-    private static int     spoilerHiddenColor;
-    private static int     spoilerShownColor;
-    private static int     refLinkColor;
-    private static boolean showSpoilers;
-
-    Pattern refPost = Pattern.compile(">>(/?[a-z]{1,4}/)?([0-9]+)");
-    Pattern bold    = Pattern.compile("(\\*\\*|__)(.*?)\\1");
-    Pattern italic  = Pattern.compile("(\\*|_)(.*?)\\1");
-    Pattern ulList  = Pattern.compile("\\n\\*(.*)");
-    Pattern olList  = Pattern.compile("\\n[0-9]+\\.(.*)");
-    Pattern code    = Pattern.compile("`(.*?)`");
-
-    private final Context context;
-
-    private final SpannableStringBuilder builder;
-    private final HanabiraPost           post;
-
-    public HanabiraParser(HanabiraPost post, Context context) {
-        if (!contextInitCompleted) {
-            bulletMarginPerLevel = Utils.convertDpToPx(context, 12);
-            spoilerHiddenColor = context.getColor(R.color.dobro_dark);
-            spoilerShownColor = context.getColor(R.color.dobro_primary_text);
-            refLinkColor = context.getColor(R.color.dobro_ref_text);
-            quoteColor = context.getColor(R.color.dobro_quote);
-            showSpoilers = PreferenceManager.getDefaultSharedPreferences(context).getBoolean("show_spoilers", false);
-            contextInitCompleted = true;
+    private static String replaceInternalLinkWithReference(String message) {
+        Pattern p = Pattern.compile("https?://dobrochan\\.(?:ru|com|org)/([a-z]{1,4})/res/(\\d+)\\.xhtml(?:#i(\\d+))?");
+        Matcher matcher = p.matcher(message);
+        if (matcher.groupCount() == 4) { // whole, board, thread, (opt) post
+            return matcher.replaceAll(">>$1/$3"); //>>/board/display_id_post
+        } else {
+            return matcher.replaceAll(">>$1/$2"); //>>/board/thread_display_id
         }
-        this.context = context;
-        this.post = post;
-        builder = new SpannableStringBuilder(replaceInternalLinkWithReference(post.getMessage()));
-        Linkify.addLinks(builder, Linkify.WEB_URLS);
     }
 
     public CharSequence getFormatted() {
@@ -284,13 +294,13 @@ public class HanabiraParser {
         paintItalic();
 
         embedRefs();
-        formatStrikethrough();
-        formatWordsHiding();
+        formatCharStrike();
+        formatWordStrike();
         return builder;
 
     }
 
-    private void formatWordsHiding() {
+    private void formatWordStrike() {
         int removedCharactersDelta = 0;
         Pattern pattern = Pattern.compile("(\\^W)+");
         Matcher matcher = pattern.matcher(builder);
@@ -306,7 +316,7 @@ public class HanabiraParser {
             int runner = start;
             try {
                 while (wordsAmount > 0) {
-                    if (Character.isSpaceChar(chars[--runner])) {
+                    if (Character.isSpaceChar(chars[runner--])) {
                         wordsAmount--;
                     }
                 }
@@ -319,7 +329,7 @@ public class HanabiraParser {
         }
     }
 
-    private void formatStrikethrough() {
+    private void formatCharStrike() {
         int removedFormatCharsDelta = 0;
         Pattern pattern = Pattern.compile("(\\^H)+");
         Matcher matcher = pattern.matcher(builder);
@@ -410,16 +420,6 @@ public class HanabiraParser {
             builder.replace(start, start + oldStringLength, replacement);
             builder.setSpan(new BulletListSpan(level), start - delta, start + paraLength - delta - diff, 0);
             delta += diff;
-        }
-    }
-
-    private static String replaceInternalLinkWithReference(String message) {
-        Pattern p = Pattern.compile("https?://dobrochan\\.(?:ru|com|org)/([a-z]{1,4})/res/(\\d+)\\.xhtml(?:#i(\\d+))?");
-        Matcher matcher = p.matcher(message);
-        if (matcher.groupCount() == 4) { // whole, board, thread, (opt) post
-            return matcher.replaceAll(">>$1/$3"); //>>/board/display_id_post
-        } else {
-            return matcher.replaceAll(">>$1/$2"); //>>/board/thread_display_id
         }
     }
 

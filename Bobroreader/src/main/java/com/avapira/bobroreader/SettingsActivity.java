@@ -42,6 +42,18 @@ import android.widget.Toast;
  *
  */
 public class SettingsActivity extends AppCompatActivity {
+
+    private static class SettingsFragment extends PreferenceFragment {
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+
+            // Load the preferences from an XML resource
+            addPreferencesFromResource(R.xml.preferences);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,15 +78,5 @@ public class SettingsActivity extends AppCompatActivity {
         // Display the fragment as the main content.
         getFragmentManager().beginTransaction().replace(R.id.frame_container, new SettingsFragment()).commit();
 
-    }
-
-    public static class SettingsFragment extends PreferenceFragment {
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-
-            // Load the preferences from an XML resource
-            addPreferencesFromResource(R.xml.preferences);
-        }
     }
 }

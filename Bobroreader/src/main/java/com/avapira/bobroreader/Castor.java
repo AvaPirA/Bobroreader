@@ -6,7 +6,7 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 /**
  *
  */
-public interface Castor {
+interface Castor {
 
     void onThreadSelected(int threadId);
     void onFragmentInteraction(Uri uri);

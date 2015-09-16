@@ -39,14 +39,7 @@ import java.util.List;
 /**
  *
  */
-public class HanabiraUser extends HanabiraEntity{
-    @SerializedName("tokens")
-    private List<Token>        tokens;
-    private List<Notification> notifications;
-    private String             language;
-    private String             password;
-    private String             id;
-
+public class HanabiraUser extends HanabiraEntity {
 
     public enum Token {
         @SerializedName("no_user_captcha")
@@ -57,6 +50,13 @@ public class HanabiraUser extends HanabiraEntity{
         READONLY
 
     }
+
+    @SerializedName("tokens")
+    private List<Token>        tokens;
+    private List<Notification> notifications;
+    private String             language;
+    private String             password;
+    private String             id;
 
     public String toString() {
         return toPrettyJson();

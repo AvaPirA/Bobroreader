@@ -34,5 +34,5 @@ package com.avapira.bobroreader.util;
  *
  */
 public interface Consumer<T> {
-    public void accept(T t);
+    void accept(T t);
 }

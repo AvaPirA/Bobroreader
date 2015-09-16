@@ -23,13 +23,117 @@ public class ThreadFragment extends Fragment {
 
     private static final String ARG_THREAD_ID       = "arg_thread_id";
     private static final String ARG_RECYCLER_LAYOUT = "arg_thread_recycler_layout";
-
-
-    private int threadId;
-
+    private RecyclerView         recycler;
+    private int                  threadId;
     private Castor               supervisor;
     private HidingScrollListener scrollListener;
     private ProgressBar          progressBar;
+
+    public ThreadFragment() {
+        // Required empty public constructor
+    }
+
+    static class PostViewHolder extends RecyclerView.ViewHolder {
+
+        final PostHolder postHolder;
+
+        public PostViewHolder(View itemView) {
+            super(itemView);
+            postHolder = new PostHolder(itemView);
+        }
+    }
+
+    private final class SuccessLoadingRunnable implements Runnable {
+
+        final HanabiraThread thread;
+
+        public SuccessLoadingRunnable(HanabiraThread thread) {
+            this.thread = thread;
+        }
+
+        public void run() {
+            ThreadAdapter adapter = new ThreadAdapter(thread);
+            if (recycler.getAdapter() != null) {
+                recycler.swapAdapter(adapter, false);
+            } else {
+                recycler.setAdapter(adapter);
+            }
+            progressBar.setVisibility(View.GONE);
+            recycler.setVisibility(View.VISIBLE);
+            supervisor.retitleOnThreadLoad(thread);
+        }
+    }
+
+    private class ThreadAdapter extends RecyclerView.Adapter<PostViewHolder> {
+
+        public static final int VT_FOOTER  = -2;
+        public static final int VT_HEADER  = -1;
+        public static final int VT_DIVIDER = 0;
+        public static final int VT_POST    = 1;
+        private List<Integer> reflectedPosts;
+
+        public ThreadAdapter(HanabiraThread thread) {
+            updateDataSet(thread);
+        }
+
+        public List<Integer> getReflectedPosts() {
+            return reflectedPosts;
+        }
+
+        private void updateDataSet(HanabiraThread thread) {
+            reflectedPosts = new ArrayList<>(thread.getPosts().size());
+            for (Integer i : thread.getPosts().values()) {
+                reflectedPosts.add(i);
+            }
+            Hanabira.getStem().asyncParse(thread.getPosts().values());
+        }
+
+        @Override
+        public PostViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            int layoutId;
+            switch (viewType) {
+                case VT_FOOTER:
+                    layoutId = R.layout.thread_footer_view;
+                    break;
+                case VT_HEADER:
+                    layoutId = R.layout.thread_header_view;
+                    break;
+                case VT_DIVIDER:
+                    layoutId = R.layout.layout_post_divider;
+                    break;
+                case VT_POST:
+                    layoutId = R.layout.layout_post;
+                    break;
+                default:
+                    throw new InternalError();
+            }
+            View view = LayoutInflater.from(getContext()).inflate(layoutId, parent, false);
+            return new PostViewHolder(view);
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            if (position == 0) {
+                return VT_HEADER; //header
+            } else if (position == getItemCount() - 1) {
+                return VT_FOOTER; //footer
+            } else {
+                return position % 2;
+            }
+        }
+
+        @Override
+        public void onBindViewHolder(PostViewHolder holder, int position) {
+            if (getItemViewType(position) == VT_POST) {
+                holder.postHolder.fillWithData(reflectedPosts.get(position / 2));
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return 2 * reflectedPosts.size() + 1;
+        }
+    }
 
     public static ThreadFragment newInstance(int threadId) {
         ThreadFragment fragment = new ThreadFragment();
@@ -37,10 +141,6 @@ public class ThreadFragment extends Fragment {
         args.putInt(ARG_THREAD_ID, threadId);
         fragment.setArguments(args);
         return fragment;
-    }
-
-    public ThreadFragment() {
-        // Required empty public constructor
     }
 
     @Override
@@ -56,8 +156,6 @@ public class ThreadFragment extends Fragment {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_scroller, container, false);
     }
-
-    RecyclerView recycler;
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
@@ -123,26 +221,6 @@ public class ThreadFragment extends Fragment {
         }
     }
 
-    private final class SuccessLoadingRunnable implements Runnable {
-        final HanabiraThread thread;
-
-        public SuccessLoadingRunnable(HanabiraThread thread) {
-            this.thread = thread;
-        }
-
-        public void run() {
-            ThreadAdapter adapter = new ThreadAdapter(thread);
-            if (recycler.getAdapter() != null) {
-                recycler.swapAdapter(adapter, false);
-            } else {
-                recycler.setAdapter(adapter);
-            }
-            progressBar.setVisibility(View.GONE);
-            recycler.setVisibility(View.VISIBLE);
-            supervisor.retitleOnThreadLoad(thread);
-        }
-    }
-
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -173,88 +251,6 @@ public class ThreadFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         supervisor = null;
-    }
-
-    private class ThreadAdapter extends RecyclerView.Adapter<PostViewHolder> {
-
-        public static final int VT_FOOTER  = -2;
-        public static final int VT_HEADER  = -1;
-        public static final int VT_DIVIDER = 0;
-        public static final int VT_POST    = 1;
-
-        public List<Integer> getReflectedPosts() {
-            return reflectedPosts;
-        }
-
-        private List<Integer> reflectedPosts;
-
-        public ThreadAdapter(HanabiraThread thread) {
-            updateDataSet(thread);
-        }
-
-        private void updateDataSet(HanabiraThread thread) {
-            reflectedPosts = new ArrayList<>(thread.getPosts().size());
-            for (Integer i : thread.getPosts().values()) {
-                reflectedPosts.add(i);
-            }
-            Hanabira.getStem().asyncParse(thread.getPosts().values());
-        }
-
-        @Override
-        public PostViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            int layoutId = 0;
-            switch (viewType) {
-                case VT_FOOTER:
-                    layoutId = R.layout.thread_footer_view;
-                    break;
-                case VT_HEADER:
-                    layoutId = R.layout.thread_header_view;
-                    break;
-                case VT_DIVIDER:
-                    layoutId = R.layout.layout_post_divider;
-                    break;
-                case VT_POST:
-                    layoutId = R.layout.layout_post;
-                    break;
-                default:
-                    throw new InternalError();
-            }
-            View view = LayoutInflater.from(getContext()).inflate(layoutId, parent, false);
-            return new PostViewHolder(view);
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            if (position == 0) {
-                return VT_HEADER; //header
-            } else if (position == getItemCount() - 1) {
-                return VT_FOOTER; //footer
-            } else {
-                return position % 2;
-            }
-        }
-
-        @Override
-        public void onBindViewHolder(PostViewHolder holder, int position) {
-            if (getItemViewType(position) == VT_POST) {
-                holder.postHolder.fillWithData(reflectedPosts.get(position / 2));
-            }
-        }
-
-        @Override
-        public int getItemCount() {
-            return 2 * reflectedPosts.size() + 1;
-        }
-    }
-
-    static class PostViewHolder extends RecyclerView.ViewHolder {
-
-        PostHolder postHolder;
-
-        public PostViewHolder(View itemView) {
-            super(itemView);
-            postHolder = new PostHolder(itemView);
-        }
     }
 
 }

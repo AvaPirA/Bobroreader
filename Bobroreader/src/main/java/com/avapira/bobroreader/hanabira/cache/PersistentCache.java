@@ -9,6 +9,7 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
  *
  */
 public class PersistentCache implements HanabiraCache {
+
     @Override
     public void asyncParse(Iterable<Integer> threads, int recentDepth) {
         //do nothing

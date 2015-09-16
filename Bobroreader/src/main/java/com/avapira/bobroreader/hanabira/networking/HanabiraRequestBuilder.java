@@ -15,65 +15,34 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 /**
  *
  */
+@SuppressWarnings("unused")
 public class HanabiraRequestBuilder {
 
-    public static final String TAG = "HanabiraRequest";
-
-    private static final String FLOWER = "http://dobrochan.ru";
-
-    private static HanabiraRequestBuilder instance;
-
-    public static HanabiraRequestBuilder init(Context context) {
-        if (instance == null) {
-            return instance = new HanabiraRequestBuilder(context);
-        } else {
-            throw new IllegalStateException("Only one instance per session");
-        }
+    public enum ThreadRequestType {
+        ALL, NEW, LAST, INFO
     }
 
+    public enum SpecialRequestType {
+        USER, DIFF
+    }
+
+    public static final  String TAG    = "HanabiraRequest";
+    private static final String FLOWER = "http://dobrochan.ru";
+    private static HanabiraRequestBuilder instance;
+    private static Response.ErrorListener errorListener = new Response.ErrorListener() {
+        public void onErrorResponse(VolleyError e) {
+            e.printStackTrace();
+        }
+    };
     private final RequestQueue volleyQueue;
 
     private HanabiraRequestBuilder(Context context) {
         volleyQueue = Volley.newRequestQueue(context);
     }
 
-    private static StringRequest createRequest(String url, Response.Listener<String> listener) {
-        return createRequest(url, listener, errorListener);
-    }
-
-    private static StringRequest createRequest(String url,
-                                               Response.Listener<String> listener,
-                                               Response.ErrorListener errorListener) {
-        Log.d(TAG.concat("#createRequest"), url);
-        return new StringRequest(url, listener, errorListener);
-    }
-
-    private static Response.ErrorListener errorListener = new Response.ErrorListener() {
-        public void onErrorResponse(VolleyError e) {
-            e.printStackTrace();
-        }
-    };
-
-
-    public class HanabiraRequest {
-        private String url;
-
-        public HanabiraRequest(String cookedUrl) {
-            url = cookedUrl;
-        }
-
-        public void doRequest(Response.Listener<String> listener) {
-            doRequest(listener, errorListener);
-        }
-
-        public void doRequest(Response.Listener<String> listener, Response.ErrorListener errorListener) {
-            volleyQueue.add(createRequest(url, listener, errorListener));
-        }
-
-    }
-
     @SuppressWarnings("unchecked")
     private static abstract class RequestBuilder<B extends RequestBuilder> {
+
         protected StringBuilder flower = new StringBuilder(FLOWER);
         boolean withNewFormat   = false;
         boolean withMessageHtml = false;
@@ -155,7 +124,26 @@ public class HanabiraRequestBuilder {
         }
     }
 
+    public class HanabiraRequest {
+
+        private String url;
+
+        public HanabiraRequest(String cookedUrl) {
+            url = cookedUrl;
+        }
+
+        public void doRequest(Response.Listener<String> listener) {
+            doRequest(listener, errorListener);
+        }
+
+        public void doRequest(Response.Listener<String> listener, Response.ErrorListener errorListener) {
+            volleyQueue.add(createRequest(url, listener, errorListener));
+        }
+
+    }
+
     public class BoardRequestBuilder extends RequestBuilder<BoardRequestBuilder> {
+
         String key;
         int page = -1; // -1 <=> not set manually
 
@@ -305,8 +293,10 @@ public class HanabiraRequestBuilder {
                     }
                     break;
             }
-            return new HanabiraRequest(
-                    flower.append(checkAndGetThreadDefinition()).append(requestTypeString()).append(params.toString()).toString());
+            return new HanabiraRequest(flower.append(checkAndGetThreadDefinition())
+                                             .append(requestTypeString())
+                                             .append(params.toString())
+                                             .toString());
         }
 
         private String requestTypeString() {
@@ -435,6 +425,25 @@ public class HanabiraRequestBuilder {
         }
     }
 
+    public static HanabiraRequestBuilder init(Context context) {
+        if (instance == null) {
+            return instance = new HanabiraRequestBuilder(context);
+        } else {
+            throw new IllegalStateException("Only one instance per session");
+        }
+    }
+
+    private static StringRequest createRequest(String url, Response.Listener<String> listener) {
+        return createRequest(url, listener, errorListener);
+    }
+
+    private static StringRequest createRequest(String url,
+                                               Response.Listener<String> listener,
+                                               Response.ErrorListener errorListener) {
+        Log.d(TAG.concat("#createRequest"), url);
+        return new StringRequest(url, listener, errorListener);
+    }
+
     public BoardRequestBuilder board() {
         return new BoardRequestBuilder();
     }
@@ -449,14 +458,6 @@ public class HanabiraRequestBuilder {
 
     public SpecialRequestBuilder specials() {
         return new SpecialRequestBuilder();
-    }
-
-    public enum ThreadRequestType {
-        ALL, NEW, LAST, INFO
-    }
-
-    public enum SpecialRequestType {
-        USER, DIFF
     }
 
 }

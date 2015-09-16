@@ -43,15 +43,11 @@ import java.util.*;
  */
 abstract class HanabiraEntity {
 
-    private static LocalDateTime extractLocatDateTime(JsonElement jsonElement) {
-        if (jsonElement == null || jsonElement.isJsonNull()) {
-            return null;
-        } else {
-            return LocalDateTime.parse(jsonElement.getAsString().replace(' ', 'T'));
-        }
-    }
+    private static final Gson gson;
+    private static final Gson prettyGson;
 
     private static class LocalDateTimeDeserializer implements JsonDeserializer<LocalDateTime> {
+
         @Override
         public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
         throws JsonParseException {
@@ -89,13 +85,34 @@ abstract class HanabiraEntity {
 
             List<Integer> threadsOnPageIds = new ArrayList<>();
             for (JsonElement threadElement : boardObject.getAsJsonArray("threads")) {
-                threadsOnPageIds.add(createThreadWithPosts(threadElement.getAsJsonObject(), boardKey).getDispayId());
+                threadsOnPageIds.add(createThreadWithPosts(threadElement.getAsJsonObject(), boardKey).getDisplayId());
             }
             cachedBoard.updatePage(page, threadsOnPageIds);
 
             return cachedBoard;
         }
 
+    }
+
+    private static class HanabiraThreadDeserializer implements JsonDeserializer<HanabiraThread> {
+
+        @Override
+        public HanabiraThread deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+            if (json == null) {
+                throw new IllegalArgumentException();
+            }
+            JsonObject jsonObject = json.getAsJsonObject();
+            return createThreadWithPosts(jsonObject, null);
+        }
+    }
+
+    private static LocalDateTime extractLocatDateTime(JsonElement jsonElement) {
+        if (jsonElement == null || jsonElement.isJsonNull()) {
+            return null;
+        } else {
+            return LocalDateTime.parse(jsonElement.getAsString().replace(' ', 'T'));
+        }
     }
 
     private static HanabiraThread createThreadWithPosts(JsonObject threadObject, String boardKey) {
@@ -137,7 +154,7 @@ abstract class HanabiraEntity {
 
         // set thread creation date
         // always for OP post and thread `display_id` and `date` are equal
-        HanabiraPost opPost = Hanabira.getStem().findPostByDisplayId(thread.getDispayId());
+        HanabiraPost opPost = Hanabira.getStem().findPostByDisplayId(thread.getDisplayId());
         if (opPost == null || !opPost.isOp()) {
             throw new InputMismatchException("Op post not received");
         }
@@ -176,30 +193,6 @@ abstract class HanabiraEntity {
         return cachedPost;
     }
 
-    private static class HanabiraThreadDeserializer implements JsonDeserializer<HanabiraThread> {
-
-        @Override
-        public HanabiraThread deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-        throws JsonParseException {
-            if (json == null) {
-                throw new IllegalArgumentException();
-            }
-            JsonObject jsonObject = json.getAsJsonObject();
-            return createThreadWithPosts(jsonObject, null);
-        }
-    }
-
-    static {
-        gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer())
-                                .registerTypeAdapter(HanabiraBoard.class, new HanabiraBoardDeserializer())
-                                .registerTypeAdapter(HanabiraThread.class, new HanabiraThreadDeserializer())
-                                .create();
-        prettyGson = new GsonBuilder().setPrettyPrinting().create();
-    }
-
-    private static final Gson gson;
-    private static final Gson prettyGson;
-
     public static <T extends HanabiraEntity> T fromJson(String jsonString, Class<T> clazz) {
         return gson.fromJson(jsonString, clazz);
     }
@@ -208,8 +201,16 @@ abstract class HanabiraEntity {
         return gson.toJson(this);
     }
 
-    public String toPrettyJson() {
+    String toPrettyJson() {
         return prettyGson.toJson(this);
+    }
+
+    static {
+        gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer())
+                                .registerTypeAdapter(HanabiraBoard.class, new HanabiraBoardDeserializer())
+                                .registerTypeAdapter(HanabiraThread.class, new HanabiraThreadDeserializer())
+                                .create();
+        prettyGson = new GsonBuilder().setPrettyPrinting().create();
     }
 
 }

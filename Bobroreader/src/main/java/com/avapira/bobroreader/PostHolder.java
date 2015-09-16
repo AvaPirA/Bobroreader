@@ -16,6 +16,11 @@ import org.joda.time.format.DateTimeFormat;
  */
 public class PostHolder {
 
+    final TextView displayId;
+    final TextView date;
+    final TextView name;
+    final         TextView message;
+
     public PostHolder(TextView displayId, TextView date, TextView name, TextView message) {
         this.displayId = displayId;
         this.date = date;
@@ -30,41 +35,7 @@ public class PostHolder {
         message = (TextView) parent.findViewById(R.id.text_post_content_message);
     }
 
-    TextView displayId;
-    TextView date;
-    TextView name;
-    TextView message;
-
-    public void fillWithData(HanabiraPost post) {
-        displayId.setText(formatDisplayId(post.getDisplayId()));
-        date.setText(formatDate(post.getCreatedDate()));
-        name.setText(post.getName());
-        message.setText(Hanabira.getStem().getParsedPost(post.getDisplayId()));
-//        message.setMovementMethod(LinkMovementMethod.getInstance());
-        message.setOnTouchListener(new LinkMovementMethodOverride());
-    }
-
-    public void fillWithData(int postDisplayId) {
-        fillWithData(Hanabira.getStem().findPostByDisplayId(postDisplayId));
-        show();
-    }
-
-    public void show() {
-        ((View) message.getParent().getParent()).setVisibility(View.VISIBLE);
-    }
-
-    public void hide() {
-        ((View) message.getParent().getParent()).setVisibility(View.GONE);
-    }
-
-    private static CharSequence formatDisplayId(int displayId) {
-        return String.format("№%d", displayId);
-    }
-
-    private static CharSequence formatDate(LocalDateTime localDateTime) {
-        return DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(localDateTime);
-    }
-    public class LinkMovementMethodOverride implements View.OnTouchListener{
+    private class LinkMovementMethodOverride implements View.OnTouchListener {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
@@ -75,8 +46,7 @@ public class PostHolder {
 
                 int action = event.getAction();
 
-                if (action == MotionEvent.ACTION_UP
-                        || action == MotionEvent.ACTION_DOWN) {
+                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
                     int x = (int) event.getX();
                     int y = (int) event.getY();
 
@@ -89,10 +59,10 @@ public class PostHolder {
                     Layout layout = widget.getLayout();
                     int line = layout.getLineForVertical(y);
                     int off = layout.getOffsetForHorizontal(line, x);
-                    ClickableSpan[] link = buffer.getSpans(off, off,ClickableSpan.class);
+                    ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
                     if (link.length != 0) {
                         if (action == MotionEvent.ACTION_UP) {
-                            for(ClickableSpan l : link) {
+                            for (ClickableSpan l : link) {
                                 l.onClick(widget);
                             }
                         }
@@ -102,5 +72,34 @@ public class PostHolder {
             }
             return false;
         }
+    }
+
+    private static CharSequence formatDisplayId(int displayId) {
+        return String.format("№%d", displayId);
+    }
+
+    private static CharSequence formatDate(LocalDateTime localDateTime) {
+        return DateTimeFormat.forPattern("dd MMMM yyyy (EEE)\nHH:mm:ss").print(localDateTime);
+    }
+
+    public void fillWithData(HanabiraPost post) {
+        displayId.setText(formatDisplayId(post.getDisplayId()));
+        date.setText(formatDate(post.getCreatedDate()));
+        name.setText(post.getName());
+        message.setText(Hanabira.getStem().getParsedPost(post.getDisplayId()));
+        message.setOnTouchListener(new LinkMovementMethodOverride());
+    }
+
+    public void fillWithData(int postDisplayId) {
+        fillWithData(Hanabira.getStem().findPostByDisplayId(postDisplayId));
+        showContainingList();
+    }
+
+    private void showContainingList() {
+        ((View) message.getParent().getParent()).setVisibility(View.VISIBLE);
+    }
+
+    public void hideContainingList() {
+        ((View) message.getParent().getParent()).setVisibility(View.GONE);
     }
 }

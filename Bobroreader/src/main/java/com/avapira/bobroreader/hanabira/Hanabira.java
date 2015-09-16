@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import com.android.volley.Response;
 import com.avapira.bobroreader.Bober;
 import com.avapira.bobroreader.R;
@@ -22,7 +23,10 @@ import org.json.JSONObject;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -49,6 +53,18 @@ public class Hanabira {
                 new CookieManager(new PersistentCookieStore(ctx), CookiePolicy.ACCEPT_ORIGINAL_SERVER));
     }
 
+    private static class ThreadCollector implements Response.Listener<String> {
+
+        private final Consumer<HanabiraThread> consumer;
+
+        private ThreadCollector(Consumer<HanabiraThread> consumer) {this.consumer = consumer;}
+
+        @Override
+        public void onResponse(String response) {
+            consumer.accept(HanabiraThread.fromJson(response, HanabiraThread.class));
+        }
+    }
+
     public static void bind(Context ctx) {
         if (flower == null) {
             flower = new Hanabira(ctx);
@@ -63,6 +79,10 @@ public class Hanabira {
 
     public static HanabiraCache getStem() {
         return flower.cacheImpl;
+    }
+
+    private static LocalDateTime extractLocatDateTime(@NonNull String ldt) {
+        return LocalDateTime.parse(ldt.replace(' ', 'T'));
     }
 
     private boolean useMockedNetwork() {
@@ -194,7 +214,7 @@ public class Hanabira {
                                         JSONObject threadInfoJson = new JSONObject(response);
                                         HanabiraThread cachedThread = Hanabira.getStem().findThreadById(threadId);
                                         if (!cachedThread.getLastHit()
-                                                         .equals(LocalDateTime.parse(
+                                                         .equals(extractLocatDateTime(
                                                                  threadInfoJson.getString("last_hit")))) {
                                             // new post after last one cached exists
                                             int diff = threadInfoJson.getInt("posts_count") -
@@ -224,17 +244,6 @@ public class Hanabira {
                                     }
                                 }
                             });
-        }
-    }
-
-    private static class ThreadCollector implements Response.Listener<String> {
-        private final Consumer<HanabiraThread> consumer;
-
-        private ThreadCollector(Consumer<HanabiraThread> consumer) {this.consumer = consumer;}
-
-        @Override
-        public void onResponse(String response) {
-            consumer.accept(HanabiraThread.fromJson(response, HanabiraThread.class));
         }
     }
 

@@ -25,7 +25,6 @@ package com.avapira.bobroreader.hanabira.networking;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-
 import com.google.gson.Gson;
 
 import java.net.*;
@@ -49,7 +48,8 @@ public class PersistentCookieStore implements CookieStore {
      */
     private final static String PREF_DEFAULT_STRING       =
             "{\"discard\":false,\"domain\":\"dobrochan.ru\",\"httpOnly\":false,\"maxAge\":-1,\"name\":\"hanabira\"," +
-                    "\"path\":\"/\",\"secure\":false,\"value\":\"b278577bb1befca8ea8068e59bbef27b4e28878e078cd88a419378f3e70b1234fcd3c645\"," +
+                    "\"path\":\"/\",\"secure\":false," +
+                    "\"value\":\"b278577bb1befca8ea8068e59bbef27b4e28878e078cd88a419378f3e70b1234fcd3c645\"," +
                     "\"version\":0}";
     private final static String PREF_DEFAULT_EMPTY_STRING = "";
 
@@ -63,8 +63,8 @@ public class PersistentCookieStore implements CookieStore {
      */
     private final static String PREF_SESSION_COOKIE = "session_cookie";
 
-    private CookieStore mStore;
-    private Context     mContext;
+    private final CookieStore mStore;
+    private final Context     mContext;
 
     /**
      * @param context The application context
@@ -119,7 +119,7 @@ public class PersistentCookieStore implements CookieStore {
     }
 
     private String getJsonSessionCookieString() {
-        return getPrefs().getString(PREF_SESSION_COOKIE, PREF_DEFAULT_STRING); // XXX here's my own test-cookie
+        return getPrefs().getString(PREF_SESSION_COOKIE, PREF_DEFAULT_EMPTY_STRING); // XXX here's my own test-cookie
     }
 
     /**

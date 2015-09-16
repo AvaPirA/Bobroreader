@@ -8,34 +8,34 @@
         android:paddingEnd="@dimen/small"
         tools:showIn="@layout/card_post">
     <TextView android:id="@+id/text_post_header_datetime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/dobro_primary_text"
-            android:textSize="@dimen/font_text"
-            android:text="15 August 2015 (Sat)\n10:10:10"
-            android:layout_alignParentEnd="true"
-            android:gravity="end"
-            android:lines="2"/>
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:textColor="@color/dobro_primary_text"
+              android:textSize="@dimen/font_text"
+              android:text="15 August 2015 (Sat)\n10:10:10"
+              android:layout_alignParentEnd="true"
+              android:gravity="end"
+              android:lines="2"/>
 
     <TextView android:id="@+id/text_post_header_display_id"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:textSize="@dimen/font_text"
-            android:text="№1231231123"
-            android:textColor="@color/dobro_primary_text"
-            android:lines="1"/>
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:layout_alignParentStart="true"
+              android:textSize="@dimen/font_text"
+              android:text="№1231231123"
+              android:textColor="@color/dobro_primary_text"
+              android:lines="1"/>
 
     <TextView android:id="@+id/text_post_header_author_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="@dimen/font_text"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:textSize="@dimen/font_text"
               android:layout_alignBottom="@id/text_post_header_datetime"
               android:gravity="bottom"
-            android:textColor="@color/dobro_name"
-            android:textStyle="bold"
-            android:lines="1"
-            android:text="Chlenodevka"
+              android:textColor="@color/dobro_name"
+              android:textStyle="bold"
+              android:lines="1"
+              android:text="Chlenodevka"
             />
 
 

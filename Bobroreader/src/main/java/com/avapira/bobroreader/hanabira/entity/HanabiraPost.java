@@ -41,16 +41,34 @@ import java.util.List;
  */
 public class HanabiraPost extends HanabiraEntity {
 
+    @SerializedName("display_id")
+    private final int           displayId;
+    @SerializedName("date")
+    private final LocalDateTime createdDate;
+    @SerializedName("post_id")
+    private final int           postId;
+    @SerializedName("board_id")
+    private final int           boardId;
+    @SerializedName("thread_id")
+    private final int           threadId;
+    private final boolean       op;
+    //    private List<File>    files;
+    @SerializedName("last_modified")
+    private       LocalDateTime modifiedDate;
+    private       String        message;
+    private       String        subject;
+    private       String        name;
+
     HanabiraPost(int displayId,
-                        LocalDateTime modifiedDate,
-                        LocalDateTime createdDate,
-                        int postId,
-                        String message,
-                        String subject,
-                        int boardId,
-                        String name,
-                        int threadId,
-                        boolean op) {
+                 LocalDateTime modifiedDate,
+                 LocalDateTime createdDate,
+                 int postId,
+                 String message,
+                 String subject,
+                 int boardId,
+                 String name,
+                 int threadId,
+                 boolean op) {
         this.displayId = displayId;
         this.modifiedDate = modifiedDate;
         this.createdDate = createdDate;
@@ -63,7 +81,7 @@ public class HanabiraPost extends HanabiraEntity {
         this.op = op;
     }
 
-    static class ModificationDateComparator implements Comparator<HanabiraPost> {
+    private static class ModificationDateComparator implements Comparator<HanabiraPost> {
 
         @Override
         public int compare(HanabiraPost lhs, HanabiraPost rhs) {
@@ -71,30 +89,16 @@ public class HanabiraPost extends HanabiraEntity {
         }
     }
 
-    @SerializedName("display_id")
-    private final int           displayId;
-    //    private List<File>    files;
-    @SerializedName("last_modified")
-    private LocalDateTime modifiedDate;
-    @SerializedName("date")
-    private final LocalDateTime createdDate;
-    @SerializedName("post_id")
-    private final int           postId;
-    private String        message;
-    private String        subject;
-    @SerializedName("board_id")
-    private final int           boardId;
-    private String        name;
-    @SerializedName("thread_id")
-    private final int           threadId;
-    private final boolean       op;
-
     public int getBoardId() {
         return boardId;
     }
 
     public String getMessage() {
         return message;
+    }
+
+    void setMessage(String message) {
+        this.message = message;
     }
 
     public boolean equals(Object o) {
@@ -112,6 +116,10 @@ public class HanabiraPost extends HanabiraEntity {
         return modifiedDate;
     }
 
+    void setModifiedDate(LocalDateTime modifiedDate) {
+        this.modifiedDate = modifiedDate;
+    }
+
     public LocalDateTime getCreatedDate() {
         return createdDate;
     }
@@ -124,12 +132,20 @@ public class HanabiraPost extends HanabiraEntity {
         return subject;
     }
 
+    void setSubject(String subject) {
+        this.subject = subject;
+    }
+
     public int getThreadId() {
         return threadId;
     }
 
     public String getName() {
         return name;
+    }
+
+    void setName(String name) {
+        this.name = name;
     }
 
     public boolean isOp() {
@@ -146,22 +162,6 @@ public class HanabiraPost extends HanabiraEntity {
 
     public boolean isUpToDate(LocalDateTime modifiedDate) {
         return modifiedDate.isEqual(modifiedDate);
-    }
-
-    void setName(String name) {
-        this.name = name;
-    }
-
-    void setSubject(String subject) {
-        this.subject = subject;
-    }
-
-    void setMessage(String message) {
-        this.message = message;
-    }
-
-    void setModifiedDate(LocalDateTime modifiedDate) {
-        this.modifiedDate = modifiedDate;
     }
 
 }

@@ -69,11 +69,191 @@ import java.util.Map;
 import java.util.Random;
 
 public class Bober extends AppCompatActivity implements Castor {
-    private static double DEBUG_INIT_START = DEBUG_time();
+    private static final double DEBUG_INIT_START = DEBUG_time();
+    private Toolbar toolbar;
     private boolean loadDiff;
-    Toolbar toolbar;
-    private Drawer boardsDrawer;
-    private Drawer featuresDrawer;
+    private Drawer  boardsDrawer;
+    private Drawer  featuresDrawer;
+
+    private static final class DrawerIdentifier {
+
+        private static final int SETTINGS = 239;
+    }
+
+    private static class ShortSectionDivider extends SectionDrawerItem {
+
+        @Override
+        @LayoutRes
+        public int getLayoutRes() {
+            return R.layout.activity_bober_drawer_boards_section_divider;
+        }
+    }
+
+    public static final class BoardDrawerItem extends PrimaryDrawerItem {
+
+        public BoardDrawerItem(String s, Drawable icon) {
+            super();
+            withName(s);
+            withIcon(icon);
+        }
+
+        public BoardDrawerItem(@StringRes int id, @DrawableRes int idIcon) {
+            super();
+            withName(id);
+            withIcon(idIcon);
+        }
+
+        @Override
+        public int getLayoutRes() {
+            return R.layout.activity_bober_drawer_boards_item;
+        }
+
+    }
+
+    public static final class SettingsDrawerItem extends PrimaryDrawerItem {
+
+        public SettingsDrawerItem() {
+            super();
+            withIdentifier(DrawerIdentifier.SETTINGS);
+            withSelectable(false);
+            withName("Settings");
+        }
+
+    }
+
+    private class BoardSwitcher implements com.mikepenz.materialdrawer.Drawer.OnDrawerItemClickListener {
+
+        @Override
+        public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
+            if (drawerItem != null) {
+                if (drawerItem instanceof BoardDrawerItem) {
+                    BoardDrawerItem clickedItem = (BoardDrawerItem) drawerItem;
+                    String boardKey = HanabiraBoard.Info.cutSlashes(clickedItem.getName().getText());
+                    Fragment boardFragment = BoardFragment.newInstance(boardKey);
+                    getFragmentManager().beginTransaction().replace(R.id.frame_container, boardFragment).commit();
+                }
+            }
+            updateDrawerDiff(true);
+            return false;
+        }
+
+    }
+
+    private class BoardItemGenerator {
+
+        private final Map<String, int[]> pics = new LinkedHashMap<String, int[]>() {
+            {
+                put("b",
+                        new int[]{R.drawable.banners_b_125700861425839, R.drawable.banners_b_125860969605710, R
+                                .drawable.banners_b_b1});
+                put("u", new int[]{R.drawable.banners_u_125860969598039});
+                put("rf",
+                        new int[]{R.drawable.banners_rf_125699252353074, R.drawable.banners_rf_125701163950149, R
+                                .drawable.banners_rf_125701647009375, R.drawable.banners_rf_125736226221120, R
+                                .drawable.banners_rf_125861026695515});
+
+                put("dt", new int[]{R.drawable.banners_dt_125697739438064});
+                put("vg",
+                        new int[]{R.drawable.banners_vg_125701543235898, R.drawable.banners_vg_125701543238460, R
+                                .drawable.banners_vg_125709977081546, R.drawable.banners_vg_125718465081528, R
+                                .drawable.banners_vg_125725276436260, R.drawable.banners_vg_125752214930592, R
+                                .drawable.banners_vg_125787756729250, R.drawable.banners_vg_125860991758021});
+                put("r", new int[]{R.drawable.banners_r_125699732718180, R.drawable.banners_r_r});
+                put("cr",
+                        new int[]{R.drawable.banners_cr_cr2, R.drawable.banners_cr_cr4, R.drawable
+                                .banners_cr_cr_vampire});
+                put("mu",
+                        new int[]{R.drawable.banners_mu_125701524833743, R.drawable.banners_mu_125706039606802, R
+                                .drawable.banners_mu_125758466249422, R.drawable.banners_mu_125758466251705, R
+                                .drawable.banners_mu_125861048005976, R.drawable.banners_mu___116});
+                put("oe", new int[]{});
+                put("s", new int[]{R.drawable.banners_s_125776130692418, R.drawable.banners_s_125860969610249});
+                put("w", new int[]{});
+                put("hr", new int[]{});
+                put("a",
+                        new int[]{R.drawable.banners_a_125700436332204, R.drawable.banners_a_125701704962528, R
+                                .drawable.banners_a_125702195165767, R.drawable.banners_a_125761210590870, R.drawable
+                                .banners_a_125768405443972});
+                put("ma", new int[]{R.drawable.banners_ma_125860969613262, R.drawable.banners_ma_ma});
+                put("sw", new int[]{R.drawable.banners_sw_125861045421667, R.drawable.banners_sw_125694314851117});
+                put("hau", new int[]{R.drawable.banners_hau_125861045418626});
+                put("azu", new int[]{});
+                put("tv",
+                        new int[]{R.drawable.banners_tv_2bd020d5bb30, R.drawable.banners_tv_2e04001fa57f, R.drawable
+                                .banners_tv_snapshot20100724100336, R.drawable.banners_tv_ccd7cbf4e061, R.drawable
+                                .banners_tv_55555, R.drawable.banners_tv_46599021_1248208279_clapperboardmanresized2,
+                                R.drawable.banners_tv_3672202a3ac0});
+                put("cp", new int[]{R.drawable.banners_cp_g125788239756657});
+                put("gf", new int[]{R.drawable.banners_gf_125860979571217});
+                put("bo", new int[]{});
+                put("di",
+                        new int[]{R.drawable.banners_di_125702135915554, R.drawable.banners_di_125762259407262, R
+                                .drawable.banners_di_125860991769106});
+                put("vn", new int[]{R.drawable.banners_vn_125861005475361});
+                put("ve",
+                        new int[]{R.drawable.banners_ve_125698553182650, R.drawable.banners_ve_125698880498448, R
+                                .drawable.banners_ve_125699339172544});
+                put("wh",
+                        new int[]{R.drawable.banners_wh_125697147834527, R.drawable.banners_wh_wh2, R.drawable
+                                .banners_wh_wh1, R.drawable.banners_wh_125861075646865});
+                put("fur", new int[]{R.drawable.banners_fur_125861026701646});
+                put("to",
+                        new int[]{R.drawable.banners_to_to_oppai_edition__lewd_, R.drawable.banners_to_to_lunatic, R
+                                .drawable.banners_to_to_cosplay, R.drawable.banners_to_to_cirnotopter, R.drawable
+                                .banners_to_125861045424732});
+                put("bg",
+                        new int[]{R.drawable.banners_bg_bg, R.drawable.banners_bg_125861578033434, R.drawable
+                                .banners_bg_125697224028122});
+                put("wn", new int[]{R.drawable.banners_wn_125701591350076, R.drawable.banners_wn_125861005478345});
+                put("slow",
+                        new int[]{R.drawable.banners_slow_slow_2_copy_new, R.drawable.banners_slow_slow_3, R.drawable
+                                .banners_slow_slow_4});
+                put("mad", new int[]{R.drawable.banners_mad_mad});
+                put("d", new int[]{R.drawable.banners_d_125711152029591, R.drawable.banners_d_d_motherland_hears_you});
+                put("news", new int[]{R.drawable.banners_news_125710395977840});
+            }
+        };
+        private final int[]              SECTION_LENGTHS = {12, 5, 14, 2};
+        private final String[]           SECTION_TITLES  = {"Общее", "Аниме", "На пробу", "Доброчан"};
+        private final Random             r               = new Random();
+
+        public ArrayList<IDrawerItem> getItems() {
+            int toSection = 0;
+            int nextSectionIndex = 0;
+            ArrayList<IDrawerItem> items = new ArrayList<>();
+            for (Map.Entry<String, int[]> entry : pics.entrySet()) {
+                if (toSection-- == 0) {
+                    items.add(new ShortSectionDivider().withName(SECTION_TITLES[nextSectionIndex]));
+                    toSection = SECTION_LENGTHS[nextSectionIndex++];
+                }
+                String name = slashify(entry.getKey());
+                Drawable drw = getRandomDrawable(entry.getKey());
+                items.add(new BoardDrawerItem(name, drw));
+            }
+            Log.d("Init", DEBUG_initRelativeTime() + " items loaded");
+            return items;
+        }
+
+        private Drawable getRandomDrawable(String key) {
+            int[] ids = pics.get(key);
+            int id;
+            Drawable empty = getDrawable(R.drawable.banners_empty);
+            if (ids.length != 0) {
+                if (ids.length == 1) {
+                    id = ids[0];
+                } else {
+                    id = ids[r.nextInt(ids.length)];
+                }
+            } else {
+                return empty;
+            }
+            return getDrawable(id);
+        }
+
+        private String slashify(String key) {
+            return new StringBuilder("/").append(key).append('/').toString();
+        }
+    }
 
     private static double DEBUG_time() {
         return System.nanoTime();
@@ -82,6 +262,20 @@ public class Bober extends AppCompatActivity implements Castor {
 
     private static double DEBUG_initRelativeTime() {
         return (DEBUG_time() - DEBUG_INIT_START) / 10e5;
+    }
+
+    public static String rawJsonToString(Resources res, @RawRes int resId) {
+        String name = res.getResourceName(resId);
+        BufferedInputStream bis = new BufferedInputStream(res.openRawResource(resId));
+        try {
+            byte[] bytes = new byte[bis.available()];
+            int bytesRead = bis.read(bytes);
+            Log.i("Bober#rawJsonToString", String.format("Streaming raw file %s: %s bytes read", name, bytesRead));
+            return new String(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "";
+        }
     }
 
     @Override
@@ -111,36 +305,6 @@ public class Bober extends AppCompatActivity implements Castor {
                             .addToBackStack("board_open_thread")
                             .replace(R.id.frame_container, threadFragment)
                             .commit();
-    }
-
-    private static final class DrawerIdentifier {
-        private static final int SETTINGS = 239;
-    }
-
-
-    private static class ShortSectionDivider extends SectionDrawerItem {
-        @Override
-        @LayoutRes
-        public int getLayoutRes() {
-            return R.layout.activity_bober_drawer_boards_section_divider;
-        }
-    }
-
-    private class BoardSwitcher implements com.mikepenz.materialdrawer.Drawer.OnDrawerItemClickListener {
-        @Override
-        public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
-            if (drawerItem != null) {
-                if (drawerItem instanceof BoardDrawerItem) {
-                    BoardDrawerItem clickedItem = (BoardDrawerItem) drawerItem;
-                    String boardKey = HanabiraBoard.Info.cutSlashes(clickedItem.getName().getText());
-                    Fragment boardFragment = BoardFragment.newInstance(boardKey);
-                    getFragmentManager().beginTransaction().replace(R.id.frame_container, boardFragment).commit();
-                }
-            }
-            updateDrawerDiff(true);
-            return false;
-        }
-
     }
 
     private void loadingLog(String newState) {
@@ -183,21 +347,6 @@ public class Bober extends AppCompatActivity implements Castor {
         loadDiff = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                                     .getBoolean("pref_load_diff", false);
         updateDrawerDiff(false);
-    }
-
-
-    public static String rawJsonToString(Resources res, @RawRes int resId) {
-        String name = res.getResourceName(resId);
-        BufferedInputStream bis = new BufferedInputStream(res.openRawResource(resId));
-        try {
-            byte[] bytes = new byte[bis.available()];
-            int bytesRead = bis.read(bytes);
-            Log.i("Bober#rawJsonToString", String.format("Streaming raw file %s: %s bytes read", name, bytesRead));
-            return new String(bytes);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "";
-        }
     }
 
     private void updateDrawerDiff(boolean wait) {
@@ -342,152 +491,6 @@ public class Bober extends AppCompatActivity implements Castor {
         v.setImageDrawable(d);
 //        searchView.setOnQueryTextListener(this);
         return super.onPrepareOptionsMenu(menu);
-    }
-
-    public static final class BoardDrawerItem extends PrimaryDrawerItem {
-
-        @Override
-        public int getLayoutRes() {
-            return R.layout.activity_bober_drawer_boards_item;
-        }
-
-        public BoardDrawerItem(String s, Drawable icon) {
-            super();
-            withName(s);
-            withIcon(icon);
-        }
-
-        public BoardDrawerItem(@StringRes int id, @DrawableRes int idIcon) {
-            super();
-            withName(id);
-            withIcon(idIcon);
-        }
-
-    }
-
-    public static final class SettingsDrawerItem extends PrimaryDrawerItem {
-        public SettingsDrawerItem() {
-            super();
-            withIdentifier(DrawerIdentifier.SETTINGS);
-            withSelectable(false);
-            withName("Settings");
-        }
-
-    }
-
-    private class BoardItemGenerator {
-        private final Map<String, int[]> pics            = new LinkedHashMap<String, int[]>() {
-            {
-                put("b",
-                        new int[]{R.drawable.banners_b_125700861425839, R.drawable.banners_b_125860969605710, R
-                                .drawable.banners_b_b1});
-                put("u", new int[]{R.drawable.banners_u_125860969598039});
-                put("rf",
-                        new int[]{R.drawable.banners_rf_125699252353074, R.drawable.banners_rf_125701163950149, R
-                                .drawable.banners_rf_125701647009375, R.drawable.banners_rf_125736226221120, R
-                                .drawable.banners_rf_125861026695515});
-
-                put("dt", new int[]{R.drawable.banners_dt_125697739438064});
-                put("vg",
-                        new int[]{R.drawable.banners_vg_125701543235898, R.drawable.banners_vg_125701543238460, R
-                                .drawable.banners_vg_125709977081546, R.drawable.banners_vg_125718465081528, R
-                                .drawable.banners_vg_125725276436260, R.drawable.banners_vg_125752214930592, R
-                                .drawable.banners_vg_125787756729250, R.drawable.banners_vg_125860991758021});
-                put("r", new int[]{R.drawable.banners_r_125699732718180, R.drawable.banners_r_r});
-                put("cr",
-                        new int[]{R.drawable.banners_cr_cr2, R.drawable.banners_cr_cr4, R.drawable
-                                .banners_cr_cr_vampire});
-                put("mu",
-                        new int[]{R.drawable.banners_mu_125701524833743, R.drawable.banners_mu_125706039606802, R
-                                .drawable.banners_mu_125758466249422, R.drawable.banners_mu_125758466251705, R
-                                .drawable.banners_mu_125861048005976, R.drawable.banners_mu___116});
-                put("oe", new int[]{});
-                put("s", new int[]{R.drawable.banners_s_125776130692418, R.drawable.banners_s_125860969610249});
-                put("w", new int[]{});
-                put("hr", new int[]{});
-                put("a",
-                        new int[]{R.drawable.banners_a_125700436332204, R.drawable.banners_a_125701704962528, R
-                                .drawable.banners_a_125702195165767, R.drawable.banners_a_125761210590870, R.drawable
-                                .banners_a_125768405443972});
-                put("ma", new int[]{R.drawable.banners_ma_125860969613262, R.drawable.banners_ma_ma});
-                put("sw", new int[]{R.drawable.banners_sw_125861045421667, R.drawable.banners_sw_125694314851117});
-                put("hau", new int[]{R.drawable.banners_hau_125861045418626});
-                put("azu", new int[]{});
-                put("tv",
-                        new int[]{R.drawable.banners_tv_2bd020d5bb30, R.drawable.banners_tv_2e04001fa57f, R.drawable
-                                .banners_tv_snapshot20100724100336, R.drawable.banners_tv_ccd7cbf4e061, R.drawable
-                                .banners_tv_55555, R.drawable.banners_tv_46599021_1248208279_clapperboardmanresized2,
-                                R.drawable.banners_tv_3672202a3ac0});
-                put("cp", new int[]{R.drawable.banners_cp_g125788239756657});
-                put("gf", new int[]{R.drawable.banners_gf_125860979571217});
-                put("bo", new int[]{});
-                put("di",
-                        new int[]{R.drawable.banners_di_125702135915554, R.drawable.banners_di_125762259407262, R
-                                .drawable.banners_di_125860991769106});
-                put("vn", new int[]{R.drawable.banners_vn_125861005475361});
-                put("ve",
-                        new int[]{R.drawable.banners_ve_125698553182650, R.drawable.banners_ve_125698880498448, R
-                                .drawable.banners_ve_125699339172544});
-                put("wh",
-                        new int[]{R.drawable.banners_wh_125697147834527, R.drawable.banners_wh_wh2, R.drawable
-                                .banners_wh_wh1, R.drawable.banners_wh_125861075646865});
-                put("fur", new int[]{R.drawable.banners_fur_125861026701646});
-                put("to",
-                        new int[]{R.drawable.banners_to_to_oppai_edition__lewd_, R.drawable.banners_to_to_lunatic, R
-                                .drawable.banners_to_to_cosplay, R.drawable.banners_to_to_cirnotopter, R.drawable
-                                .banners_to_125861045424732});
-                put("bg",
-                        new int[]{R.drawable.banners_bg_bg, R.drawable.banners_bg_125861578033434, R.drawable
-                                .banners_bg_125697224028122});
-                put("wn", new int[]{R.drawable.banners_wn_125701591350076, R.drawable.banners_wn_125861005478345});
-                put("slow",
-                        new int[]{R.drawable.banners_slow_slow_2_copy_new, R.drawable.banners_slow_slow_3, R.drawable
-                                .banners_slow_slow_4});
-                put("mad", new int[]{R.drawable.banners_mad_mad});
-                put("d", new int[]{R.drawable.banners_d_125711152029591, R.drawable.banners_d_d_motherland_hears_you});
-                put("news", new int[]{R.drawable.banners_news_125710395977840});
-            }
-        };
-        private final int[]              SECTION_LENGTHS = {12, 5, 14, 2};
-        private final String[]           SECTION_TITLES  = {"Общее", "Аниме", "На пробу", "Доброчан"};
-        private final Random             r               = new Random();
-
-        public ArrayList<IDrawerItem> getItems() {
-            int toSection = 0;
-            int nextSectionIndex = 0;
-            ArrayList<IDrawerItem> items = new ArrayList<>();
-            for (Map.Entry<String, int[]> entry : pics.entrySet()) {
-                if (toSection-- == 0) {
-                    items.add(new ShortSectionDivider().withName(SECTION_TITLES[nextSectionIndex]));
-                    toSection = SECTION_LENGTHS[nextSectionIndex++];
-                }
-                String name = slashify(entry.getKey());
-                Drawable drw = getRandomDrawable(entry.getKey());
-                items.add(new BoardDrawerItem(name, drw));
-            }
-            Log.d("Init", DEBUG_initRelativeTime() + " items loaded");
-            return items;
-        }
-
-        private Drawable getRandomDrawable(String key) {
-            int[] ids = pics.get(key);
-            int id;
-            Drawable empty = getDrawable(R.drawable.banners_empty);
-            if (ids.length != 0) {
-                if (ids.length == 1) {
-                    id = ids[0];
-                } else {
-                    id = ids[r.nextInt(ids.length)];
-                }
-            } else {
-                return empty;
-            }
-            return getDrawable(id);
-        }
-
-        private String slashify(String key) {
-            return new StringBuilder("/").append(key).append('/').toString();
-        }
     }
 
 }

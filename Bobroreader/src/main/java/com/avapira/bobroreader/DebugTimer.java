@@ -8,14 +8,13 @@ import java.util.List;
 /**
  *
  */
-public class DebugTimer {
+class DebugTimer {
 
-    public static final String TAG = DebugTimer.class.getSimpleName();
-
-    private static List<String> names = new LinkedList<>();
-    private static List<Double> laps  = new LinkedList<>();
-    static double lastLap;
-    static double start;
+    private static final String TAG = DebugTimer.class.getSimpleName();
+    private static double lastLap;
+    private static double start;
+    private static final List<String> names = new LinkedList<>();
+    private static final List<Double> laps = new LinkedList<>();
 
     public static void start() {
         names.clear();
@@ -27,7 +26,7 @@ public class DebugTimer {
         lap("");
     }
 
-    public static void lap(String s) {
+    private static void lap(String s) {
         laps.add(System.nanoTime() - lastLap);
         names.add(s);
         lastLap = System.nanoTime();

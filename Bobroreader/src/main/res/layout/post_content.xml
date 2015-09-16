@@ -6,7 +6,7 @@
               android:paddingBottom="@dimen/small"
               android:paddingStart="@dimen/small"
               android:paddingEnd="@dimen/small" tools:showIn="@layout/layout_post"
-            android:animateLayoutChanges="true"
+              android:animateLayoutChanges="true"
         >
     <TextView
             android:id="@+id/text_post_content_message"

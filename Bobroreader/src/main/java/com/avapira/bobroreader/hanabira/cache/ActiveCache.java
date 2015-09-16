@@ -17,17 +17,15 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
 
     private static final String TAG = ActiveCache.class.getSimpleName();
     private final Context context;
+    private final Map<Integer, CharSequence>   cachedParsedPosts     = new HashMap<>();
+    private final Map<String, HanabiraBoard>   indexedBoards         = new HashMap<>();
+    private final Map<Integer, HanabiraThread> indexedThreads        = new HashMap<>();
+    private final Map<Integer, HanabiraPost>   indexedPosts          = new HashMap<>();
+    private final Map<Integer, HanabiraThread> indexedThreadsDisplay = new HashMap<>();
+    private final Map<Integer, HanabiraPost>   indexedPostsDisplay   = new HashMap<>();
 
     public ActiveCache(Context context) {
         this.context = context;
-    }
-
-    public void asyncParse(Iterable<Integer> threads, int recentDepth) {
-        new Thread(new AsyncHanabiraParser(threads, recentDepth)).start();
-    }
-
-    public void asyncParse(Iterable<Integer> threads) {
-        new Thread(new AsyncHanabiraParser(threads)).start();
     }
 
     private class AsyncHanabiraParser implements Runnable {
@@ -78,6 +76,13 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
         }
     }
 
+    public void asyncParse(Iterable<Integer> threads, int recentDepth) {
+        new Thread(new AsyncHanabiraParser(threads, recentDepth)).start();
+    }
+
+    public void asyncParse(Iterable<Integer> threads) {
+        new Thread(new AsyncHanabiraParser(threads)).start();
+    }
 
     public HanabiraBoard findBoardByKey(String boardKey) {
         HanabiraBoard retVal = indexedBoards.get(boardKey);
@@ -147,7 +152,6 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
         }
     }
 
-
     public void saveBoard(HanabiraBoard board) {
         indexedBoards.put(board.getKey(), board);
         super.saveBoard(board);
@@ -155,7 +159,7 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
 
     public void saveThread(HanabiraThread thread) {
         indexedThreads.put(thread.getThreadId(), thread);
-        indexedThreadsDisplay.put(thread.getDispayId(), thread);
+        indexedThreadsDisplay.put(thread.getDisplayId(), thread);
         super.saveThread(thread);
     }
 
@@ -165,15 +169,5 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
         findThreadById(cachedPost.getThreadId()).getPosts().put(cachedPost.getCreatedDate(), cachedPost.getDisplayId());
         super.savePost(cachedPost);
     }
-
-
-    private final Map<Integer, CharSequence> cachedParsedPosts = new HashMap<>();
-
-    private final Map<String, HanabiraBoard>   indexedBoards  = new HashMap<>();
-    private final Map<Integer, HanabiraThread> indexedThreads = new HashMap<>();
-    private final Map<Integer, HanabiraPost>   indexedPosts   = new HashMap<>();
-
-    private final Map<Integer, HanabiraThread> indexedThreadsDisplay = new HashMap<>();
-    private final Map<Integer, HanabiraPost>   indexedPostsDisplay   = new HashMap<>();
 
 }
