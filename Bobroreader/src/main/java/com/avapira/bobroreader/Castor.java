@@ -1,7 +1,6 @@
 package com.avapira.bobroreader;
 
 import android.net.Uri;
-import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 
 /**
  *
@@ -12,5 +11,5 @@ interface Castor {
     void onFragmentInteraction(Uri uri);
     void retitleOnLoading();
     void retitleOnBoardLoad(String key, int page);
-    void retitleOnThreadLoad(HanabiraThread thread);
+    void retitleOnThreadLoad(String key, String title);
 }

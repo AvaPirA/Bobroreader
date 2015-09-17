@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import com.android.volley.Response;
 import com.avapira.bobroreader.Bober;
 import com.avapira.bobroreader.R;
@@ -68,9 +69,16 @@ public class Hanabira {
     public static void bind(Context ctx) {
         if (flower == null) {
             flower = new Hanabira(ctx);
+            Log.d("Hanabira", "Create");
         } else {
             throw new IllegalStateException("Switching hanabira context is impossible");
         }
+    }
+
+    public static void unbind() {
+        HanabiraRequestBuilder.destroy();
+        flower = null;
+        Log.d("Hanabira", "Destroy");
     }
 
     public static Hanabira getFlower() {

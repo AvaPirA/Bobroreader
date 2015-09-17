@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import com.avapira.bobroreader.hanabira.Hanabira;
+import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.util.Consumer;
 
@@ -28,6 +29,7 @@ public class ThreadFragment extends Fragment {
     private Castor               supervisor;
     private HidingScrollListener scrollListener;
     private ProgressBar          progressBar;
+    private ThreadAdapter        threadAdapter;
 
     public ThreadFragment() {
         // Required empty public constructor
@@ -52,15 +54,8 @@ public class ThreadFragment extends Fragment {
         }
 
         public void run() {
-            ThreadAdapter adapter = new ThreadAdapter(thread);
-            if (recycler.getAdapter() != null) {
-                recycler.swapAdapter(adapter, false);
-            } else {
-                recycler.setAdapter(adapter);
-            }
-            progressBar.setVisibility(View.GONE);
-            recycler.setVisibility(View.VISIBLE);
-            supervisor.retitleOnThreadLoad(thread);
+            threadAdapter = new ThreadAdapter(thread);
+            hookUpData();
         }
     }
 
@@ -143,6 +138,14 @@ public class ThreadFragment extends Fragment {
         return fragment;
     }
 
+    private void hookUpData() {
+        recycler.setAdapter(threadAdapter);
+        progressBar.setVisibility(View.GONE);
+        recycler.setVisibility(View.VISIBLE);
+        HanabiraThread t = Hanabira.getStem().findThreadById(threadId);
+        supervisor.retitleOnThreadLoad(HanabiraBoard.Info.getForId(t.getBoardId()).boardKey, t.getTitle());
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -162,10 +165,16 @@ public class ThreadFragment extends Fragment {
         progressBar = (ProgressBar) view.findViewById(R.id.pb);
         recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
-        scrollListener = new HidingScrollListener(
-                (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container), getContext());
+        if (threadAdapter == null) {
+            // open board page
+            scrollListener = new HidingScrollListener(getContext());
+            loadThread();
+        } else {
+            // popping from fragments stack
+            hookUpData();
+        }
+        scrollListener.resetContainer((FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container));
         recycler.addOnScrollListener(scrollListener);
-        loadThread();
     }
 
     private void loadThread() {

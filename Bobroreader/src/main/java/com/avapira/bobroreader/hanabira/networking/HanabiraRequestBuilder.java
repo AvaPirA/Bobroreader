@@ -26,7 +26,7 @@ public class HanabiraRequestBuilder {
         USER, DIFF
     }
 
-    public static final  String TAG    = "HanabiraRequest";
+    public static final  String TAG    = HanabiraRequestBuilder.class.getSimpleName();
     private static final String FLOWER = "http://dobrochan.ru";
     private static HanabiraRequestBuilder instance;
     private static Response.ErrorListener errorListener = new Response.ErrorListener() {
@@ -427,10 +427,17 @@ public class HanabiraRequestBuilder {
 
     public static HanabiraRequestBuilder init(Context context) {
         if (instance == null) {
-            return instance = new HanabiraRequestBuilder(context);
+            instance = new HanabiraRequestBuilder(context);
+            Log.d(TAG, "Create");
+            return instance;
         } else {
             throw new IllegalStateException("Only one instance per session");
         }
+    }
+    public static void destroy() {
+        instance.volleyQueue.stop();
+        instance = null;
+        Log.d("HanabiraRequestBuilder", "Destroy");
     }
 
     private static StringRequest createRequest(String url, Response.Listener<String> listener) {

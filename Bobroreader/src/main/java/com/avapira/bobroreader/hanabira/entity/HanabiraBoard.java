@@ -1,6 +1,8 @@
 package com.avapira.bobroreader.hanabira.entity;
 
+import android.content.res.Resources;
 import android.support.annotation.NonNull;
+import com.avapira.bobroreader.Bober;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
@@ -86,9 +88,10 @@ public class HanabiraBoard extends HanabiraEntity {
         @SerializedName("board")
         public         String                  boardKey;
 
-        public static void loadBoardsInfo(String json) {
+        public static void loadBoardsInfo(Resources res, int id) {
             if (isLoaded()) { return; }
             // read json
+            String json = Bober.rawJsonToString(res, id);
             boardsInfoStorage = new Gson().fromJson(json, new TypeToken<List<Info>>() {}.getType());
             // index data
             for (Info info : boardsInfoStorage) {

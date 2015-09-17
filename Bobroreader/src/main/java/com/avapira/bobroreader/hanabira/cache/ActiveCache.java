@@ -13,10 +13,9 @@ import java.util.Map;
 /**
  *
  */
-public class ActiveCache extends PersistentCache implements HanabiraCache {
+public class ActiveCache extends PersistentCache {
 
     private static final String TAG = ActiveCache.class.getSimpleName();
-    private final Context context;
     private final Map<Integer, CharSequence>   cachedParsedPosts     = new HashMap<>();
     private final Map<String, HanabiraBoard>   indexedBoards         = new HashMap<>();
     private final Map<Integer, HanabiraThread> indexedThreads        = new HashMap<>();
@@ -25,7 +24,8 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
     private final Map<Integer, HanabiraPost>   indexedPostsDisplay   = new HashMap<>();
 
     public ActiveCache(Context context) {
-        this.context = context;
+        super(context);
+        Log.d(TAG, "Create");
     }
 
     private class AsyncHanabiraParser implements Runnable {
@@ -90,7 +90,7 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
 //            Log.d(TAG, "board found by id=" + boardKey);
             return retVal;
         } else {
-            Log.d(TAG, "board NOT FOUND by id=" + boardKey);
+//            Log.d(TAG, "board NOT FOUND by id=" + boardKey);
             return super.findBoardByKey(boardKey);
         }
     }
@@ -101,7 +101,7 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
 //            Log.d(TAG, "thread found by id=" + threadId);
             return retVal;
         } else {
-            Log.d(TAG, "thread NOT FOUND by id=" + threadId);
+//            Log.d(TAG, "thread NOT FOUND by id=" + threadId);
             return super.findThreadById(threadId);
         }
     }
@@ -112,7 +112,7 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
 //            Log.d(TAG, "post found by id=" + postId);
             return retVal;
         } else {
-            Log.d(TAG, "post NOT FOUND by id=" + postId);
+//            Log.d(TAG, "post NOT FOUND by id=" + postId);
             return super.findPostById(postId);
         }
     }

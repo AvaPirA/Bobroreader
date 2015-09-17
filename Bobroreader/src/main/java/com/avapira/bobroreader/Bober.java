@@ -31,6 +31,7 @@
 package com.avapira.bobroreader;
 
 import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Typeface;
@@ -52,7 +53,6 @@ import android.widget.ImageView;
 import android.widget.SearchView;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
-import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.util.Consumer;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
@@ -230,7 +230,6 @@ public class Bober extends AppCompatActivity implements Castor {
                 Drawable drw = getRandomDrawable(entry.getKey());
                 items.add(new BoardDrawerItem(name, drw));
             }
-            Log.d("Init", DEBUG_initRelativeTime() + " items loaded");
             return items;
         }
 
@@ -294,21 +293,22 @@ public class Bober extends AppCompatActivity implements Castor {
     }
 
     @Override
-    public void retitleOnThreadLoad(HanabiraThread t) {
-        toolbar.setTitle(String.format("%s/%s", HanabiraBoard.Info.getForId(t.getBoardId()).boardKey, t.getTitle()));
+    public void retitleOnThreadLoad(String key, String title) {
+        toolbar.setTitle(String.format("%s/%s", key, title));
     }
 
     @Override
     public void onThreadSelected(int threadId) {
         Fragment threadFragment = ThreadFragment.newInstance(threadId);
         getFragmentManager().beginTransaction()
-                            .addToBackStack("board_open_thread")
                             .replace(R.id.frame_container, threadFragment)
+                            .addToBackStack("board_open_thread")
                             .commit();
     }
 
     private void loadingLog(String newState) {
-        Log.d("Init", new StringBuilder().append(DEBUG_initRelativeTime()).append(' ').append(newState).toString());
+        Log.d("Bober init", new StringBuilder().append(DEBUG_initRelativeTime()).append(' ').append(newState).toString
+                ());
     }
 
     @Override
@@ -319,9 +319,9 @@ public class Bober extends AppCompatActivity implements Castor {
         loadingLog("Coalescing core...");
         Hanabira.bind(this);
         loadingLog("Manuscripts contemplation...");
-        HanabiraBoard.Info.loadBoardsInfo(rawJsonToString(getResources(), R.raw.boards));
+        HanabiraBoard.Info.loadBoardsInfo(getResources(), R.raw.boards);
 
-        loadingLog("Acquiring superposition...");
+        loadingLog("Superposition...");
         super.onCreate(savedInstanceState);
         loadingLog("Dressing...");
         setContentView(R.layout.activity_bober);
@@ -333,7 +333,6 @@ public class Bober extends AppCompatActivity implements Castor {
         boardsDrawer = generateBoardsDrawerBuilder(savedInstanceState, toolbar).build();
         loadingLog("Equipping secondary weapon...");
         featuresDrawer = generateFeaturesDrawerBuilder(savedInstanceState).append(boardsDrawer);
-        Log.d("Init", DEBUG_initRelativeTime() + " features drawer generated");
         loadingLog("Starting a new journey");
         findViewById(R.id.frame_toolbar_container).setVisibility(View.VISIBLE);
         setTheme(R.style.Bobroreader_Theme_Default);
@@ -343,6 +342,7 @@ public class Bober extends AppCompatActivity implements Castor {
     @Override
     protected void onStart() {
         super.onStart();
+        Log.d("Bober", "Start");
         // todo show pretty /news/ index page
         loadDiff = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                                     .getBoolean("pref_load_diff", false);
@@ -372,7 +372,6 @@ public class Bober extends AppCompatActivity implements Castor {
                                                     .inflate(R.layout.activity_bober_drawer_boards_header_horo, null);
         Drawable horo = getDrawable(R.drawable.acc39fc867f_transparent);
         image.setImageDrawable(horo);
-        Log.d("Init", DEBUG_initRelativeTime() + " header loaded");
         return new DrawerBuilder().withActivity(Bober.this)
                                   .withFullscreen(true)
                                   .withToolbar(toolbar)
@@ -471,8 +470,28 @@ public class Bober extends AppCompatActivity implements Castor {
         if (boardsDrawer != null && boardsDrawer.isDrawerOpen()) {
             boardsDrawer.closeDrawer();
         } else {
-            super.onBackPressed();
+            FragmentManager fm = getFragmentManager();
+            if (fm.getBackStackEntryCount() > 0) {
+                Log.i("Bober", "popping backstack");
+                fm.popBackStack();
+            } else {
+                Log.i("Bober", "nothing on backstack, calling super");
+                super.onBackPressed();
+            }
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d("Bober", "destroy");
+        Hanabira.unbind();
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d("Bober", "stop");
+        super.onStop();
     }
 
     @Override
