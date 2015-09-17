@@ -30,11 +30,11 @@
  */
 package com.avapira.bobroreader;
 
+import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -45,12 +45,9 @@ import android.support.annotation.RawRes;
 import android.support.annotation.StringRes;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.SpannableStringBuilder;
-import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.*;
 import android.widget.ImageView;
-import android.widget.SearchView;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.util.Consumer;
@@ -298,6 +295,21 @@ public class Bober extends AppCompatActivity implements Castor {
     }
 
     @Override
+    public void onOpenPost(String board, int postDisplayId) {
+        DialogFragment postDialog = PostDialogFragment.newInstance(board, postDisplayId);
+        postDialog.show(getFragmentManager(), null);
+    }
+
+    @Override
+    public void onThreadSelected(String board, int threadDisplayId) {
+        Fragment threadFragment = ThreadFragment.newInstance(board, threadDisplayId);
+        getFragmentManager().beginTransaction()
+                            .replace(R.id.frame_container, threadFragment)
+                            .addToBackStack(null)
+                            .commit();
+    }
+
+    @Override
     public void onThreadSelected(int threadId) {
         Fragment threadFragment = ThreadFragment.newInstance(threadId);
         getFragmentManager().beginTransaction()
@@ -447,9 +459,6 @@ public class Bober extends AppCompatActivity implements Castor {
             case android.R.id.home:
                 onBackPressed();
                 return true;
-            case R.id.show_goto:
-
-                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -497,18 +506,6 @@ public class Bober extends AppCompatActivity implements Castor {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.default_menu, menu);
-        // todo draw a proper icon for Go-To-Ref-Link
-        SearchView searchView = (SearchView) menu.findItem(R.id.show_goto).getActionView();
-        int searchImgId = getResources().getIdentifier("android:id/search_button", null, null);
-        ImageView v = (ImageView) searchView.findViewById(searchImgId);
-        SpannableStringBuilder ssb = new SpannableStringBuilder("board/post");
-        ssb.setSpan(new StyleSpan(Typeface.MONOSPACE.getStyle()), 0, 10, 0);
-//        ImageView icon = (ImageView)searchView.findViewById(android.R.id.search_mag_icon);
-        searchView.setQueryHint(ssb);
-        Drawable d = getDrawable(android.R.drawable.ic_media_ff);
-        d.setTint(getColor(R.color.dobro_primary_text));
-        v.setImageDrawable(d);
-//        searchView.setOnQueryTextListener(this);
         return super.onPrepareOptionsMenu(menu);
     }
 

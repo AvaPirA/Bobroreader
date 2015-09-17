@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,10 +23,12 @@ import java.util.List;
 
 public class ThreadFragment extends Fragment {
 
-    private static final String ARG_THREAD_ID       = "arg_thread_id";
-    private static final String ARG_RECYCLER_LAYOUT = "arg_thread_recycler_layout";
+    private static final String ARG_THREAD_ID         = "arg_thread_id";
+    private static final String ARG_THREAD_DISPLAY_ID = "arg_thread_display_id";
+    private static final String ARG_THREAD_BOARD      = "arg_thread_board";
+    private static final String ARG_RECYCLER_LAYOUT   = "arg_thread_recycler_layout";
     private RecyclerView         recycler;
-    private int                  threadId;
+    private AmbiguousId          id;
     private Castor               supervisor;
     private HidingScrollListener scrollListener;
     private ProgressBar          progressBar;
@@ -130,10 +133,20 @@ public class ThreadFragment extends Fragment {
         }
     }
 
-    public static ThreadFragment newInstance(int threadId) {
-        ThreadFragment fragment = new ThreadFragment();
+    public static Fragment newInstance(int threadId) {
+        Fragment fragment = new ThreadFragment();
         Bundle args = new Bundle();
         args.putInt(ARG_THREAD_ID, threadId);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+
+    public static Fragment newInstance(String board, int threadDisplayId) {
+        Fragment fragment = new ThreadFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_THREAD_BOARD, board);
+        args.putInt(ARG_THREAD_DISPLAY_ID, threadDisplayId);
         fragment.setArguments(args);
         return fragment;
     }
@@ -142,7 +155,7 @@ public class ThreadFragment extends Fragment {
         recycler.setAdapter(threadAdapter);
         progressBar.setVisibility(View.GONE);
         recycler.setVisibility(View.VISIBLE);
-        HanabiraThread t = Hanabira.getStem().findThreadById(threadId);
+        HanabiraThread t = Hanabira.getStem().findThread(id);
         supervisor.retitleOnThreadLoad(HanabiraBoard.Info.getForId(t.getBoardId()).boardKey, t.getTitle());
     }
 
@@ -150,7 +163,13 @@ public class ThreadFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            threadId = getArguments().getInt(ARG_THREAD_ID);
+            int threadId = getArguments().getInt(ARG_THREAD_ID);
+            if (threadId == 0) {
+                id = new AmbiguousId(getArguments().getString(ARG_THREAD_BOARD),
+                        getArguments().getInt(ARG_THREAD_DISPLAY_ID));
+            } else {
+                id = new AmbiguousId(threadId);
+            }
         }
     }
 
@@ -182,17 +201,24 @@ public class ThreadFragment extends Fragment {
         recycler.setVisibility(View.INVISIBLE);
         progressBar.setVisibility(View.VISIBLE);
 
-        final HanabiraThread thread = Hanabira.getStem().findThreadById(threadId);
+        final HanabiraThread thread = Hanabira.getStem().findThread(id);
+
         if (thread == null || thread.getPostsCount() != thread.getPosts().size()) {
             // full load required
-            Hanabira.getFlower().getFullThread(threadId, new Consumer<HanabiraThread>() {
+            Hanabira.getFlower().getFullThread(id, new Consumer<HanabiraThread>() {
                 @Override
                 public void accept(HanabiraThread thread) {
                     if (thread != null) {
-                        getActivity().runOnUiThread(new SuccessLoadingRunnable(thread));
+                        Activity activity = getActivity();
+                        if(activity != null) {
+                            activity.runOnUiThread(new SuccessLoadingRunnable(thread));
+                        } else {
+                            Log.e("ThreadFragment#load", "NPE on runOnUi");
+                        }
                     } else {
                         throw new RuntimeException("No such thread");
                     }
+
                 }
             });
         } else {
@@ -200,11 +226,11 @@ public class ThreadFragment extends Fragment {
             // 1)run network (check+load if needed)
             // 2)swap adapter if
             // 3)check for deleted
-            Hanabira.getFlower().getThreadWithUpdate(threadId, new Consumer<HanabiraThread>() {
+            Hanabira.getFlower().getThreadWithUpdate(id, new Consumer<HanabiraThread>() {
                 @Override
                 public void accept(HanabiraThread thread) {
                     getActivity().runOnUiThread(new SuccessLoadingRunnable(thread));
-                    Hanabira.getFlower().checkForDeletedPosts(threadId, new Consumer<Boolean>() {
+                    Hanabira.getFlower().checkForDeletedPosts(id, new Consumer<Boolean>() {
                         @Override
                         public void accept(Boolean deleted) {
                             if (deleted) {
@@ -233,7 +259,12 @@ public class ThreadFragment extends Fragment {
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putInt(ARG_THREAD_ID, threadId);
+        if (id.isDisplay()) {
+            outState.putString(ARG_THREAD_BOARD, id.getBoard());
+            outState.putInt(ARG_THREAD_DISPLAY_ID, id.getDisplayId());
+        } else {
+            outState.putInt(ARG_THREAD_ID, id.getId());
+        }
         outState.putParcelable(ARG_RECYCLER_LAYOUT, recycler.getLayoutManager().onSaveInstanceState());
     }
 
@@ -241,6 +272,13 @@ public class ThreadFragment extends Fragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (savedInstanceState != null) {
+            int threadId = savedInstanceState.getInt(ARG_THREAD_ID);
+            if (threadId == 0) {
+                id = new AmbiguousId(savedInstanceState.getString(ARG_THREAD_BOARD),
+                        savedInstanceState.getInt(ARG_THREAD_DISPLAY_ID));
+            } else {
+                id = new AmbiguousId(threadId);
+            }
             threadId = savedInstanceState.getInt(ARG_THREAD_ID, 0);
             recycler.getLayoutManager().onRestoreInstanceState(savedInstanceState.getParcelable(ARG_RECYCLER_LAYOUT));
         }
@@ -261,5 +299,4 @@ public class ThreadFragment extends Fragment {
         super.onDetach();
         supervisor = null;
     }
-
 }

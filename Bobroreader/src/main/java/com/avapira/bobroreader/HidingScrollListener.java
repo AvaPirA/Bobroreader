@@ -103,7 +103,7 @@ class HidingScrollListener extends RecyclerView.OnScrollListener {
     }
 
     public void reset() {
+        toolbarAnimateShow();
         toolbarSetElevation(TOOLBAR_ELEVATION_DOWN);
-        toolbarContainer.setTranslationY(0);
     }
 }
