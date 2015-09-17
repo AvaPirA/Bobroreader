@@ -8,6 +8,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.avapira.bobroreader.AmbiguousId;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.HanabiraException;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
@@ -26,7 +27,7 @@ public class HanabiraRequestBuilder {
         USER, DIFF
     }
 
-    public static final  String TAG    = "HanabiraRequest";
+    public static final  String TAG    = HanabiraRequestBuilder.class.getSimpleName();
     private static final String FLOWER = "http://dobrochan.ru";
     private static HanabiraRequestBuilder instance;
     private static Response.ErrorListener errorListener = new Response.ErrorListener() {
@@ -214,6 +215,14 @@ public class HanabiraRequestBuilder {
             }
             this.type = type;
             return this;
+        }
+
+        public ThreadRequestBuilder forAmbiguousId(AmbiguousId id) {
+            if (id.isDisplay()) {
+                return this.onBoard(id.getBoard()).forDisplayId(id.getDisplayId());
+            } else {
+                return this.forId(id.getId());
+            }
         }
 
         public ThreadRequestBuilder forId(int threadId) {
@@ -427,10 +436,17 @@ public class HanabiraRequestBuilder {
 
     public static HanabiraRequestBuilder init(Context context) {
         if (instance == null) {
-            return instance = new HanabiraRequestBuilder(context);
+            instance = new HanabiraRequestBuilder(context);
+            Log.d(TAG, "Create");
+            return instance;
         } else {
             throw new IllegalStateException("Only one instance per session");
         }
+    }
+    public static void destroy() {
+        instance.volleyQueue.stop();
+        instance = null;
+        Log.d("HanabiraRequestBuilder", "Destroy");
     }
 
     private static StringRequest createRequest(String url, Response.Listener<String> listener) {

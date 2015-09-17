@@ -49,8 +49,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.view.animation.BounceInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.*;
@@ -74,12 +72,11 @@ public class BoardFragment extends Fragment {
     private ProgressBar          progressBar;
     private RecyclerView         recycler;
     private HidingScrollListener scrollListener;
-    private Animation            animRotateForward;
-    private Animation            animRotateBackward;
     private int recentListSize = 3;
-    private String boardKey;
-    private int    page;
-    private Castor supervisor;
+    private String       boardKey;
+    private int          page;
+    private Castor       supervisor;
+    private BoardAdapter boardAdapter;
 
     public BoardFragment() {
         // Required empty public constructor
@@ -90,8 +87,8 @@ public class BoardFragment extends Fragment {
         public static final int VIEW_TYPE_PREV_PAGE = 1;
         public static final int VIEW_TYPE_THREAD    = 2;
         public static final int VIEW_TYPE_NEXT_PAGE = 3;
-        final         List<Integer> threadIds;
-        private final       int ELLIPSIZE_MAX_LINES = 15;
+        final List<Integer> threadIds;
+        private final int ELLIPSIZE_MAX_LINES = 15;
         private final List<Boolean> requestFillRecentPosts;
         private int whereIsRecentPostsShownPosition = -239;
 
@@ -480,6 +477,7 @@ public class BoardFragment extends Fragment {
      * @return A new instance of fragment NotificationFragment.
      */
     public static BoardFragment newInstance(String boardKey) {
+        Log.d(TAG, "new instance");
         BoardFragment fragment = new BoardFragment();
         Bundle b = new Bundle();
         b.putString(ARG_KEY, boardKey);
@@ -491,6 +489,7 @@ public class BoardFragment extends Fragment {
 
     @Override
     public void onViewStateRestored(Bundle savedInstanceState) {
+        Log.d(TAG, "restore");
         super.onViewStateRestored(savedInstanceState);
         if (savedInstanceState != null) {
             boardKey = savedInstanceState.getString("board");
@@ -500,34 +499,24 @@ public class BoardFragment extends Fragment {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "create");
         super.onCreate(savedInstanceState);
-        animRotateForward = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_around_center_point_fwd);
-        animRotateBackward = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_around_center_point_bwd);
         if (getArguments() != null) {
             boardKey = boardKey == null ? getArguments().getString(ARG_KEY) : boardKey;
         }
     }
 
     private void switchPage(final int newPage) {
+        Log.d(TAG, "switch page from " + page + " to " + newPage);
         supervisor.retitleOnLoading();
         progressBar.setVisibility(View.VISIBLE);
         recycler.setVisibility(View.INVISIBLE);
-        scrollListener.reset();
         page = newPage;
         Hanabira.getFlower().getBoardPage(boardKey, page, new Consumer<List<Integer>>() {
             @Override
             public void accept(List<Integer> hanabiraThreads) {
-                final BoardAdapter boardAdapter = new BoardAdapter(hanabiraThreads);
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        recycler.setAdapter(boardAdapter);
-                        progressBar.setVisibility(View.GONE);
-                        recycler.setVisibility(View.VISIBLE);
-
-                        supervisor.retitleOnBoardLoad(boardKey, newPage);
-                    }
-                });
+                boardAdapter = new BoardAdapter(hanabiraThreads);
+                hookUpThreads();
             }
         });
     }
@@ -537,6 +526,7 @@ public class BoardFragment extends Fragment {
      */
     @Deprecated
     public void onAttach(Activity activity) {
+        Log.d(TAG, "attach");
         super.onAttach(activity);
         try {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activity);
@@ -550,12 +540,14 @@ public class BoardFragment extends Fragment {
 
     @Override
     public void onDetach() {
+        Log.d(TAG, "detach");
         super.onDetach();
         supervisor = null;
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
+        Log.d(TAG, "SIS");
         super.onSaveInstanceState(outState);
         outState.putString(ARG_KEY, boardKey);
         outState.putInt(ARG_PAGE, page);
@@ -564,6 +556,7 @@ public class BoardFragment extends Fragment {
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
+        Log.d(TAG, "activity created (open bundle)");
         super.onActivityCreated(savedInstanceState);
         if (savedInstanceState != null) {
             boardKey = savedInstanceState.getString(ARG_KEY, null);
@@ -580,13 +573,73 @@ public class BoardFragment extends Fragment {
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
+        Log.d(TAG, "view created (find and switch)");
+
         progressBar = (ProgressBar) view.findViewById(R.id.pb);
         recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
-        scrollListener = new HidingScrollListener(
-                (FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container), getContext());
+        if (boardAdapter == null) {
+            // open board page
+            scrollListener = new HidingScrollListener(getContext());
+            switchPage(page);
+        } else {
+            // popping from fragments stack
+            hookUpThreads();
+            // should be run immediately because it's already main thread
+        }
+
+        scrollListener.resetContainer((FrameLayout) getActivity().findViewById(R.id.frame_toolbar_container));
         recycler.addOnScrollListener(scrollListener);
-        switchPage(page);
     }
 
+    private void hookUpThreads() {
+        Log.d(TAG, "hook up page " + page);
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                recycler.setAdapter(boardAdapter);
+                progressBar.setVisibility(View.GONE);
+                recycler.setVisibility(View.VISIBLE);
+                supervisor.retitleOnBoardLoad(boardKey, page);
+            }
+        });
+    }
+
+    @Override
+    public void onDestroyView() {
+        recycler = null;
+        progressBar = null;
+        Log.d(TAG, "destroy view");
+        super.onDestroyView();
+    }
+
+    @Override
+    public void onStart() {
+        Log.d(TAG, "start");
+        super.onStart();
+    }
+
+    @Override
+    public void onResume() {
+        Log.d(TAG, "resume");
+        super.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        Log.d(TAG, "pause");
+        super.onPause();
+    }
+
+    @Override
+    public void onStop() {
+        Log.d(TAG, "stop");
+        super.onStop();
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "destroy");
+        super.onDestroy();
+    }
 }

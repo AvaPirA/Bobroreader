@@ -37,7 +37,6 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.text.Layout;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -46,7 +45,7 @@ import android.text.style.*;
 import android.text.util.Linkify;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
+import com.avapira.bobroreader.Castor;
 import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
@@ -67,7 +66,7 @@ public class HanabiraParser {
     private static int                    spoilerShownColor;
     private static int                    refLinkColor;
     private static boolean                showSpoilers;
-    private final  Context                context;
+    private final  Castor                 castor;
     private final  SpannableStringBuilder builder;
     private final  HanabiraPost           post;
     Pattern refPost = Pattern.compile(">>(/?[a-z]{1,4}/)?([0-9]+)");
@@ -77,9 +76,10 @@ public class HanabiraParser {
     Pattern olList  = Pattern.compile("\\n[0-9]+\\.(.*)");
     Pattern code    = Pattern.compile("`(.*?)`");
 
-    public HanabiraParser(HanabiraPost post, Context context) {
+    public HanabiraParser(HanabiraPost post, Castor castor) {
+        Context context = castor.getApplicationContext();
         if (!contextInitCompleted) {
-            bulletMarginPerLevel = Utils.convertDpToPx(context, 12);
+            bulletMarginPerLevel = Utils.convertDpToPx(context.getApplicationContext(), 12);
             spoilerHiddenColor = context.getColor(R.color.dobro_dark);
             spoilerShownColor = context.getColor(R.color.dobro_primary_text);
             refLinkColor = context.getColor(R.color.dobro_ref_text);
@@ -87,7 +87,7 @@ public class HanabiraParser {
             showSpoilers = PreferenceManager.getDefaultSharedPreferences(context).getBoolean("show_spoilers", false);
             contextInitCompleted = true;
         }
-        this.context = context;
+        this.castor = castor;
         this.post = post;
         builder = new SpannableStringBuilder(replaceInternalLinkWithReference(post.getMessage()));
         Linkify.addLinks(builder, Linkify.WEB_URLS);
@@ -248,22 +248,25 @@ public class HanabiraParser {
         }
     }
 
-    private class HanabiraLinkSpan extends ClickableSpan implements UpdateAppearance {
+    private static class HanabiraLinkSpan extends ClickableSpan implements UpdateAppearance {
 
-        private final String board;
-        private final String post;
+        private final String  board;
+        private final int     postDisplayId;
+        private final Castor  castor;
 
-        public HanabiraLinkSpan(@Nullable String board, @NonNull String post) {
-            this.board = board == null ? HanabiraBoard.Info.getKeyForId(HanabiraParser.this.post.getBoardId()) : board;
-            this.post = post;
+        public HanabiraLinkSpan(@NonNull String board, @NonNull String post, Castor castor) {
+            this.board = board;
+            postDisplayId = Integer.parseInt(post);
+            this.castor = castor;
         }
 
         @Override
         public void onClick(View widget) {
-            Toast.makeText(HanabiraParser.this.context, String.format("Open >>%s/%s", board, post), Toast.LENGTH_SHORT)
-                 .show();
-            //open >>/board/post
+            Log.i("Link span", String.format("Opening post >>%s/%d", board, postDisplayId));
+            castor.onOpenPost(board, postDisplayId);
         }
+
+
 
         @Override
         public void updateDrawState(@NonNull TextPaint ds) {
@@ -358,7 +361,9 @@ public class HanabiraParser {
             CodeBlockSpan[] spans = builder.getSpans(start, end, CodeBlockSpan.class);
             if (spans != null && spans.length != 0) { continue; }
 
-            builder.setSpan(new HanabiraLinkSpan(refMatcher.group(2), refMatcher.group(3)), start, end, 0);
+            String board = refMatcher.group(2);
+            board = board == null ? HanabiraBoard.Info.getKeyForId(HanabiraParser.this.post.getBoardId()) : board;
+            builder.setSpan(new HanabiraLinkSpan(board, refMatcher.group(3), castor), start, end, 0);
         }
     }
 

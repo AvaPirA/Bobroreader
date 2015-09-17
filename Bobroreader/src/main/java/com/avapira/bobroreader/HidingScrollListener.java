@@ -11,18 +11,22 @@ import android.widget.FrameLayout;
 
 class HidingScrollListener extends RecyclerView.OnScrollListener {
 
-    private final FrameLayout toolbarContainer;
     private final float       TOOLBAR_ELEVATION_RISE;
     private final float       TOOLBAR_ELEVATION_DOWN;
-    private int     verticalOffset;
-    private boolean scrollingUp;
-    private boolean expandTriggered;
+    private       FrameLayout toolbarContainer;
+    private       int         verticalOffset;
+    private       boolean     scrollingUp;
+    private       boolean     expandTriggered;
 
-    public HidingScrollListener(FrameLayout toolbarContainer, Context context) {
-        this.toolbarContainer = toolbarContainer;
+    public HidingScrollListener(Context context) {
         TOOLBAR_ELEVATION_RISE = context.getResources().getDimension(R.dimen.tiny);
         TOOLBAR_ELEVATION_DOWN = context.getResources().getDimension(R.dimen.micro);
+    }
+
+    public HidingScrollListener resetContainer(FrameLayout container) {
+        toolbarContainer = container;
         reset();
+        return this;
     }
 
     @Override
@@ -99,10 +103,7 @@ class HidingScrollListener extends RecyclerView.OnScrollListener {
     }
 
     public void reset() {
+        toolbarAnimateShow();
         toolbarSetElevation(TOOLBAR_ELEVATION_DOWN);
-        toolbarContainer.setTranslationY(0);
-        verticalOffset = 0;
-        scrollingUp = false;
-        expandTriggered = false;
     }
 }
