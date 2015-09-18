@@ -15,14 +15,14 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
  */
 public class PostDialogFragment extends DialogFragment {
 
-    public static final  String ARG_TITLE = "title";
+    public static final  String ARG_BOARD = "title";
     private static final String ARG_ID    = "id";
     final                String LOG_TAG   = "myLogs";
 
     public static DialogFragment newInstance(String board, int id) {
         DialogFragment fragment = new PostDialogFragment();
         Bundle bundle = new Bundle();
-        bundle.putString(ARG_TITLE, String.format(">>%s/%d", board, id));
+        bundle.putString(ARG_BOARD, board);
         bundle.putInt(ARG_ID, id);
         fragment.setArguments(bundle);
         return fragment;
@@ -38,9 +38,11 @@ public class PostDialogFragment extends DialogFragment {
             throw new RuntimeException("Not properly initialized post dialog");
         }
         PostHolder ph = new PostHolder(view);
-        getDialog().setTitle(getArguments().getString(ARG_TITLE));
+        String board = getArguments().getString(ARG_BOARD);
         int id = getArguments().getInt(ARG_ID);
-        HanabiraPost postData = Hanabira.getStem().findPostById(id);
+
+        getDialog().setTitle(String.format(">>%s/%d", board, id));
+        HanabiraPost postData = Hanabira.getStem().findPostByDisplayId(board, id);
         if (postData == null) {
             ph.displayId.setText("№"+id);
             ph.message.setText("LALKA NOT IMPLEMENTED POST DOWNLOADING");

@@ -1,5 +1,6 @@
 package com.avapira.bobroreader.hanabira.cache;
 
+import android.annotation.SuppressLint;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -18,8 +19,7 @@ import java.util.Map;
  */
 public class ActiveCache extends PersistentCache {
 
-    private static final String                                    TAG                   = ActiveCache.class
-            .getSimpleName();
+    private static final String                                    TAG                   = "RAM cache";
     private final        Map<Integer, CharSequence>                cachedParsedPosts     = new HashMap<>();
     private final        Map<String, HanabiraBoard>                indexedBoards         = new HashMap<>();
     private final        Map<Integer, HanabiraThread>              indexedThreads        = new HashMap<>();
@@ -140,6 +140,7 @@ public class ActiveCache extends PersistentCache {
         }
     }
 
+    @SuppressLint("UseSparseArrays")
     public void saveBoard(HanabiraBoard board) {
         indexedBoards.put(board.getKey(), board);
         indexedPostsDisplay.put(board.getKey(), new HashMap<Integer, HanabiraPost>());

@@ -5,6 +5,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical" tools:showIn="@layout/card_post"
         android:paddingBottom="@dimen/small"
+        android:background="@color/dobro_medium"
         >
     <include layout="@layout/post_header"/>
     <View android:layout_height="1dp"
