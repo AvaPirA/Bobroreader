@@ -31,6 +31,7 @@
 
 package com.avapira.bobroreader.hanabira.entity;
 
+import android.support.annotation.Nullable;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.google.gson.*;
 import org.joda.time.LocalDateTime;
@@ -85,7 +86,7 @@ abstract class HanabiraEntity {
 
             List<Integer> threadsOnPageIds = new ArrayList<>();
             for (JsonElement threadElement : boardObject.getAsJsonArray("threads")) {
-                threadsOnPageIds.add(createThreadWithPosts(threadElement.getAsJsonObject(), boardKey).getDisplayId());
+                threadsOnPageIds.add(createThreadWithPosts(threadElement.getAsJsonObject(), boardKey).getThreadId());
             }
             cachedBoard.updatePage(page, threadsOnPageIds);
 
@@ -115,12 +116,13 @@ abstract class HanabiraEntity {
         }
     }
 
-    private static HanabiraThread createThreadWithPosts(JsonObject threadObject, String boardKey) {
+    private static HanabiraThread createThreadWithPosts(JsonObject threadObject, @Nullable String boardKey) {
         int threadId = threadObject.get("thread_id").getAsInt();
         LocalDateTime modifiedDate = extractLocatDateTime(threadObject.get("last_modified"));
 
         HanabiraThread thread = Hanabira.getStem().findThreadById(threadId);
-        if (thread != null) {
+        boolean oldThread = thread != null;
+        if (oldThread) {
             if (modifiedDate == null || !thread.isUpToDate(modifiedDate)) {
                 // update thread meta
                 thread.setPostsCount(threadObject.get("posts_count").getAsInt());
@@ -144,7 +146,7 @@ abstract class HanabiraEntity {
 
             thread = new HanabiraThread(displayId, threadId, modifiedDate, postsCount, filesCount, boardId, archived,
                     title, autosage, lastHit);
-            Hanabira.getStem().saveThread(thread);
+            Hanabira.getStem().saveThread(thread, boardKey);
         }
 
         // cache posts
@@ -152,13 +154,14 @@ abstract class HanabiraEntity {
             createAndSavePost(postElement.getAsJsonObject(), threadId, boardKey);
         }
 
-        // set thread creation date
-        // always for OP post and thread `display_id` and `date` are equal
-        HanabiraPost opPost = Hanabira.getStem().findPostByDisplayId(thread.getDisplayId());
-        if (opPost == null || !opPost.isOp()) {
-            throw new InputMismatchException("Op post not received");
+        if (!oldThread) {
+            // set thread creation date
+            HanabiraPost opPost = Hanabira.getStem().findPostByDisplayId(boardKey, thread.getDisplayId());
+            if (opPost == null || !opPost.isOp()) {
+                throw new InputMismatchException("Op post not received");
+            }
+            thread.setCreatedDate(opPost.getCreatedDate());
         }
-        thread.setCreatedDate(opPost.getCreatedDate());
         return thread;
     }
 
@@ -188,7 +191,7 @@ abstract class HanabiraEntity {
                     boardKey != null ? HanabiraBoard.Info.getIdForKey(boardKey) : postObject.get("board_id").getAsInt();
             cachedPost = new HanabiraPost(displayId, modifiedDate, createdDate, postId, message, subject, boardId, name,
                     threadId, op);
-            Hanabira.getStem().savePost(cachedPost);
+            Hanabira.getStem().savePost(cachedPost, boardKey);
         }
         return cachedPost;
     }

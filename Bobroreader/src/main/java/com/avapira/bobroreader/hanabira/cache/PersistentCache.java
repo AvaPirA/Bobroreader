@@ -2,7 +2,6 @@ package com.avapira.bobroreader.hanabira.cache;
 
 import android.support.annotation.CallSuper;
 import android.util.Log;
-import com.avapira.bobroreader.AmbiguousId;
 import com.avapira.bobroreader.Castor;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
@@ -43,30 +42,18 @@ public class PersistentCache extends HanabiraCache {
     }
 
     @Override
-    public HanabiraThread findThread(AmbiguousId id) {
-        return null;
-    }
-
-    @Override
     @CallSuper
     public HanabiraPost findPostById(int postId) {
         return null;
     }
 
     @Override
-    public HanabiraPost findPost(AmbiguousId id) {
+    public HanabiraThread findThreadByDisplayId(String boardKey, int threadDisplayId) {
         return null;
     }
 
     @Override
-    @CallSuper
-    public HanabiraThread findThreadByDisplayId(int threadDisplayId) {
-        return null;
-    }
-
-    @Override
-    @CallSuper
-    public HanabiraPost findPostByDisplayId(int postDisplayId) {
+    public HanabiraPost findPostByDisplayId(String boardKey, int postDisplayId) {
         return null;
     }
 
@@ -83,13 +70,13 @@ public class PersistentCache extends HanabiraCache {
 
     @Override
     @CallSuper
-    public void saveThread(HanabiraThread thread) {
+    public void saveThread(HanabiraThread thread, String boardKey) {
 
     }
 
     @Override
     @CallSuper
-    public void savePost(HanabiraPost cachedPost) {
+    public void savePost(HanabiraPost cachedPost, String boardKey) {
 
     }
 }

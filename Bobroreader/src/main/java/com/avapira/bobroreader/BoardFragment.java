@@ -92,10 +92,10 @@ public class BoardFragment extends Fragment {
         private final List<Boolean> requestFillRecentPosts;
         private int whereIsRecentPostsShownPosition = -239;
 
-        public BoardAdapter(List<Integer> tt) {
-            threadIds = tt;
-            requestFillRecentPosts = new ArrayList<>(tt.size());
-            for (int i = 0; i < tt.size(); i++) {
+        public BoardAdapter(List<Integer> threadInternalIds) {
+            threadIds = threadInternalIds;
+            requestFillRecentPosts = new ArrayList<>(threadInternalIds.size());
+            for (int i = 0; i < threadInternalIds.size(); i++) {
                 requestFillRecentPosts.add(true);
             }
             Hanabira.getStem().asyncParse(threadIds, recentListSize);
@@ -183,8 +183,7 @@ public class BoardFragment extends Fragment {
             }
 
             private void onOpenClick() {
-                supervisor.onThreadSelected(
-                        Hanabira.getStem().findPostByDisplayId(threadIds.get(getAdapterPosition() - 1)).getThreadId());
+                supervisor.onThreadSelected(threadIds.get(getAdapterPosition() - 1));
             }
 
             public void onExpandClick() {
@@ -238,7 +237,7 @@ public class BoardFragment extends Fragment {
                 if (requestFillRecentPosts.get(threadIndex)) {
                     requestFillRecentPosts.set(threadIndex, false);
                     List<Integer> recentsList = Hanabira.getStem()
-                                                        .findThreadByDisplayId(threadIds.get(getLayoutPosition() - 1))
+                                                        .findThreadById(threadIds.get(getLayoutPosition() - 1))
                                                         .getLastN(recentListSize);
                     int i = 0;
                     for (; i < recentsList.size(); i++) {
@@ -396,11 +395,11 @@ public class BoardFragment extends Fragment {
             if (borderItem) { return; }
 
             int threadIndex = position - 1;
-            int threadDisplayId = threadIds.get(threadIndex);
+            int threadId = threadIds.get(threadIndex);
 
-            HanabiraThread thread = Hanabira.getStem().findThreadByDisplayId(threadDisplayId);
-            HanabiraPost op = Hanabira.getStem().findPostByDisplayId(threadDisplayId);
-//            HanabiraPost op = Hanabira.getStem().findPostByDisplayId(thread.getPosts().firstEntry().getValue());
+            HanabiraThread thread = Hanabira.getStem().findThreadById(threadId);
+            HanabiraPost op = Hanabira.getStem().findPostByDisplayId(boardKey, thread.getDisplayId());
+
             holder.threadTitle.setText(thread.getTitle());
             holder.postHolder.fillWithData(op);
             holder.postHolder.message.setMaxLines(ELLIPSIZE_MAX_LINES);// reset the
