@@ -1,11 +1,15 @@
 package com.avapira.bobroreader;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 /**
  *
  */
-public class AmbiguousId {
-    private final int id;
-    private final int displayId;
+public class AmbiguousId implements Parcelable {
+
+    private final int    id;
+    private final int    displayId;
     private final String board;
 
     public AmbiguousId(int id) {
@@ -36,4 +40,30 @@ public class AmbiguousId {
         return board;
     }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(board);
+        if (isDisplay()) {
+            dest.writeInt(-1 * displayId);
+        } else {
+            dest.writeInt(id);
+        }
+    }
+
+    public AmbiguousId(Parcel in) {
+        board = in.readString();
+        int aid = in.readInt();
+        if (aid > 0) {
+            id = aid;
+            displayId = 0;
+        } else {
+            id = 0;
+            displayId = aid;
+        }
+    }
 }
