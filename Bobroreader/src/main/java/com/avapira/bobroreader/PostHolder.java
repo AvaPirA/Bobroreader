@@ -86,12 +86,12 @@ public class PostHolder {
         displayId.setText(formatDisplayId(post.getDisplayId()));
         date.setText(formatDate(post.getCreatedDate()));
         name.setText(post.getName());
-        message.setText(Hanabira.getStem().getParsedPost(post.getDisplayId()));
+        message.setText(Hanabira.getStem().getParsedPost(post.getPostId()));
         message.setOnTouchListener(new LinkMovementMethodOverride());
     }
 
-    public void fillWithData(int postDisplayId) {
-        fillWithData(Hanabira.getStem().findPostByDisplayId(postDisplayId));
+    public void fillWithData(int postId) {
+        fillWithData(Hanabira.getStem().findPostById(postId));
         showContainingList();
     }
 

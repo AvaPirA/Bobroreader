@@ -9,7 +9,6 @@ import android.net.Uri;
 public interface Castor {
 
     Context getApplicationContext();
-    void onThreadSelected(String board, int threadDisplayId);
     void onThreadSelected(int threadId);
     void onFragmentInteraction(Uri uri);
     void retitleOnLoading();

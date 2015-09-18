@@ -8,7 +8,6 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.avapira.bobroreader.AmbiguousId;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.HanabiraException;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
@@ -215,14 +214,6 @@ public class HanabiraRequestBuilder {
             }
             this.type = type;
             return this;
-        }
-
-        public ThreadRequestBuilder forAmbiguousId(AmbiguousId id) {
-            if (id.isDisplay()) {
-                return this.onBoard(id.getBoard()).forDisplayId(id.getDisplayId());
-            } else {
-                return this.forId(id.getId());
-            }
         }
 
         public ThreadRequestBuilder forId(int threadId) {

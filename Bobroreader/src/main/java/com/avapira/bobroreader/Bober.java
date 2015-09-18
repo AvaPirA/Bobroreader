@@ -301,15 +301,6 @@ public class Bober extends AppCompatActivity implements Castor {
     }
 
     @Override
-    public void onThreadSelected(String board, int threadDisplayId) {
-        Fragment threadFragment = ThreadFragment.newInstance(board, threadDisplayId);
-        getFragmentManager().beginTransaction()
-                            .replace(R.id.frame_container, threadFragment)
-                            .addToBackStack(null)
-                            .commit();
-    }
-
-    @Override
     public void onThreadSelected(int threadId) {
         Fragment threadFragment = ThreadFragment.newInstance(threadId);
         getFragmentManager().beginTransaction()
@@ -319,8 +310,8 @@ public class Bober extends AppCompatActivity implements Castor {
     }
 
     private void loadingLog(String newState) {
-        Log.d("Bober init", new StringBuilder().append(DEBUG_initRelativeTime()).append(' ').append(newState).toString
-                ());
+        Log.d("Bober init",
+                new StringBuilder().append(DEBUG_initRelativeTime()).append(' ').append(newState).toString());
     }
 
     @Override

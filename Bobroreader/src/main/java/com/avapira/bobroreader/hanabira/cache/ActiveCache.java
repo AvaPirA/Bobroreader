@@ -1,8 +1,10 @@
 package com.avapira.bobroreader.hanabira.cache;
 
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
-import com.avapira.bobroreader.AmbiguousId;
 import com.avapira.bobroreader.Castor;
+import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
@@ -16,13 +18,14 @@ import java.util.Map;
  */
 public class ActiveCache extends PersistentCache {
 
-    private static final String                       TAG                   = ActiveCache.class.getSimpleName();
-    private final        Map<Integer, CharSequence>   cachedParsedPosts     = new HashMap<>();
-    private final        Map<String, HanabiraBoard>   indexedBoards         = new HashMap<>();
-    private final        Map<Integer, HanabiraThread> indexedThreads        = new HashMap<>();
-    private final        Map<Integer, HanabiraPost>   indexedPosts          = new HashMap<>();
-    private final        Map<Integer, HanabiraThread> indexedThreadsDisplay = new HashMap<>();
-    private final        Map<Integer, HanabiraPost>   indexedPostsDisplay   = new HashMap<>();
+    private static final String                                    TAG                   = ActiveCache.class
+            .getSimpleName();
+    private final        Map<Integer, CharSequence>                cachedParsedPosts     = new HashMap<>();
+    private final        Map<String, HanabiraBoard>                indexedBoards         = new HashMap<>();
+    private final        Map<Integer, HanabiraThread>              indexedThreads        = new HashMap<>();
+    private final        Map<Integer, HanabiraPost>                indexedPosts          = new HashMap<>();
+    private final        Map<String, Map<Integer, HanabiraThread>> indexedThreadsDisplay = new HashMap<>();
+    private final        Map<String, Map<Integer, HanabiraPost>>   indexedPostsDisplay   = new HashMap<>();
 
     public ActiveCache(Castor castor) {
         super(castor);
@@ -56,23 +59,25 @@ public class ActiveCache extends PersistentCache {
                 }
             }
             if (threadsToParse != null) {
-                for (int tdi : threadsToParse) {
-                    cachePost(tdi);     // first priority
+                for (int threadId : threadsToParse) {
+                    cachePost(Hanabira.getStem().findThreadById(threadId).getPosts().firstEntry().getValue());
+                    // OP posts is first priority
                 }
-                for (int tdi : threadsToParse) {
-                    for (Integer pdi : findThreadByDisplayId(tdi).getLastN(previewsToParse)) {
-                        cachePost(pdi);             // second priority
+                for (int threadId : threadsToParse) {
+                    for (Integer pdi : findThreadById(threadId).getLastN(previewsToParse)) {
+                        cachePost(pdi);
                     }
+                    // previews posts is second priority
                 }
             }
             Log.w(TAG, Thread.currentThread().toString() + " completed parsing for " +
                     ((System.nanoTime() - start) / 10e5) + "ms");
         }
 
-        private void cachePost(int postDisplayId) {
+        private void cachePost(int postId) {
             synchronized (cachedParsedPosts) { // not way 'if(contains) return;' because mby it's edited reloaded post
-                HanabiraPost post = findPostByDisplayId(postDisplayId);
-                cachedParsedPosts.put(post.getDisplayId(), new HanabiraParser(post, castor).getFormatted());
+                HanabiraPost post = findPostById(postId);
+                cachedParsedPosts.put(post.getPostId(), new HanabiraParser(post, castor).getFormatted());
             }
         }
     }
@@ -95,21 +100,13 @@ public class ActiveCache extends PersistentCache {
     }
 
     @Override
-    public HanabiraThread findThread(AmbiguousId id) {
-        if (id.isDisplay()) {
-            return findThreadByDisplayId(id.getDisplayId());
-        } else {
-            return findThreadById(id.getId());
-        }
+    public HanabiraThread findThreadByDisplayId(@NonNull String boardKey, int threadDisplayId) {
+        return indexedThreadsDisplay.get(boardKey).get(threadDisplayId);
     }
 
     @Override
-    public HanabiraPost findPost(AmbiguousId id) {
-        if (id.isDisplay()) {
-            return findPostByDisplayId(id.getDisplayId());
-        } else {
-            return findPostById(id.getId());
-        }
+    public HanabiraPost findPostByDisplayId(@NonNull String boardKey, int postDisplayId) {
+        return indexedPostsDisplay.get(boardKey).get(postDisplayId);
     }
 
     public HanabiraThread findThreadById(int threadId) {
@@ -130,32 +127,14 @@ public class ActiveCache extends PersistentCache {
         }
     }
 
-    public HanabiraThread findThreadByDisplayId(int threadDisplayId) {
-        HanabiraThread retVal = indexedThreadsDisplay.get(threadDisplayId);
-        if (retVal != null) {
-            return retVal;
-        } else {
-            return super.findThreadByDisplayId(threadDisplayId);
-        }
-    }
-
-    public HanabiraPost findPostByDisplayId(int postDisplayId) {
-        HanabiraPost retVal = indexedPostsDisplay.get(postDisplayId);
-        if (retVal != null) {
-            return retVal;
-        } else {
-            return super.findPostByDisplayId(postDisplayId);
-        }
-    }
-
     @Override
-    public CharSequence getParsedPost(int postDisplayId) {
+    public CharSequence getParsedPost(int postId) {
         synchronized (cachedParsedPosts) {
-            CharSequence seq = cachedParsedPosts.get(postDisplayId);
+            CharSequence seq = cachedParsedPosts.get(postId);
             if (seq == null) {
-                Log.w(TAG, "Parsed cache miss for post " + postDisplayId);
-                seq = new HanabiraParser(findPostByDisplayId(postDisplayId), castor).getFormatted();
-                cachedParsedPosts.put(postDisplayId, seq);
+                Log.w(TAG, "Parsed cache miss for post " + postId);
+                seq = new HanabiraParser(findPostById(postId), castor).getFormatted();
+                cachedParsedPosts.put(postId, seq);
             }
             return seq;
         }
@@ -163,20 +142,24 @@ public class ActiveCache extends PersistentCache {
 
     public void saveBoard(HanabiraBoard board) {
         indexedBoards.put(board.getKey(), board);
+        indexedPostsDisplay.put(board.getKey(), new HashMap<Integer, HanabiraPost>());
+        indexedThreadsDisplay.put(board.getKey(), new HashMap<Integer, HanabiraThread>());
         super.saveBoard(board);
     }
 
-    public void saveThread(HanabiraThread thread) {
+    public void saveThread(HanabiraThread thread, @Nullable String boardKey) {
+        boardKey = boardKey == null ? HanabiraBoard.Info.getKeyForId(thread.getBoardId()) : boardKey;
         indexedThreads.put(thread.getThreadId(), thread);
-        indexedThreadsDisplay.put(thread.getDisplayId(), thread);
-        super.saveThread(thread);
+        indexedThreadsDisplay.get(boardKey).put(thread.getDisplayId(), thread);
+        super.saveThread(thread, boardKey);
     }
 
-    public void savePost(HanabiraPost cachedPost) {
+    public void savePost(HanabiraPost cachedPost, @Nullable String boardKey) {
+        boardKey = boardKey == null ? HanabiraBoard.Info.getKeyForId(cachedPost.getBoardId()) : boardKey;
         indexedPosts.put(cachedPost.getPostId(), cachedPost);
-        indexedPostsDisplay.put(cachedPost.getDisplayId(), cachedPost);
-        findThreadById(cachedPost.getThreadId()).getPosts().put(cachedPost.getCreatedDate(), cachedPost.getDisplayId());
-        super.savePost(cachedPost);
+        indexedPostsDisplay.get(boardKey).put(cachedPost.getDisplayId(), cachedPost);
+        findThreadById(cachedPost.getThreadId()).getPosts().put(cachedPost.getCreatedDate(), cachedPost.getPostId());
+        super.savePost(cachedPost, boardKey);
     }
 
 }

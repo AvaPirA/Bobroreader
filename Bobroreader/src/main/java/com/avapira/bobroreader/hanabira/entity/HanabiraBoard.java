@@ -18,6 +18,10 @@ import java.util.regex.Pattern;
 public class HanabiraBoard extends HanabiraEntity {
 
     private final String                      boardKey;
+
+    /**
+     * Thread global IDs (not display)
+     */
     private final Map<Integer, List<Integer>> pages;
     private       int                         pagesCount;
     private       Object                      capabilities;
@@ -159,8 +163,8 @@ public class HanabiraBoard extends HanabiraEntity {
         if (page == null) {
             return Collections.emptyList();
         }
-        for (Integer threadDisplayId : page) {
-            threads.add(Hanabira.getStem().findThreadByDisplayId(threadDisplayId));
+        for (Integer threadId : page) {
+            threads.add(Hanabira.getStem().findThreadById(threadId));
         }
         return threads;
     }

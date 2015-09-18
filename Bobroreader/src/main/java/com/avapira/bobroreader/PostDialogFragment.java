@@ -40,7 +40,7 @@ public class PostDialogFragment extends DialogFragment {
         PostHolder ph = new PostHolder(view);
         getDialog().setTitle(getArguments().getString(ARG_TITLE));
         int id = getArguments().getInt(ARG_ID);
-        HanabiraPost postData = Hanabira.getStem().findPostByDisplayId(id);
+        HanabiraPost postData = Hanabira.getStem().findPostById(id);
         if (postData == null) {
             ph.displayId.setText("№"+id);
             ph.message.setText("LALKA NOT IMPLEMENTED POST DOWNLOADING");
