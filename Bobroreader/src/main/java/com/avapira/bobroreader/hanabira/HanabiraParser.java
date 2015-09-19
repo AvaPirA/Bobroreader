@@ -32,11 +32,13 @@
 package com.avapira.bobroreader.hanabira;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.v4.content.LocalBroadcastManager;
 import android.text.Layout;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -45,7 +47,7 @@ import android.text.style.*;
 import android.text.util.Linkify;
 import android.util.Log;
 import android.view.View;
-import com.avapira.bobroreader.Castor;
+import com.avapira.bobroreader.PostDialogFragment;
 import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
@@ -66,7 +68,6 @@ public class HanabiraParser {
     private static int                    spoilerShownColor;
     private static int                    refLinkColor;
     private static boolean                showSpoilers;
-    private final  Castor                 castor;
     private final  SpannableStringBuilder builder;
     private final  HanabiraPost           post;
     Pattern refPost = Pattern.compile(">>(/?[a-z]{1,4}/)?([0-9]+)");
@@ -76,8 +77,8 @@ public class HanabiraParser {
     Pattern olList  = Pattern.compile("\\n[0-9]+\\.(.*)");
     Pattern code    = Pattern.compile("`(.*?)`");
 
-    public HanabiraParser(HanabiraPost post, Castor castor) {
-        Context context = castor.getApplicationContext();
+    public HanabiraParser(HanabiraPost post) {
+        Context context = Hanabira.getFlower();
         if (!contextInitCompleted) {
             bulletMarginPerLevel = Utils.convertDpToPx(context.getApplicationContext(), 12);
             spoilerHiddenColor = context.getColor(R.color.dobro_dark);
@@ -87,7 +88,6 @@ public class HanabiraParser {
             showSpoilers = PreferenceManager.getDefaultSharedPreferences(context).getBoolean("show_spoilers", false);
             contextInitCompleted = true;
         }
-        this.castor = castor;
         this.post = post;
         builder = new SpannableStringBuilder(replaceInternalLinkWithReference(post.getMessage()));
         Linkify.addLinks(builder, Linkify.WEB_URLS);
@@ -226,7 +226,7 @@ public class HanabiraParser {
                 default:
                     throw new InternalError(
                             String.format("Found level value equals %s instead \'1\' or \'2\' after constructor check",
-                                    level));
+                                          level));
 
             }
         }
@@ -250,22 +250,22 @@ public class HanabiraParser {
 
     private static class HanabiraLinkSpan extends ClickableSpan implements UpdateAppearance {
 
-        private final String  board;
-        private final int     postDisplayId;
-        private final Castor  castor;
+        private final String board;
+        private final int    postDisplayId;
 
-        public HanabiraLinkSpan(@NonNull String board, @NonNull String post, Castor castor) {
+        public HanabiraLinkSpan(@NonNull String board, @NonNull String post) {
             this.board = board;
             postDisplayId = Integer.parseInt(post);
-            this.castor = castor;
         }
 
         @Override
         public void onClick(View widget) {
             Log.i("Link span", String.format("Opening post >>%s/%d", board, postDisplayId));
-            castor.onOpenPost(board, postDisplayId);
+            LocalBroadcastManager.getInstance(Hanabira.getFlower())
+                                 .sendBroadcast(new Intent().setAction(Hanabira.Action.OPEN_POST.name())
+                                                            .putExtra(PostDialogFragment.ARG_BOARD, board)
+                                                            .putExtra(PostDialogFragment.ARG_ID, postDisplayId));
         }
-
 
 
         @Override
@@ -363,7 +363,7 @@ public class HanabiraParser {
 
             String board = refMatcher.group(2);
             board = board == null ? HanabiraBoard.Info.getKeyForId(HanabiraParser.this.post.getBoardId()) : board;
-            builder.setSpan(new HanabiraLinkSpan(board, refMatcher.group(3), castor), start, end, 0);
+            builder.setSpan(new HanabiraLinkSpan(board, refMatcher.group(3)), start, end, 0);
         }
     }
 
@@ -462,10 +462,11 @@ public class HanabiraParser {
 
             int lengthPrefix = matcher.group(1).length();
             builder.replace(matcher.start(1) - removedFormatCharsDelta, matcher.end(1) - removedFormatCharsDelta,
-                    beginRestore);
+                            beginRestore);
 
             builder.replace(matcher.start(3) - lengthPrefix - removedFormatCharsDelta + beginRestore.length(),
-                    matcher.end(3) - lengthPrefix - removedFormatCharsDelta + beginRestore.length(), endRestore);
+                            matcher.end(3) - lengthPrefix - removedFormatCharsDelta + beginRestore.length(),
+                            endRestore);
 
             SpannableString rep = new SpannableString(matcher.group(2));
             rep.setSpan(factory.getSpan(), 0, rep.length(), 0);
@@ -474,7 +475,7 @@ public class HanabiraParser {
                 // fixme twice used Linkify? try remove and just setSpan to builder
             }
             builder.replace(matcher.start() - removedFormatCharsDelta + beginRestore.length(),
-                    matcher.start() + rep.length() - removedFormatCharsDelta + endRestore.length(), rep);
+                            matcher.start() + rep.length() - removedFormatCharsDelta + endRestore.length(), rep);
 
             // store deletions
             removedFormatCharsDelta += matcher.group(1).length() - beginRestore.length();

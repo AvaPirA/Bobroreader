@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import com.avapira.bobroreader.Castor;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.avapira.bobroreader.hanabira.HanabiraParser;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
@@ -17,7 +16,7 @@ import java.util.Map;
 /**
  *
  */
-public class ActiveCache extends PersistentCache {
+public class ActiveCache extends PersistentCache implements HanabiraCache {
 
     private static final String                                    TAG                   = "RAM cache";
     private final        Map<Integer, CharSequence>                cachedParsedPosts     = new HashMap<>();
@@ -26,11 +25,6 @@ public class ActiveCache extends PersistentCache {
     private final        Map<Integer, HanabiraPost>                indexedPosts          = new HashMap<>();
     private final        Map<String, Map<Integer, HanabiraThread>> indexedThreadsDisplay = new HashMap<>();
     private final        Map<String, Map<Integer, HanabiraPost>>   indexedPostsDisplay   = new HashMap<>();
-
-    public ActiveCache(Castor castor) {
-        super(castor);
-        Log.d(TAG, "Create");
-    }
 
     private class AsyncHanabiraParser implements Runnable {
 
@@ -77,7 +71,7 @@ public class ActiveCache extends PersistentCache {
         private void cachePost(int postId) {
             synchronized (cachedParsedPosts) { // not way 'if(contains) return;' because mby it's edited reloaded post
                 HanabiraPost post = findPostById(postId);
-                cachedParsedPosts.put(post.getPostId(), new HanabiraParser(post, castor).getFormatted());
+                cachedParsedPosts.put(post.getPostId(), new HanabiraParser(post).getFormatted());
             }
         }
     }
@@ -133,7 +127,7 @@ public class ActiveCache extends PersistentCache {
             CharSequence seq = cachedParsedPosts.get(postId);
             if (seq == null) {
                 Log.w(TAG, "Parsed cache miss for post " + postId);
-                seq = new HanabiraParser(findPostById(postId), castor).getFormatted();
+                seq = new HanabiraParser(findPostById(postId)).getFormatted();
                 cachedParsedPosts.put(postId, seq);
             }
             return seq;

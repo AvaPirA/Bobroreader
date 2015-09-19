@@ -1,8 +1,11 @@
 package com.avapira.bobroreader.hanabira.networking;
 
 import android.content.Context;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import android.widget.Toast;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -36,7 +39,7 @@ public class HanabiraRequestBuilder {
     };
     private final RequestQueue volleyQueue;
 
-    private HanabiraRequestBuilder(Context context) {
+    public HanabiraRequestBuilder(Context context) {
         volleyQueue = Volley.newRequestQueue(context);
     }
 
@@ -186,7 +189,7 @@ public class HanabiraRequestBuilder {
                         // may produce fail-throws when board grew and local info is not up to date
                         throw new HanabiraException(
                                 String.format("Board %s has only %d pages while requested %d", key, actualPagesCount,
-                                        page));
+                                              page));
                     }
                 }
             }
@@ -319,7 +322,7 @@ public class HanabiraRequestBuilder {
             } else {
                 throw new HanabiraException(
                         String.format("Wrong arguments: \"board\"=%s while using " + "%sdisplay id of thread", boardKey,
-                                displayId ? "" : "non-"));
+                                      displayId ? "" : "non-"));
             }
         }
     }
@@ -370,12 +373,12 @@ public class HanabiraRequestBuilder {
         private String checkAndGetPostDefinition() {
             if ((threadDisplayId != null) == (boardKey != null) == (displayId)) {
                 return displayId ? String.format("/api/post/%s%s/%d.json", boardKey,
-                        threadDisplayId == null ? "" : "/" + threadDisplayId, postId) : String.format(
-                        "/api/thread/%d.json", postId);
+                                                 threadDisplayId == null ? "" : "/" + threadDisplayId,
+                                                 postId) : String.format("/api/thread/%d.json", postId);
             } else {
                 throw new HanabiraException(
                         String.format("Wrong arguments: \"board\"=%s while using " + "%sdisplay id of posts", boardKey,
-                                displayId ? "" : "non-"));
+                                      displayId ? "" : "non-"));
             }
         }
 
@@ -425,21 +428,6 @@ public class HanabiraRequestBuilder {
         }
     }
 
-    public static HanabiraRequestBuilder init(Context context) {
-        if (instance == null) {
-            instance = new HanabiraRequestBuilder(context);
-            Log.d(TAG, "Create");
-            return instance;
-        } else {
-            throw new IllegalStateException("Only one instance per session");
-        }
-    }
-    public static void destroy() {
-        instance.volleyQueue.stop();
-        instance = null;
-        Log.d("HanabiraRequestBuilder", "Destroy");
-    }
-
     private static StringRequest createRequest(String url, Response.Listener<String> listener) {
         return createRequest(url, listener, errorListener);
     }
@@ -448,7 +436,18 @@ public class HanabiraRequestBuilder {
                                                Response.Listener<String> listener,
                                                Response.ErrorListener errorListener) {
         Log.d(TAG.concat("#createRequest"), url);
-        return new StringRequest(url, listener, errorListener);
+        StringRequest req = new StringRequest(url, listener, errorListener);
+        req.setRetryPolicy(new DefaultRetryPolicy(3500, 2, 1f) {
+            @Override
+            public void retry(VolleyError error) throws VolleyError {
+                Looper.prepare();
+                Toast.makeText(Hanabira.getFlower(), "Connection " +
+                        "timed out. Retry #" +
+                        getCurrentRetryCount(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        return req;
     }
 
     public BoardRequestBuilder board() {

@@ -1,8 +1,6 @@
 package com.avapira.bobroreader.hanabira.cache;
 
 import android.support.annotation.CallSuper;
-import android.util.Log;
-import com.avapira.bobroreader.Castor;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
@@ -10,14 +8,9 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 /**
  *
  */
-public class PersistentCache extends HanabiraCache {
+public class PersistentCache implements HanabiraCache {
 
     public static final String TAG = PersistentCache.class.getSimpleName();
-
-    public PersistentCache(Castor castor) {
-        super(castor);
-        Log.d(TAG, "Create");
-    }
 
     @Override
     public void asyncParse(Iterable<Integer> threads, int recentDepth) {
