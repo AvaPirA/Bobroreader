@@ -33,7 +33,10 @@ package com.avapira.bobroreader;
 import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -43,6 +46,7 @@ import android.support.annotation.DrawableRes;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.RawRes;
 import android.support.annotation.StringRes;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -127,7 +131,7 @@ public class Bober extends AppCompatActivity implements Castor {
                     BoardDrawerItem clickedItem = (BoardDrawerItem) drawerItem;
                     String boardKey = HanabiraBoard.Info.cutSlashes(clickedItem.getName().getText());
                     Fragment boardFragment = BoardFragment.newInstance(boardKey);
-                    getFragmentManager().beginTransaction().replace(R.id.frame_container, boardFragment).commit();
+                    getFragmentManager().beginTransaction().replace(R.id.frame_main_container, boardFragment).commit();
                 }
             }
             updateDrawerDiff(true);
@@ -138,73 +142,72 @@ public class Bober extends AppCompatActivity implements Castor {
 
     private class BoardItemGenerator {
 
-        private final Map<String, int[]> pics = new LinkedHashMap<String, int[]>() {
+        private final Map<String, int[]> pics            = new LinkedHashMap<String, int[]>() {
             {
                 put("b",
-                        new int[]{R.drawable.banners_b_125700861425839, R.drawable.banners_b_125860969605710, R
-                                .drawable.banners_b_b1});
+                    new int[]{R.drawable.banners_b_125700861425839, R.drawable.banners_b_125860969605710, R.drawable
+                            .banners_b_b1});
                 put("u", new int[]{R.drawable.banners_u_125860969598039});
                 put("rf",
-                        new int[]{R.drawable.banners_rf_125699252353074, R.drawable.banners_rf_125701163950149, R
-                                .drawable.banners_rf_125701647009375, R.drawable.banners_rf_125736226221120, R
-                                .drawable.banners_rf_125861026695515});
+                    new int[]{R.drawable.banners_rf_125699252353074, R.drawable.banners_rf_125701163950149, R
+                            .drawable.banners_rf_125701647009375, R.drawable.banners_rf_125736226221120, R.drawable
+                            .banners_rf_125861026695515});
 
                 put("dt", new int[]{R.drawable.banners_dt_125697739438064});
                 put("vg",
-                        new int[]{R.drawable.banners_vg_125701543235898, R.drawable.banners_vg_125701543238460, R
-                                .drawable.banners_vg_125709977081546, R.drawable.banners_vg_125718465081528, R
-                                .drawable.banners_vg_125725276436260, R.drawable.banners_vg_125752214930592, R
-                                .drawable.banners_vg_125787756729250, R.drawable.banners_vg_125860991758021});
+                    new int[]{R.drawable.banners_vg_125701543235898, R.drawable.banners_vg_125701543238460, R
+                            .drawable.banners_vg_125709977081546, R.drawable.banners_vg_125718465081528, R.drawable
+                            .banners_vg_125725276436260, R.drawable.banners_vg_125752214930592, R.drawable
+                            .banners_vg_125787756729250, R.drawable.banners_vg_125860991758021});
                 put("r", new int[]{R.drawable.banners_r_125699732718180, R.drawable.banners_r_r});
                 put("cr",
-                        new int[]{R.drawable.banners_cr_cr2, R.drawable.banners_cr_cr4, R.drawable
-                                .banners_cr_cr_vampire});
+                    new int[]{R.drawable.banners_cr_cr2, R.drawable.banners_cr_cr4, R.drawable.banners_cr_cr_vampire});
                 put("mu",
-                        new int[]{R.drawable.banners_mu_125701524833743, R.drawable.banners_mu_125706039606802, R
-                                .drawable.banners_mu_125758466249422, R.drawable.banners_mu_125758466251705, R
-                                .drawable.banners_mu_125861048005976, R.drawable.banners_mu___116});
+                    new int[]{R.drawable.banners_mu_125701524833743, R.drawable.banners_mu_125706039606802, R
+                            .drawable.banners_mu_125758466249422, R.drawable.banners_mu_125758466251705, R.drawable
+                            .banners_mu_125861048005976, R.drawable.banners_mu___116});
                 put("oe", new int[]{});
                 put("s", new int[]{R.drawable.banners_s_125776130692418, R.drawable.banners_s_125860969610249});
                 put("w", new int[]{});
                 put("hr", new int[]{});
                 put("a",
-                        new int[]{R.drawable.banners_a_125700436332204, R.drawable.banners_a_125701704962528, R
-                                .drawable.banners_a_125702195165767, R.drawable.banners_a_125761210590870, R.drawable
-                                .banners_a_125768405443972});
+                    new int[]{R.drawable.banners_a_125700436332204, R.drawable.banners_a_125701704962528, R.drawable
+                            .banners_a_125702195165767, R.drawable.banners_a_125761210590870, R.drawable
+                            .banners_a_125768405443972});
                 put("ma", new int[]{R.drawable.banners_ma_125860969613262, R.drawable.banners_ma_ma});
                 put("sw", new int[]{R.drawable.banners_sw_125861045421667, R.drawable.banners_sw_125694314851117});
                 put("hau", new int[]{R.drawable.banners_hau_125861045418626});
                 put("azu", new int[]{});
                 put("tv",
-                        new int[]{R.drawable.banners_tv_2bd020d5bb30, R.drawable.banners_tv_2e04001fa57f, R.drawable
-                                .banners_tv_snapshot20100724100336, R.drawable.banners_tv_ccd7cbf4e061, R.drawable
-                                .banners_tv_55555, R.drawable.banners_tv_46599021_1248208279_clapperboardmanresized2,
-                                R.drawable.banners_tv_3672202a3ac0});
+                    new int[]{R.drawable.banners_tv_2bd020d5bb30, R.drawable.banners_tv_2e04001fa57f, R.drawable
+                            .banners_tv_snapshot20100724100336, R.drawable.banners_tv_ccd7cbf4e061, R.drawable
+                            .banners_tv_55555, R.drawable.banners_tv_46599021_1248208279_clapperboardmanresized2, R
+                            .drawable.banners_tv_3672202a3ac0});
                 put("cp", new int[]{R.drawable.banners_cp_g125788239756657});
                 put("gf", new int[]{R.drawable.banners_gf_125860979571217});
                 put("bo", new int[]{});
                 put("di",
-                        new int[]{R.drawable.banners_di_125702135915554, R.drawable.banners_di_125762259407262, R
-                                .drawable.banners_di_125860991769106});
+                    new int[]{R.drawable.banners_di_125702135915554, R.drawable.banners_di_125762259407262, R
+                            .drawable.banners_di_125860991769106});
                 put("vn", new int[]{R.drawable.banners_vn_125861005475361});
                 put("ve",
-                        new int[]{R.drawable.banners_ve_125698553182650, R.drawable.banners_ve_125698880498448, R
-                                .drawable.banners_ve_125699339172544});
+                    new int[]{R.drawable.banners_ve_125698553182650, R.drawable.banners_ve_125698880498448, R
+                            .drawable.banners_ve_125699339172544});
                 put("wh",
-                        new int[]{R.drawable.banners_wh_125697147834527, R.drawable.banners_wh_wh2, R.drawable
-                                .banners_wh_wh1, R.drawable.banners_wh_125861075646865});
+                    new int[]{R.drawable.banners_wh_125697147834527, R.drawable.banners_wh_wh2, R.drawable
+                            .banners_wh_wh1, R.drawable.banners_wh_125861075646865});
                 put("fur", new int[]{R.drawable.banners_fur_125861026701646});
                 put("to",
-                        new int[]{R.drawable.banners_to_to_oppai_edition__lewd_, R.drawable.banners_to_to_lunatic, R
-                                .drawable.banners_to_to_cosplay, R.drawable.banners_to_to_cirnotopter, R.drawable
-                                .banners_to_125861045424732});
+                    new int[]{R.drawable.banners_to_to_oppai_edition__lewd_, R.drawable.banners_to_to_lunatic, R
+                            .drawable.banners_to_to_cosplay, R.drawable.banners_to_to_cirnotopter, R.drawable
+                            .banners_to_125861045424732});
                 put("bg",
-                        new int[]{R.drawable.banners_bg_bg, R.drawable.banners_bg_125861578033434, R.drawable
-                                .banners_bg_125697224028122});
+                    new int[]{R.drawable.banners_bg_bg, R.drawable.banners_bg_125861578033434, R.drawable
+                            .banners_bg_125697224028122});
                 put("wn", new int[]{R.drawable.banners_wn_125701591350076, R.drawable.banners_wn_125861005478345});
                 put("slow",
-                        new int[]{R.drawable.banners_slow_slow_2_copy_new, R.drawable.banners_slow_slow_3, R.drawable
-                                .banners_slow_slow_4});
+                    new int[]{R.drawable.banners_slow_slow_2_copy_new, R.drawable.banners_slow_slow_3, R.drawable
+                            .banners_slow_slow_4});
                 put("mad", new int[]{R.drawable.banners_mad_mad});
                 put("d", new int[]{R.drawable.banners_d_125711152029591, R.drawable.banners_d_d_motherland_hears_you});
                 put("news", new int[]{R.drawable.banners_news_125710395977840});
@@ -248,6 +251,14 @@ public class Bober extends AppCompatActivity implements Castor {
 
         private String slashify(String key) {
             return new StringBuilder("/").append(key).append('/').toString();
+        }
+    }
+
+    private class PostOpenBroadcastReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            PostDialogFragment.newInstance(intent.getExtras()).show(getFragmentManager(), null);
         }
     }
 
@@ -304,14 +315,14 @@ public class Bober extends AppCompatActivity implements Castor {
     public void onThreadSelected(int threadId) {
         Fragment threadFragment = ThreadFragment.newInstance(threadId);
         getFragmentManager().beginTransaction()
-                            .replace(R.id.frame_container, threadFragment)
+                            .replace(R.id.frame_main_container, threadFragment)
                             .addToBackStack("board_open_thread")
                             .commit();
     }
 
     private void loadingLog(String newState) {
         Log.d("Bober init",
-                new StringBuilder().append(DEBUG_initRelativeTime()).append(' ').append(newState).toString());
+              new StringBuilder().append(DEBUG_initRelativeTime()).append(' ').append(newState).toString());
     }
 
     @Override
@@ -319,8 +330,6 @@ public class Bober extends AppCompatActivity implements Castor {
         loadingLog("Freezing time...");
         // Build the local caches inside Joda Time
         new LocalDateTime();
-        loadingLog("Coalescing core...");
-        Hanabira.bind(this);
         loadingLog("Manuscripts contemplation...");
         HanabiraBoard.Info.loadBoardsInfo(getResources(), R.raw.boards);
 
@@ -340,6 +349,9 @@ public class Bober extends AppCompatActivity implements Castor {
         findViewById(R.id.frame_toolbar_container).setVisibility(View.VISIBLE);
         setTheme(R.style.Bobroreader_Theme_Default);
         // TODO create big enough splash logo
+        LocalBroadcastManager.getInstance(this)
+                             .registerReceiver(new PostOpenBroadcastReceiver(),
+                                               new IntentFilter(Hanabira.Action.OPEN_POST.name()));
     }
 
     @Override
@@ -411,12 +423,13 @@ public class Bober extends AppCompatActivity implements Castor {
                                   .addDrawerItems(new PrimaryDrawerItem().withName("History")
                                                                          .withIdentifier(0)
                                                                          .withSelectable(false), new PrimaryDrawerItem()
-                                                  .withName("Thread AutoHide")
-                                                  .withIdentifier(1)
-                                                  .withSelectable(false), new PrimaryDrawerItem().withName("Bookmarks")
-                                                                                                 .withIdentifier(2)
-                                                                                                 .withSelectable(false),
-                                          new SettingsDrawerItem().withIdentifier(3).withSelectable(false))
+                                                          .withName("Thread AutoHide")
+                                                          .withIdentifier(1)
+                                                          .withSelectable(false),
+                                                  new PrimaryDrawerItem().withName("Bookmarks")
+                                                                         .withIdentifier(2)
+                                                                         .withSelectable(false),
+                                                  new SettingsDrawerItem().withIdentifier(3).withSelectable(false))
                                   .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                                       @Override
                                       public boolean onItemClick(View view, int i, IDrawerItem iDrawerItem) {
@@ -439,9 +452,19 @@ public class Bober extends AppCompatActivity implements Castor {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        //add the values which need to be saved from the drawer to the bundle
-        outState = boardsDrawer.saveInstanceState(outState);
+        Fragment currentFragment = getFragmentManager().findFragmentById(R.id.frame_main_container);
+        if (currentFragment != null) {
+            getFragmentManager().putFragment(outState, "main-fragment", currentFragment);
+        }
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        getFragmentManager().beginTransaction()
+                            .add(getFragmentManager().getFragment(savedInstanceState, "main-fragment"), null)
+                            .commit();
+
     }
 
     @Override
@@ -484,7 +507,6 @@ public class Bober extends AppCompatActivity implements Castor {
     @Override
     protected void onDestroy() {
         Log.d("Bober", "destroy");
-        Hanabira.unbind();
         super.onDestroy();
     }
 

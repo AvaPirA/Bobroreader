@@ -38,7 +38,7 @@
         android:layout_height="match_parent">
 
     <FrameLayout
-            android:id="@+id/frame_container"
+            android:id="@+id/frame_main_container"
             android:layout_below="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>

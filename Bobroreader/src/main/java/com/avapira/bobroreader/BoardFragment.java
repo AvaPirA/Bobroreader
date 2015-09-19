@@ -71,6 +71,7 @@ public class BoardFragment extends Fragment {
     private static final String ARG_RECYCLER_LAYOUT = "arg_board_recycler_layout";
     private ProgressBar          progressBar;
     private RecyclerView         recycler;
+    private RecyclerView.LayoutManager recyclerLayoutManager;
     private HidingScrollListener scrollListener;
     private int recentListSize = 3;
     private String       boardKey;
@@ -550,7 +551,7 @@ public class BoardFragment extends Fragment {
         super.onSaveInstanceState(outState);
         outState.putString(ARG_KEY, boardKey);
         outState.putInt(ARG_PAGE, page);
-        outState.putParcelable(ARG_RECYCLER_LAYOUT, recycler.getLayoutManager().onSaveInstanceState());
+        outState.putParcelable(ARG_RECYCLER_LAYOUT, recyclerLayoutManager.onSaveInstanceState());
     }
 
     @Override
@@ -576,7 +577,8 @@ public class BoardFragment extends Fragment {
 
         progressBar = (ProgressBar) view.findViewById(R.id.pb);
         recycler = (RecyclerView) view.findViewById(R.id.thread_recycler);
-        recycler.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerLayoutManager = new LinearLayoutManager(getContext());
+        recycler.setLayoutManager(recyclerLayoutManager);
         if (boardAdapter == null) {
             // open board page
             scrollListener = new HidingScrollListener(getContext());
@@ -606,8 +608,6 @@ public class BoardFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        recycler = null;
-        progressBar = null;
         Log.d(TAG, "destroy view");
         super.onDestroyView();
     }

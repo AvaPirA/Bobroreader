@@ -76,7 +76,7 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         // Display the fragment as the main content.
-        getFragmentManager().beginTransaction().replace(R.id.frame_container, new SettingsFragment()).commit();
+        getFragmentManager().beginTransaction().replace(R.id.frame_main_container, new SettingsFragment()).commit();
 
     }
 }

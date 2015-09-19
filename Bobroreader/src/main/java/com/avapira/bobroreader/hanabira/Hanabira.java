@@ -1,17 +1,16 @@
 package com.avapira.bobroreader.hanabira;
 
-import android.content.Context;
+import android.app.Application;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import com.android.volley.Response;
 import com.avapira.bobroreader.Bober;
-import com.avapira.bobroreader.Castor;
 import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.cache.ActiveCache;
 import com.avapira.bobroreader.hanabira.cache.HanabiraCache;
+import com.avapira.bobroreader.hanabira.cache.PersistentCache;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.hanabira.entity.HanabiraUser;
@@ -34,27 +33,18 @@ import java.util.concurrent.CountDownLatch;
 /**
  *
  */
-public class Hanabira {
+public class Hanabira extends Application {
+
+    public enum Action {
+        OPEN_POST
+    }
 
     private static Hanabira flower;
 
-    private final HanabiraCache          cacheImpl;          // cache
-    private final HanabiraRequestBuilder hanabiraSupplier;   // network
-
-    private final SharedPreferences prefs;
-    private final Resources         mockerRes;
-
-    private CountDownLatch diffRequestWaiter;
-
-    private Hanabira(Castor ctr) {
-        Context ctx = ctr.getApplicationContext();
-        prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-        mockerRes = ctx.getResources();
-        cacheImpl = new ActiveCache(ctr);
-        hanabiraSupplier = HanabiraRequestBuilder.init(ctx);
-        CookieHandler.setDefault(
-                new CookieManager(new PersistentCookieStore(ctx), CookiePolicy.ACCEPT_ORIGINAL_SERVER));
-    }
+    private HanabiraCache          cacheImpl;          // cache
+    private HanabiraRequestBuilder hanabiraSupplier;   // network
+    private SharedPreferences      prefs;
+    private CountDownLatch         diffRequestWaiter;
 
     private static class ThreadCollector implements Response.Listener<String> {
 
@@ -66,21 +56,6 @@ public class Hanabira {
         public void onResponse(String response) {
             consumer.accept(HanabiraThread.fromJson(response, HanabiraThread.class));
         }
-    }
-
-    public static void bind(Castor castor) {
-        if (flower == null) {
-            flower = new Hanabira(castor);
-            Log.d("Hanabira", "Create");
-        } else {
-            throw new IllegalStateException("Switching hanabira context is impossible");
-        }
-    }
-
-    public static void unbind() {
-        HanabiraRequestBuilder.destroy();
-        flower = null;
-        Log.d("Hanabira", "Destroy");
     }
 
     public static Hanabira getFlower() {
@@ -99,14 +74,31 @@ public class Hanabira {
         return flower.prefs;
     }
 
+    private PersistentCache getPersistentCache() {
+        return (PersistentCache) cacheImpl;
+    }
+
+    @Override
+    public void onCreate() {
+        flower = this;
+        super.onCreate();
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        cacheImpl = new ActiveCache();
+        CookieHandler.setDefault(
+                new CookieManager(new PersistentCookieStore(this), CookiePolicy.ACCEPT_ORIGINAL_SERVER));
+        hanabiraSupplier = new HanabiraRequestBuilder(this);
+        Log.i("Hanabira core", "Core is molten");
+    }
+
     private boolean useMockedNetwork() {
         return prefs.getBoolean("pref_mocked_network", false);
     }
 
     public void getBoardPage(String boardKey, final int pageNum, final Consumer<List<Integer>> callback) {
         if (useMockedNetwork()) {
-            callback.accept(HanabiraBoard.fromJson(Bober.rawJsonToString(mockerRes, R.raw.u_0), HanabiraBoard.class)
-                                         .getPage(pageNum));
+            callback.accept(
+                    HanabiraBoard.fromJson(Bober.rawJsonToString(getResources(), R.raw.u_0), HanabiraBoard.class)
+                                 .getPage(pageNum));
         } else {
             Response.Listener<String> boardPageCollector = new Response.Listener<String>() {
                 @Override
@@ -121,7 +113,7 @@ public class Hanabira {
 
     public void getUser(final Consumer<HanabiraUser> consumer) {
         if (useMockedNetwork()) {
-            String raw = Bober.rawJsonToString(mockerRes, R.raw.user);
+            String raw = Bober.rawJsonToString(getResources(), R.raw.user);
             consumer.accept(HanabiraUser.fromJson(raw, HanabiraUser.class));
         } else {
             Response.Listener<String> userCollector = new Response.Listener<String>() {
@@ -202,8 +194,8 @@ public class Hanabira {
 
     public void getFullThread(int threadId, final Consumer<HanabiraThread> consumer) {
         if (useMockedNetwork()) {
-            consumer.accept(
-                    HanabiraThread.fromJson(Bober.rawJsonToString(mockerRes, R.raw.x112992_all), HanabiraThread.class));
+            consumer.accept(HanabiraThread.fromJson(Bober.rawJsonToString(getResources(), R.raw.x112992_all),
+                                                    HanabiraThread.class));
         } else {
             hanabiraSupplier.thread()
                             .get(HanabiraRequestBuilder.ThreadRequestType.ALL)
@@ -236,8 +228,7 @@ public class Hanabira {
                                             HanabiraRequestBuilder.HanabiraRequest request;
                                             if (diff > 0) {
                                                 request = hanabiraSupplier.thread()
-                                                                          .get(HanabiraRequestBuilder
-                                                                                  .ThreadRequestType.LAST)
+                                                                          .get(HanabiraRequestBuilder.ThreadRequestType.LAST)
                                                                           .forId(id)
                                                                           .noMoreThan(diff)
                                                                           .build();
@@ -246,12 +237,13 @@ public class Hanabira {
                                                 // that's likely because some posts were deleted
                                                 // hence do full reload (don't cry, my GPRS princess)
                                                 request = hanabiraSupplier.thread()
-                                                                          .get(HanabiraRequestBuilder
-                                                                                  .ThreadRequestType.ALL)
+                                                                          .get(HanabiraRequestBuilder.ThreadRequestType.ALL)
                                                                           .forId(id)
                                                                           .build();
                                             }
                                             request.doRequest(new ThreadCollector(consumer));
+                                        } else {
+                                            consumer.accept(cachedThread);
                                         }
                                     } catch (JSONException e) {
                                         e.printStackTrace();
@@ -275,7 +267,7 @@ public class Hanabira {
                                 public void onResponse(String response) {
                                     try {
                                         consumer.accept(Hanabira.getStem().findThreadById(id).getPostsCount() !=
-                                                new JSONObject(response).getInt("posts_count"));
+                                                                new JSONObject(response).getInt("posts_count"));
                                     } catch (JSONException e) {
                                         e.printStackTrace();
                                     }

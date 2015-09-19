@@ -16,7 +16,7 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 public class PostDialogFragment extends DialogFragment {
 
     public static final  String ARG_BOARD = "title";
-    private static final String ARG_ID    = "id";
+    public static final String ARG_ID = "id";
     final                String LOG_TAG   = "myLogs";
 
     public static DialogFragment newInstance(String board, int id) {
@@ -24,6 +24,13 @@ public class PostDialogFragment extends DialogFragment {
         Bundle bundle = new Bundle();
         bundle.putString(ARG_BOARD, board);
         bundle.putInt(ARG_ID, id);
+
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    public static DialogFragment newInstance(Bundle bundle) {
+        DialogFragment fragment = new PostDialogFragment();
         fragment.setArguments(bundle);
         return fragment;
     }

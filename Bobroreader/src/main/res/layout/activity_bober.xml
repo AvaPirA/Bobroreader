@@ -7,7 +7,7 @@
                                                  android:id="@+id/snackbarPosition">
 
     <FrameLayout
-            android:id="@+id/frame_container"
+            android:id="@+id/frame_main_container"
             android:background="@color/dobro_light"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
