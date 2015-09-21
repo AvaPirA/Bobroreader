@@ -58,8 +58,8 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
                     // OP posts is first priority
                 }
                 for (int threadId : threadsToParse) {
-                    for (Integer pdi : findThreadById(threadId).getLastN(previewsToParse)) {
-                        cachePost(pdi);
+                    for (Integer postIds : findThreadById(threadId).getLastN(previewsToParse)) {
+                        cachePost(postIds);
                     }
                     // previews posts is second priority
                 }
@@ -89,17 +89,20 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
         if (retVal != null) {
             return retVal;
         } else {
-            return super.findBoardByKey(boardKey);
+            retVal = super.findBoardByKey(boardKey);
+            activeCacheInternalSaveBoard(retVal);
+            return retVal;
         }
     }
 
     @Override
-    public HanabiraThread findThreadByDisplayId(@NonNull String boardKey, int threadDisplayId) {
+    public HanabiraThread findThreadByDisplayId(@NonNull String boardKey, int threadDisplayId)
+    throws NullPointerException {
         return indexedThreadsDisplay.get(boardKey).get(threadDisplayId);
     }
 
     @Override
-    public HanabiraPost findPostByDisplayId(@NonNull String boardKey, int postDisplayId) {
+    public HanabiraPost findPostByDisplayId(@NonNull String boardKey, int postDisplayId) throws NullPointerException {
         return indexedPostsDisplay.get(boardKey).get(postDisplayId);
     }
 
@@ -108,7 +111,9 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
         if (retVal != null) {
             return retVal;
         } else {
-            return super.findThreadById(threadId);
+            retVal = super.findThreadById(threadId);
+            activeCacheInternalSaveThread(retVal, HanabiraBoard.Info.getKeyForId(retVal.getBoardId()));
+            return retVal;
         }
     }
 
@@ -117,7 +122,9 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
         if (retVal != null) {
             return retVal;
         } else {
-            return super.findPostById(postId);
+            retVal = super.findPostById(postId);
+            activeCacheInternalSavePost(retVal, HanabiraBoard.Info.getKeyForId(retVal.getBoardId()));
+            return retVal;
         }
     }
 
@@ -136,25 +143,37 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
 
     @SuppressLint("UseSparseArrays")
     public void saveBoard(HanabiraBoard board) {
+        activeCacheInternalSaveBoard(board);
+        super.saveBoard(board);
+    }
+
+    private void activeCacheInternalSaveBoard(HanabiraBoard board) {
         indexedBoards.put(board.getKey(), board);
         indexedPostsDisplay.put(board.getKey(), new HashMap<Integer, HanabiraPost>());
         indexedThreadsDisplay.put(board.getKey(), new HashMap<Integer, HanabiraThread>());
-        super.saveBoard(board);
     }
 
     public void saveThread(HanabiraThread thread, @Nullable String boardKey) {
         boardKey = boardKey == null ? HanabiraBoard.Info.getKeyForId(thread.getBoardId()) : boardKey;
+        activeCacheInternalSaveThread(thread, boardKey);
+        super.saveThread(thread, boardKey);
+    }
+
+    private void activeCacheInternalSaveThread(HanabiraThread thread, @Nullable String boardKey) {
         indexedThreads.put(thread.getThreadId(), thread);
         indexedThreadsDisplay.get(boardKey).put(thread.getDisplayId(), thread);
-        super.saveThread(thread, boardKey);
     }
 
     public void savePost(HanabiraPost cachedPost, @Nullable String boardKey) {
         boardKey = boardKey == null ? HanabiraBoard.Info.getKeyForId(cachedPost.getBoardId()) : boardKey;
+        activeCacheInternalSavePost(cachedPost, boardKey);
+        super.savePost(cachedPost, boardKey);
+    }
+
+    private void activeCacheInternalSavePost(HanabiraPost cachedPost, @Nullable String boardKey) {
         indexedPosts.put(cachedPost.getPostId(), cachedPost);
         indexedPostsDisplay.get(boardKey).put(cachedPost.getDisplayId(), cachedPost);
         findThreadById(cachedPost.getThreadId()).getPosts().put(cachedPost.getCreatedDate(), cachedPost.getPostId());
-        super.savePost(cachedPost, boardKey);
     }
 
 }

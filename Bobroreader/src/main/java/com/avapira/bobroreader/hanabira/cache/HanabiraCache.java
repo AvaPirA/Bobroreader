@@ -9,8 +9,6 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
  */
 public interface HanabiraCache {
 
-    void asyncParse(Iterable<Integer> threads, int recentDepth);
-    void asyncParse(Iterable<Integer> threads);
     HanabiraBoard findBoardByKey(String boardKey);
     HanabiraThread findThreadById(int threadId);
     HanabiraPost findPostById(int postId);

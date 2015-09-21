@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import com.avapira.bobroreader.hanabira.Hanabira;
+import com.avapira.bobroreader.hanabira.cache.ActiveCache;
 import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.util.Consumer;
@@ -82,7 +83,7 @@ public class ThreadFragment extends Fragment {
             for (Integer i : thread.getPosts().values()) {
                 reflectedPosts.add(i);
             }
-            Hanabira.getStem().asyncParse(thread.getPosts().values());
+            ((ActiveCache) Hanabira.getStem()).asyncParse(thread.getPosts().values());
         }
 
         @Override

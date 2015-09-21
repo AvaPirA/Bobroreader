@@ -53,6 +53,7 @@ import android.view.animation.BounceInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.*;
 import com.avapira.bobroreader.hanabira.Hanabira;
+import com.avapira.bobroreader.hanabira.cache.ActiveCache;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 import com.avapira.bobroreader.util.Consumer;
@@ -99,7 +100,7 @@ public class BoardFragment extends Fragment {
             for (int i = 0; i < threadInternalIds.size(); i++) {
                 requestFillRecentPosts.add(true);
             }
-            Hanabira.getStem().asyncParse(threadIds, recentListSize);
+            ((ActiveCache) Hanabira.getStem()).asyncParse(threadIds, recentListSize);
         }
 
         public class ThreadWithPreviewViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {

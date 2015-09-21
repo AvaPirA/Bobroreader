@@ -13,16 +13,6 @@ public class PersistentCache implements HanabiraCache {
     public static final String TAG = PersistentCache.class.getSimpleName();
 
     @Override
-    public void asyncParse(Iterable<Integer> threads, int recentDepth) {
-        //do nothing
-    }
-
-    @Override
-    public void asyncParse(Iterable<Integer> threads) {
-        //do nothing
-    }
-
-    @Override
     @CallSuper
     public HanabiraBoard findBoardByKey(String boardKey) {
         return null;

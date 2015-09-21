@@ -17,6 +17,9 @@ public class HanabiraThread extends HanabiraEntity {
     @SerializedName("board_id")
     private final int                             boardId;
     private final boolean                         autosage;
+    /**
+     * Maps date of post creation to it's (internal) ID
+     */
     private final TreeMap<LocalDateTime, Integer> posts;
     @SerializedName("last_modified")
     private       LocalDateTime                   modifiedDate;
@@ -134,6 +137,9 @@ public class HanabiraThread extends HanabiraEntity {
         return posts;
     }
 
+    /**
+     * @return list of IDs of last {@code want} posts on this thread
+     */
     public List<Integer> getLastN(int want) {
         if (postsCount < 2) { return Collections.emptyList(); }
         int have = posts.size() - 1;
