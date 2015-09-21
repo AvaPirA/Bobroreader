@@ -37,14 +37,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.LayoutRes;
-import android.support.annotation.RawRes;
 import android.support.annotation.StringRes;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
@@ -62,8 +60,6 @@ import com.mikepenz.materialdrawer.model.SectionDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import org.joda.time.LocalDateTime;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -271,20 +267,6 @@ public class Bober extends AppCompatActivity implements Castor {
         return (DEBUG_time() - DEBUG_INIT_START) / 10e5;
     }
 
-    public static String rawJsonToString(Resources res, @RawRes int resId) {
-        String name = res.getResourceName(resId);
-        BufferedInputStream bis = new BufferedInputStream(res.openRawResource(resId));
-        try {
-            byte[] bytes = new byte[bis.available()];
-            int bytesRead = bis.read(bytes);
-            Log.i("Bober#rawJsonToString", String.format("Streaming raw file %s: %s bytes read", name, bytesRead));
-            return new String(bytes);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "";
-        }
-    }
-
     @Override
     public void onFragmentInteraction(Uri uri) {
         //todo
@@ -331,7 +313,7 @@ public class Bober extends AppCompatActivity implements Castor {
         // Build the local caches inside Joda Time
         new LocalDateTime();
         loadingLog("Manuscripts contemplation...");
-        HanabiraBoard.Info.loadBoardsInfo(getResources(), R.raw.boards);
+        HanabiraBoard.Info.loadBoardsInfo();
 
         loadingLog("Superposition...");
         super.onCreate(savedInstanceState);

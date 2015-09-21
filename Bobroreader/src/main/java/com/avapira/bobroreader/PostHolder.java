@@ -7,6 +7,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
 import com.avapira.bobroreader.hanabira.Hanabira;
+import com.avapira.bobroreader.hanabira.cache.ActiveCache;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -19,7 +20,7 @@ public class PostHolder {
     final TextView displayId;
     final TextView date;
     final TextView name;
-    final         TextView message;
+    final TextView message;
 
     public PostHolder(TextView displayId, TextView date, TextView name, TextView message) {
         this.displayId = displayId;
@@ -86,7 +87,7 @@ public class PostHolder {
         displayId.setText(formatDisplayId(post.getDisplayId()));
         date.setText(formatDate(post.getCreatedDate()));
         name.setText(post.getName());
-        message.setText(Hanabira.getStem().getParsedPost(post.getPostId()));
+        message.setText(((ActiveCache) Hanabira.getStem()).getParsedPost(post.getPostId()));
         message.setOnTouchListener(new LinkMovementMethodOverride());
     }
 

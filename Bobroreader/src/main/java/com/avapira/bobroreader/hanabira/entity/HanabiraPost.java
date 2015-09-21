@@ -51,13 +51,18 @@ public class HanabiraPost extends HanabiraEntity {
     private final int           boardId;
     @SerializedName("thread_id")
     private final int           threadId;
+    @SerializedName("op")
     private final boolean       op;
-    //    private List<File>    files;
+    @SerializedName("files")
+    private       List<HanabiraFile> files;
     @SerializedName("last_modified")
     private       LocalDateTime modifiedDate;
-    private       String        message;
-    private       String        subject;
-    private       String        name;
+    @SerializedName("message")
+    private       String message;
+    @SerializedName("subject")
+    private       String subject;
+    @SerializedName("name")
+    private       String name;
 
     HanabiraPost(int displayId,
                  LocalDateTime modifiedDate,

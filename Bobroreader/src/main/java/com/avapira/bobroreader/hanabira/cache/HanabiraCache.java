@@ -20,7 +20,6 @@ public interface HanabiraCache {
      * Should be used only if internal id is unable or hard to obtain
      */
     HanabiraPost findPostByDisplayId(String boardKey, int postDisplayId);
-    CharSequence getParsedPost(int postDisplayId);
     void saveBoard(HanabiraBoard board);
     void saveThread(HanabiraThread thread, String boardKey);
     void savePost(HanabiraPost cachedPost, String boardKey);

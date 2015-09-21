@@ -1,8 +1,7 @@
 package com.avapira.bobroreader.hanabira.entity;
 
-import android.content.res.Resources;
 import android.support.annotation.NonNull;
-import com.avapira.bobroreader.Bober;
+import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.Hanabira;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
@@ -17,10 +16,11 @@ import java.util.regex.Pattern;
  */
 public class HanabiraBoard extends HanabiraEntity {
 
-    private final String                      boardKey;
+    private final String boardKey;
 
     /**
-     * Thread global IDs (not display)
+     * Thread global IDs (not display). It's a Map just because implementing it as e.g. List is a little brainfuck
+     * with checking size, indices ans so on
      */
     private final Map<Integer, List<Integer>> pages;
     private       int                         pagesCount;
@@ -92,10 +92,10 @@ public class HanabiraBoard extends HanabiraEntity {
         @SerializedName("board")
         public         String                  boardKey;
 
-        public static void loadBoardsInfo(Resources res, int id) {
+        public static void loadBoardsInfo() {
             if (isLoaded()) { return; }
             // read json
-            String json = Bober.rawJsonToString(res, id);
+            String json = Hanabira.rawJsonToString(R.raw.boards);
             boardsInfoStorage = new Gson().fromJson(json, new TypeToken<List<Info>>() {}.getType());
             // index data
             for (Info info : boardsInfoStorage) {
@@ -143,10 +143,6 @@ public class HanabiraBoard extends HanabiraEntity {
     public void update(int pagesCount, Object capabilities) {
         this.pagesCount = pagesCount;
         this.capabilities = capabilities;
-    }
-
-    public Info getInfo() {
-        return Info.getForKey(boardKey);
     }
 
     Map<Integer, List<Integer>> getPages() {

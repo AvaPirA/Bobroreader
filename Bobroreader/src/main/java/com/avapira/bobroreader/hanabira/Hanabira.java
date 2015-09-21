@@ -4,9 +4,9 @@ import android.app.Application;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.RawRes;
 import android.util.Log;
 import com.android.volley.Response;
-import com.avapira.bobroreader.Bober;
 import com.avapira.bobroreader.R;
 import com.avapira.bobroreader.hanabira.cache.ActiveCache;
 import com.avapira.bobroreader.hanabira.cache.HanabiraCache;
@@ -21,6 +21,8 @@ import org.joda.time.LocalDateTime;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
@@ -74,6 +76,20 @@ public class Hanabira extends Application {
         return flower.prefs;
     }
 
+    public static String rawJsonToString(@RawRes int resId) {
+        String name = flower.getResources().getResourceName(resId);
+        BufferedInputStream bis = new BufferedInputStream(flower.getResources().openRawResource(resId));
+        try {
+            byte[] bytes = new byte[bis.available()];
+            int bytesRead = bis.read(bytes);
+            Log.i("Bober#rawJsonToString", String.format("Streaming raw file %s: %s bytes read", name, bytesRead));
+            return new String(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
     private PersistentCache getPersistentCache() {
         return (PersistentCache) cacheImpl;
     }
@@ -97,7 +113,7 @@ public class Hanabira extends Application {
     public void getBoardPage(String boardKey, final int pageNum, final Consumer<List<Integer>> callback) {
         if (useMockedNetwork()) {
             callback.accept(
-                    HanabiraBoard.fromJson(Bober.rawJsonToString(getResources(), R.raw.u_0), HanabiraBoard.class)
+                    HanabiraBoard.fromJson(rawJsonToString(R.raw.u_0), HanabiraBoard.class)
                                  .getPage(pageNum));
         } else {
             Response.Listener<String> boardPageCollector = new Response.Listener<String>() {
@@ -113,7 +129,7 @@ public class Hanabira extends Application {
 
     public void getUser(final Consumer<HanabiraUser> consumer) {
         if (useMockedNetwork()) {
-            String raw = Bober.rawJsonToString(getResources(), R.raw.user);
+            String raw = rawJsonToString(R.raw.user);
             consumer.accept(HanabiraUser.fromJson(raw, HanabiraUser.class));
         } else {
             Response.Listener<String> userCollector = new Response.Listener<String>() {
@@ -194,7 +210,7 @@ public class Hanabira extends Application {
 
     public void getFullThread(int threadId, final Consumer<HanabiraThread> consumer) {
         if (useMockedNetwork()) {
-            consumer.accept(HanabiraThread.fromJson(Bober.rawJsonToString(getResources(), R.raw.x112992_all),
+            consumer.accept(HanabiraThread.fromJson(rawJsonToString(R.raw.x112992_all),
                                                     HanabiraThread.class));
         } else {
             hanabiraSupplier.thread()

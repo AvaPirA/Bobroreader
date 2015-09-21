@@ -26,6 +26,10 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
     private final        Map<String, Map<Integer, HanabiraThread>> indexedThreadsDisplay = new HashMap<>();
     private final        Map<String, Map<Integer, HanabiraPost>>   indexedPostsDisplay   = new HashMap<>();
 
+    public ActiveCache() {
+        super();
+    }
+
     private class AsyncHanabiraParser implements Runnable {
 
         private final Iterable<Integer> postsToParse;
@@ -128,7 +132,6 @@ public class ActiveCache extends PersistentCache implements HanabiraCache {
         }
     }
 
-    @Override
     public CharSequence getParsedPost(int postId) {
         synchronized (cachedParsedPosts) {
             CharSequence seq = cachedParsedPosts.get(postId);
