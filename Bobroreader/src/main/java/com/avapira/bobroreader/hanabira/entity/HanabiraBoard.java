@@ -145,7 +145,7 @@ public class HanabiraBoard extends HanabiraEntity {
         this.capabilities = capabilities;
     }
 
-    Map<Integer, List<Integer>> getPages() {
+    public Map<Integer, List<Integer>> getPages() {
         return pages;
     }
 

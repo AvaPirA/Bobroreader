@@ -1,6 +1,7 @@
 package com.avapira.bobroreader.hanabira.cache;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -11,8 +12,9 @@ import com.avapira.bobroreader.hanabira.entity.HanabiraBoard;
 import com.avapira.bobroreader.hanabira.entity.HanabiraPost;
 import com.avapira.bobroreader.hanabira.entity.HanabiraThread;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -37,6 +39,7 @@ public class PersistentCache implements HanabiraCache {
     }
 
     public class Dam extends SQLiteOpenHelper {
+
 
         private static final String DB_NAME                   = "VeryStronkBeawerDam";
         private static final int    DB_VERSION                = 1;
@@ -117,17 +120,32 @@ public class PersistentCache implements HanabiraCache {
         }
     }
 
-    private static String boardPagesToDb(Map<Integer, List<Integer>> pages)
-
     @Override
     @CallSuper
     public HanabiraBoard findBoardByKey(String boardKey) {
         if (db == null) { return null; }
-        int boardId = HanabiraBoard.Info.getIdForKey(boardKey);
-        int pagesCount = 0; // todo db.getPagesCount()
-        HanabiraBoard board = new HanabiraBoard(boardKey, pagesCount, null);
-        //todo board.setPages
-        return board;
+        String[] idArg = new String[]{Integer.toString(HanabiraBoard.Info.getIdForKey(boardKey))};
+        Cursor c = db.rawQuery("SELECT (pages_count) FROM Boards WHERE ?=id", idArg);
+        if (c.getCount() != 1) {
+            throw new SQLiteException("Wrong return cursor size for <select page_num>: " + c.getCount());
+        }
+        final int pageCount = c.getInt(0);
+        c.close();
+        HanabiraBoard retBoard = new HanabiraBoard(boardKey, pageCount, null);
+
+        c = db.rawQuery("SELECT (page_num, threads) FROM BoardPages WHERE ?=id", idArg);
+        if (c.moveToFirst()) {
+            do {
+                List<Integer> threadsList = new ArrayList<>();
+                int page = c.getInt(0);
+                String[] threads = c.getString(1).split(";");
+                for (String s : threads) {
+                    threadsList.add(Integer.parseInt(s));
+                }
+                retBoard.updatePage(page, threadsList);
+            } while (!c.isLast());
+        }
+        return retBoard;
     }
 
     @Override
@@ -156,6 +174,18 @@ public class PersistentCache implements HanabiraCache {
     @CallSuper
     public void saveBoard(HanabiraBoard board) {
         if (db == null) { return; }
+        Set<Integer> pageKeys = board.getPages().keySet();
+        for (int pageKey : pageKeys) {
+            List<Integer> page = board.getPage(pageKey);
+            StringBuilder sb = new StringBuilder();
+            for (int threadId : page) {
+                sb.append(threadId);
+                sb.append(';');
+            }
+            sb.deleteCharAt(sb.length() - 1);
+            db.execSQL(String.format("INSERT (id, page_num, threads) INTO BoardPages VALUES (%s,%s,%s)", board.getKey(),
+                                     pageKey, sb.toString()));
+        }
     }
 
     @Override
@@ -164,15 +194,4 @@ public class PersistentCache implements HanabiraCache {
         if (db == null) { return; }
     }
 
-    @Override
-    @CallSuper
-    public void savePost(HanabiraPost cachedPost, String boardKey) {
-        if (db == null) { return; }
-    }
-
-    @Override
-    @CallSuper
-    public void savePost(HanabiraPost cachedPost, String boardKey) {
-        if (db == null) { return; }
-    }
 }
